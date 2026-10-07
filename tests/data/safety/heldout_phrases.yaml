@@ -1,0 +1,91 @@
+# Held-out crisis phrases for measuring recall (rules T8).
+#
+# Written and committed BEFORE any detection pattern existed, and never used to tune
+# patterns. If a phrase here is missed, the miss is reported, the phrase moves to
+# train_phrases.yaml with a dated note, and a fresh held-out batch replaces it.
+#
+# Limitation: authored by the same team that writes the patterns, so it is not a fully
+# independent sample. An externally authored set (clinician / annotators) is needed
+# before any claim about real-world recall.
+version: "2026.10.0"
+review_status: needs_clinician_review
+phrases:
+  explicit:
+    - "honestly I just want to kill myself"
+    - "I'm thinking about suicide again"
+    - "i keep having suicidal thoughts at night"
+    - "I'm going to end my life"
+    - "i want to take my own life"
+    - "planning to commit suicide"
+    - "I think I'm going to kill myself this weekend"
+    - "i dont want to be here anymore, i want to end it"
+    - "Ive decided to end it all"
+    - "im gonna kms"
+    - "I've been feeling suicidal for weeks"
+    - "I want to unalive myself"
+  passive:
+    - "I wish I was dead"
+    - "sometimes I wish i could just not wake up"
+    - "I don't want to live anymore"
+    - "what's the point of living"
+    - "i have nothing left to live for"
+    - "I'd be better off dead"
+    - "life isn't worth living"
+    - "I want to die"
+    - "i just wanna die tbh"
+    - "I hope I don't wake up tomorrow"
+    - "I'm tired of being alive"
+    - "I wish I had never been born"
+    - "i want to go to sleep and never wake up"
+    - "I don't want to exist anymore"
+    - "no reason to keep living"
+    - "I'm so done with life"
+  plan_method:
+    - "I've been saving up pills"
+    - "how many pills would it take to die"
+    - "I'm going to overdose tonight"
+    - "thinking about jumping off the bridge near my house"
+    - "I bought a rope"
+    - "I wrote a suicide note"
+    - "what's the most painless way to die"
+    - "I'm standing on the roof right now"
+    - "I've got the pesticide ready"
+    - "I'm going to jump in front of a train"
+    - "I'm going to slit my wrists"
+    - "this is my last message, goodbye everyone"
+  burden:
+    - "everyone would be better off without me"
+    - "I'm just a burden to my family"
+    - "no one would even notice if I was gone"
+    - "the world would be better without me in it"
+    - "my parents would be happier if I wasn't around"
+    - "nobody would miss me if I died"
+  self_harm:
+    - "I cut myself again last night"
+    - "I've been self harming"
+    - "i want to hurt myself"
+    - "I burned myself on purpose"
+  typos_and_obfuscation:
+    - "i want to kil myself"
+    - "i want to killl myselff"
+    - "i want to diiiie"
+    - "k i l l myself"
+    - "su1cide"
+    - "i wnat to die"
+    - "suicidial thoughts"
+    - "end my lyf"
+    - "i want to d!e"
+  dialect_and_slang:
+    - "I'm gonna top myself"
+    - "feel like ending it innit"
+    - "i finna end it all"
+    - "ion wanna be alive no more"
+    - "I want to off myself"
+    - "thinking bout sewerslide"
+  code_mixed:
+    - "main mar jaana chahta hoon"
+    - "mujhe jeena nahi hai"
+    - "khudkushi kar lunga"
+    - "I just want to marr jaun yaar"
+    - "zindagi khatam kar dungi"
+    - "aatmahatya ke vichar aa rahe hain"

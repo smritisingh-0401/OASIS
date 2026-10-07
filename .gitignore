@@ -21,7 +21,7 @@ htmlcov/
 coverage.xml
 
 # Local data — never commit user data, databases or model weights
-data/
+/data/
 *.db
 *.db-wal
 *.db-shm
