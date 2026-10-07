@@ -235,7 +235,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 | # | Item | Owner | Needed by |
 |---|---|---|---|
 | O1 | Open-source licence choice for the repository | Smriti | Before first public push |
-| O2 | Crisis resource list — regions decided (India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia); numbers verified against official sources at build time | Build | Phase 2 |
+| O2 | Crisis resource list — two tiers decided 2026-10-07 (64 Tier 1 countries; emergency number for all others; originally India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia); numbers verified against official sources at build time | Build | Phase 2 |
 | O3 | Qualified clinician reviewer for [clinical_review.md](clinical_review.md) | Smriti | Before any real use |
 | O4 | Institutional ethics approval for any human-participant testing | Smriti | Before usability testing with participants |
 | O5 | Optional PostgreSQL adapter | Smriti decides | Phase 14, only if requested |

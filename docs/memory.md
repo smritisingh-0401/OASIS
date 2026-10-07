@@ -54,7 +54,8 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-07 | Session ID is a 256-bit bearer token in `X-OASIS-Session`, stored hashed; single uvicorn worker | Never in URLs; ephemeral store and SQLite writer need one process | Cookies; multi-worker |
 | 2026-10-07 | Assessment answers and consents are structured actions on `POST /chat` | Every turn passes the same engine and safety ordering | Separate assessment endpoint |
 | 2026-10-07 | Shared types in top-level `oasis.types` | Lets `oasis.safety` stay isolated from `oasis.core` | Types inside `oasis.core` |
-| 2026-10-07 | Crisis resources cover India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia; country chosen by the user (optional), never inferred | Target user regions; consistent with no-nationality inference | Single configured region; locale/IP inference |
+| 2026-10-07 | Crisis resources extended to two tiers: Tier 1 (verified crisis line + emergency number) for 64 countries across all inhabited regions; Tier 2 (emergency number only) for every other country | World coverage while keeping the set of crisis lines that must be re-verified manageable; v1 is English-only, so English-speaking countries were prioritised | Full entries for every country; Asia-only list |
+| 2026-10-07 | (superseded) Crisis resources cover India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia; country chosen by the user (optional), never inferred | Target user regions; consistent with no-nationality inference | Single configured region; locale/IP inference |
 | 2026-10-07 | Assistant config files excluded via `.git/info/exclude` instead of `.gitignore` | Keeps them out of git without naming them in the repository | Listing them in `.gitignore` |
 | 2026-10-07 | Phase 1: turn recording lives in `ChatEngine` (no separate `core/recorder.py`) | One call site; a separate module would be a one-function wrapper | Separate recorder module |
 | 2026-10-07 | Phase 1: fallback templates are Python constants until the Phase 2 content loader | Avoids adding YAML loading before it has a second user | YAML now |
@@ -70,7 +71,6 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 ## Open items / questions for Smriti
 
-1. **Region list** — confirm it is complete (the list ended with a trailing comma) and that "Korea" means South Korea.
 2. **Python 3.12 and uv** need installing on the development machine.
 3. **Repository licence** (e.g. MIT, Apache-2.0).
 4. **Clinician reviewer** for `clinical_review.md`.

@@ -10,7 +10,7 @@ Reviewer: _not yet assigned (open item O3)._
 | CR-01 | Crisis phrase lists (explicit intent, passive ideation, plan/method, burden) | `content/safety/patterns.yaml` | 2 | pending | Recall/FPR reported in `docs/reports/phase-02.md` |
 | CR-02 | Idiom allow-list | `content/safety/allowlist.yaml` | 2 | pending | Each entry has its own test |
 | CR-03 | Crisis handoff wording | `content/safety/handoff.yaml` | 2 | pending | |
-| CR-04 | Crisis resource list for 19 regions (South/Southeast/East Asia and Russia) | `content/safety/resources.yaml` | 2 | pending | Numbers verified at build time; verification date and source stored per entry; countries without a verifiable line list the emergency number only |
+| CR-04 | Crisis resource list: Tier 1 (64 countries, crisis line + emergency number) and Tier 2 (emergency number for every other country) | `content/safety/resources.yaml` | 2 | pending | Numbers verified at build time; verification date and source stored per entry; countries without a verifiable line list the emergency number only |
 | CR-05 | Post-crisis policy (minimal supportive mode until the user opts to continue; behaviour after restart with storage down) | `core/planner.py`, `content/templates/post_crisis.yaml` | 2 | pending | Provisional |
 | CR-06 | Crisis message text not stored in history; audit keeps pattern IDs only | Turn recorder, audit log | 2 | pending | Also a privacy decision |
 | CR-07 | PHQ-9 item-9 handling (any answer ≥ 1 → crisis protocol; questionnaire not scored that turn) | `assessment/state_machine.py` | 3 | pending | |
