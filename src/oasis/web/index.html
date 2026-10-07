@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OASIS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="dev-banner" role="status">
+    Development build &mdash; not for use by anyone yet. The safety layer is not in place.
+  </div>
+
+  <header class="top">
+    <h1 class="brand">OASIS</h1>
+    <!-- Native <details>: opens with no script and no server, so help works even when the
+         backend is down (rules S12, F2). -->
+    <details class="help">
+      <summary>Need help now?</summary>
+      <div class="help-card" role="region" aria-label="Crisis help">
+        <h2>If you are in danger right now</h2>
+        <p><strong>Call your local emergency number.</strong> If you can, tell someone near you
+          how you are feeling.</p>
+        <p>Country-specific crisis lines are being verified and will appear here.</p>
+        <p>You do not have to go through this alone.</p>
+      </div>
+    </details>
+  </header>
+
+  <main class="chat">
+    <ol id="messages" class="messages" aria-live="polite" aria-label="Conversation">
+      <li class="msg bot empty-state">
+        Hi. This is a quiet place to talk about how you're feeling. What's on your mind?
+      </li>
+    </ol>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+
+    <form id="composer" class="composer">
+      <label for="input" class="visually-hidden">Your message</label>
+      <textarea id="input" rows="2" maxlength="2000" required
+                placeholder="Type how you're feeling&hellip;"></textarea>
+      <button id="send" type="submit">Send</button>
+    </form>
+  </main>
+
+  <footer class="footer">
+    OASIS is a support tool, not a diagnosis or an emergency service. It does not replace a
+    clinician.
+  </footer>
+</body>
+</html>

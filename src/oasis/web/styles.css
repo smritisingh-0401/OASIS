@@ -1,0 +1,152 @@
+/* Calm, text-only design (design §15.2). System fonts only: no external requests. */
+
+:root {
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --muted: #5b616b;
+  --accent: #2f6fd1;
+  --warm: #fdece6;
+  --focus: #1a56c4;
+  --banner-bg: #fff4d6;
+  --banner-text: #5c4100;
+  --radius: 12px;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1c1e;
+    --surface: #25272a;
+    --text: #e8e6e1;
+    --muted: #a6abb3;
+    --accent: #7ea8ec;
+    --warm: #3a2a24;
+    --focus: #9cc0ff;
+    --banner-bg: #3d3216;
+    --banner-text: #ffe7a8;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+.dev-banner {
+  background: var(--banner-bg);
+  color: var(--banner-text);
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.brand { font-size: 22px; margin: 4px 0; letter-spacing: 0.04em; }
+
+.help { position: relative; }
+.help summary {
+  cursor: pointer;
+  list-style: none;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  font-weight: 600;
+}
+.help summary::-webkit-details-marker { display: none; }
+.help-card {
+  position: absolute;
+  right: 0;
+  z-index: 2;
+  width: min(360px, calc(100vw - 32px));
+  margin-top: 8px;
+  padding: 16px;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+}
+.help-card h2 { font-size: 18px; margin: 0 0 8px; }
+
+.chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.messages { list-style: none; margin: 0; padding: 0; flex: 1; }
+
+.msg {
+  max-width: 65ch;
+  margin: 12px 0;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+}
+.msg p { margin: 0; white-space: pre-wrap; }
+.msg .note { margin-top: 6px; font-size: 14px; color: var(--muted); }
+.msg.bot { background: var(--warm); }
+.msg.user { background: var(--surface); margin-left: auto; }
+
+.status { min-height: 1.6em; color: var(--muted); font-size: 15px; margin: 8px 0; }
+
+.composer { display: flex; gap: 8px; padding-bottom: 16px; }
+.composer textarea {
+  flex: 1;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--muted);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  resize: vertical;
+}
+.composer button {
+  font: inherit;
+  font-weight: 600;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0 20px;
+  background: var(--accent);
+  color: var(--surface);
+  cursor: pointer;
+}
+.composer button:disabled { opacity: 0.6; cursor: wait; }
+
+.footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 12px 16px 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; }
+}
