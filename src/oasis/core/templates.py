@@ -1,0 +1,28 @@
+"""Vetted fixed replies for every path that does not use the LLM (design §15.3 tone rules).
+
+ponytail: Python constants for Phase 1; they move to content/templates YAML with the
+content-library loader in Phase 2. Listed in clinical_review.md (CR-18).
+"""
+
+from __future__ import annotations
+
+TEMPLATES: dict[str, str] = {
+    "llm_unavailable": (
+        "I'm having trouble finding the right words just now, but I'm still here. "
+        "Would you like to tell me a little more about what's on your mind?"
+    ),
+    "busy": ("I'm handling a lot right now. Could you give me a moment and send that again?"),
+    "guard_fallback": (
+        "That sounds really hard to sit with. If a close friend told you they felt this way "
+        "about themselves, what would you want them to know?"
+    ),
+}
+
+
+def fallback_template(reason: str) -> str:
+    """Template ID for a trace fallback reason such as "llm.busy" or "guard.fallback"."""
+    if reason == "llm.busy":
+        return "busy"
+    if reason.startswith("guard."):
+        return "guard_fallback"
+    return "llm_unavailable"
