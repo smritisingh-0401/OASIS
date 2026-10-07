@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TypeVar
 
 from oasis.storage.repository import (
+    AuditRecord,
     SessionInfo,
     StorageBusy,
     StorageUnavailable,
@@ -114,9 +115,10 @@ class SQLiteRepository:
     async def get_session(self, session_hash: str) -> SessionInfo | None:
         def op(conn: sqlite3.Connection) -> SessionInfo | None:
             row = conn.execute(
-                "SELECT user_id FROM sessions WHERE session_id_hash = ?", (session_hash,)
+                "SELECT user_id, post_crisis FROM sessions WHERE session_id_hash = ?",
+                (session_hash,),
             ).fetchone()
-            return SessionInfo(row[0]) if row else None
+            return SessionInfo(row[0], bool(row[1])) if row else None
 
         return await self._run(op)
 
@@ -166,6 +168,38 @@ class SQLiteRepository:
                 (user_id, session_hash, max(limit, 0)),
             ).fetchall()
             return [TurnRecord(*row) for row in reversed(rows)]
+
+        return await self._run(op)
+
+    async def set_post_crisis(self, user_id: str, session_hash: str, value: bool) -> None:
+        def op(conn: sqlite3.Connection) -> None:
+            cur = conn.execute(
+                "UPDATE sessions SET post_crisis = ? WHERE session_id_hash = ? AND user_id = ?",
+                (int(value), session_hash, user_id),
+            )
+            if cur.rowcount != 1:
+                raise sqlite3.IntegrityError("session not found for user")
+
+        await self._run(op)
+
+    async def append_audit(self, user_id: str, event: str, detail_json: str) -> None:
+        def op(conn: sqlite3.Connection) -> None:
+            conn.execute(
+                "INSERT INTO audit_log (audit_id, user_id, event, detail, created_at)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (uuid.uuid4().hex, user_id, event, detail_json, utc_now()),
+            )
+
+        await self._run(op)
+
+    async def list_audit(self, user_id: str) -> list[AuditRecord]:
+        def op(conn: sqlite3.Connection) -> list[AuditRecord]:
+            rows = conn.execute(
+                "SELECT event, detail, created_at FROM audit_log WHERE user_id = ?"
+                " ORDER BY created_at, rowid",
+                (user_id,),
+            ).fetchall()
+            return [AuditRecord(*row) for row in rows]
 
         return await self._run(op)
 

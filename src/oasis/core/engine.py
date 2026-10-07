@@ -8,6 +8,7 @@ stage degrades to a templated reply instead of failing the turn.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 import uuid
@@ -23,12 +24,23 @@ from oasis.safety.gate import SafetyGate, check_fail_closed
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
 from oasis.storage.repository import Repository, StorageBusy, StorageError
-from oasis.types import GuardVerdict, Mode, Plan, SafetyVerdict, TurnRecord, TurnTrace
+from oasis.types import (
+    ConversationState,
+    GuardVerdict,
+    Mode,
+    Plan,
+    SafetyVerdict,
+    TurnRecord,
+    TurnTrace,
+)
+
+# Shown in history instead of the crisis message, whose text is never stored (design §2.4).
+CRISIS_PLACEHOLDER = "Crisis support was shown."
 
 turn_log = logging.getLogger("oasis.turn")
 log = logging.getLogger("oasis.engine")
 
-Planner = Callable[[Sequence[TurnRecord]], Plan]
+Planner = Callable[[str, ConversationState], Plan]
 Guard = Callable[[str, Plan], GuardVerdict]
 
 
@@ -50,6 +62,7 @@ class TurnResult:
     persisted: bool
     degraded: frozenset[str]
     fallback_reason: str | None = None
+    verdict: SafetyVerdict = SafetyVerdict(is_crisis=False)
 
 
 @dataclass
@@ -77,6 +90,10 @@ class ChatEngine:
         self.settings = settings
         self.planner = planner
         self.guard = guard
+        # Sessions in post-crisis mode, held in memory so the policy holds even when
+        # storage is down (design §2.4). ponytail: grows with crisis sessions only and is
+        # lost on restart; the persisted flag covers restarts when storage works.
+        self._post_crisis: set[str] = set()
 
     async def handle_turn(self, session_hash: str, message: str) -> TurnResult:
         timeout = self.settings.request_timeout_s
@@ -90,7 +107,9 @@ class ChatEngine:
         verdict = check_fail_closed(self.safety, message)
         clock.mark("safety", "crisis" if verdict.is_crisis else "clear")
         if verdict.is_crisis:
-            # Nothing else runs: no storage, no planning, no LLM (rules S3, S4).
+            # Nothing else runs: no storage, no planning, no LLM (rules S3, S4). The audit
+            # entry is written by record_crisis after the response is sent.
+            self._post_crisis.add(session_hash)
             turn_log.info(
                 trace_to_json(_trace(turn_id, clock, verdict, "crisis", _NO_DRAFT, degraded))
             )
@@ -101,16 +120,19 @@ class ChatEngine:
                 templated=True,
                 persisted=False,
                 degraded=frozenset(),
+                verdict=verdict,
             )
 
         # Stage 4 — load state. Storage failure means a stateless reply, not a failed turn.
         user_id: str | None = None
         history: list[TurnRecord] = []
+        post_crisis = session_hash in self._post_crisis
         try:
             session = await self.repo.get_session(session_hash)
             if session is None:
                 raise InvalidSession
             user_id = session.user_id
+            post_crisis = post_crisis or session.post_crisis
             history = await self.repo.recent_turns(
                 user_id, session_hash, self.settings.history_turns
             )
@@ -120,12 +142,14 @@ class ChatEngine:
 
         # Stage 5 — plan.
         try:
-            plan = self.planner(history)
+            plan = self.planner(message, ConversationState(tuple(history), post_crisis))
         except Exception:  # fail-soft boundary: a planner bug must still produce a reply
             log.error("planner error")
             plan = Plan(mode="companion", templated=True, template_id="llm_unavailable")
             degraded.add("planner.error")
         clock.mark("plan", plan.mode)
+        if "post_crisis.cleared" in plan.reason_codes:
+            await self._clear_post_crisis(user_id, session_hash, degraded)
 
         # Stages 6-7 — generate and guard, or use the template the plan names.
         if plan.templated:
@@ -172,6 +196,43 @@ class ChatEngine:
             degraded=frozenset(degraded),
             fallback_reason=draft.fallback_reason,
         )
+
+    async def record_crisis(self, session_hash: str, verdict: SafetyVerdict) -> None:
+        """Best-effort bookkeeping after a crisis reply has been SENT (rules S2).
+
+        Writes the audit entry (tiers and pattern IDs, never text), persists post-crisis
+        mode and leaves a placeholder in history. Any storage failure is logged by type
+        only; it can never affect the reply, which has already gone out.
+        """
+        try:
+            session = await self.repo.get_session(session_hash)
+            if session is None:
+                return
+            detail = json.dumps({
+                "tiers": sorted(verdict.tiers),
+                "pattern_ids": list(verdict.pattern_ids),
+                "ruleset_version": verdict.ruleset_version,
+                "source": "text",
+            })  # fmt: skip
+            await self.repo.set_post_crisis(session.user_id, session_hash, True)
+            await self.repo.append_audit(session.user_id, "crisis_handoff", detail)
+            await self.repo.append_turn(session.user_id, session_hash,
+                                        turn_id=uuid.uuid4().hex, role="placeholder",
+                                        content=CRISIS_PLACEHOLDER, mode="crisis",
+                                        trace_json=None)  # fmt: skip
+        except StorageError as exc:
+            log.error("crisis audit not written: %s", type(exc).__name__)
+
+    async def _clear_post_crisis(
+        self, user_id: str | None, session_hash: str, degraded: set[str]
+    ) -> None:
+        self._post_crisis.discard(session_hash)
+        if user_id is None:
+            return
+        try:
+            await self.repo.set_post_crisis(user_id, session_hash, False)
+        except StorageError as exc:
+            degraded.add(_storage_code(exc))
 
     async def _generate(
         self, plan: Plan, history: Sequence[TurnRecord], message: str, deadline: float

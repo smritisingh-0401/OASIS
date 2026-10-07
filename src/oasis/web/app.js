@@ -11,6 +11,17 @@ const form = document.getElementById("composer");
 const input = document.getElementById("input");
 const sendButton = document.getElementById("send");
 const status = document.getElementById("status");
+const help = document.getElementById("help");
+const continueButton = document.getElementById("continue");
+const CONTINUE_TEXT = "I'd like to keep talking.";
+
+// After a crisis reply, open the help card and move focus to it so crisis lines are one
+// step away; the "Continue talking" button lets the user leave post-crisis mode.
+function showCrisisSupport() {
+  help.open = true;
+  help.querySelector(".help-card").focus();
+  continueButton.hidden = false;
+}
 
 function readToken() {
   try {
@@ -80,6 +91,39 @@ async function loadHistory() {
   }
 }
 
+async function sendText(text) {
+  const pending = addMessage("user", text);
+  setBusy(true);
+  status.textContent = "OASIS is thinking…";
+  const slow = setTimeout(() => {
+    status.textContent = "Still working — this can take a few seconds on this computer.";
+  }, SLOW_NOTICE_MS);
+
+  try {
+    const resp = await send(text);
+    if (!resp.ok) throw new Error("status " + resp.status);
+    const body = await resp.json();
+    const note = body.persisted ? "" : "This message may not have been saved.";
+    addMessage("assistant", body.reply, note);
+    status.textContent = "";
+    if (body.mode === "crisis" || body.mode === "post_crisis") {
+      showCrisisSupport();
+    } else {
+      continueButton.hidden = true;
+    }
+    return true;
+  } catch {
+    // The message was not sent: take it out of the conversation and give it back.
+    pending.remove();
+    status.textContent =
+      "I couldn't reach the server. Your message wasn't sent. \"Need help now?\" still works.";
+    return false;
+  } finally {
+    clearTimeout(slow);
+    setBusy(false);
+  }
+}
+
 async function send(text) {
   const payload = JSON.stringify({ message: text, client_ts: new Date().toISOString() });
   const request = () =>
@@ -96,34 +140,12 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = input.value.trim();
   if (!text) return;
-
-  const pending = addMessage("user", text);
   input.value = "";
-  setBusy(true);
-  status.textContent = "OASIS is thinking…";
-  const slow = setTimeout(() => {
-    status.textContent = "Still working — this can take a few seconds on this computer.";
-  }, SLOW_NOTICE_MS);
-
-  try {
-    const resp = await send(text);
-    if (!resp.ok) throw new Error("status " + resp.status);
-    const body = await resp.json();
-    const note = body.persisted ? "" : "This message may not have been saved.";
-    addMessage("assistant", body.reply, note);
-    status.textContent = "";
-  } catch {
-    // The message was not sent: take it out of the conversation and give it back.
-    pending.remove();
-    status.textContent =
-      "I couldn't reach the server. Your message wasn't sent. \"Need help now?\" still works.";
-    input.value = text;
-  } finally {
-    clearTimeout(slow);
-    setBusy(false);
-    input.focus();
-  }
+  if (!(await sendText(text))) input.value = text;
+  input.focus();
 });
+
+continueButton.addEventListener("click", () => sendText(CONTINUE_TEXT));
 
 input.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey) {

@@ -1,0 +1,3127 @@
+# Crisis and emergency contacts shown by the handoff and the static help card.
+# Clinician review pending: CR-04. GENERATED from verified sources; edit with care.
+#
+# Tier 1 (has `lines`): a crisis line confirmed on the service's own website or a
+# government website, with the URL and date stored on the entry.
+# Tier 2 (no `lines`): emergency number only, from UK Government (FCDO) travel advice,
+# a single consistent official source for every country. Countries with no usable number
+# carry an `emergency_note` instead. No unverified number is ever shipped (design §2.4).
+schema: oasis.content/v1
+kind: crisis_resources
+version: 2026.10.0
+review_status: needs_clinician_review
+regions:
+- South Asia
+- East Asia
+- Southeast Asia
+- Russia, Central Asia & Caucasus
+- Middle East & North Africa
+- Europe
+- North America
+- Latin America & Caribbean
+- Sub-Saharan Africa
+- Oceania
+countries:
+- code: AF
+  name: Afghanistan
+  region: South Asia
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '119'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/afghanistan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BD
+  name: Bangladesh
+  region: South Asia
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/bangladesh/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Kaan Pete Roi
+    phones:
+    - +880 9612-119911
+    hours: Daily 15:00-03:00
+    url: https://kaanpeteroi.org/helpline-service/
+    source: https://kaanpeteroi.org/helpline-service/
+    verified_on: 2026-10-08
+- code: BT
+  name: Bhutan
+  region: South Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '112'
+  - service: Fire
+    numbers:
+    - '110'
+  - service: Police
+    numbers:
+    - '113'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/bhutan/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: PEMA Helpline
+    phones:
+    - '1098'
+    hours: 24/7, toll-free
+    url: https://thepema.gov.bt/services
+    source: https://thepema.gov.bt/services
+    verified_on: 2026-10-08
+- code: IN
+  name: India
+  region: South Asia
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/india/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Tele-MANAS (Ministry of Health and Family Welfare)
+    phones:
+    - '14416'
+    - 1800-89-14416
+    hours: 24/7, toll-free
+    url: https://telemanas.mohfw.gov.in/
+    source: https://dghs.mohfw.gov.in/national-mental-health-programme.php
+    verified_on: 2026-10-08
+- code: MV
+  name: Maldives
+  region: South Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '102'
+  - service: Fire
+    numbers:
+    - '118'
+  - service: Police
+    numbers:
+    - '119'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/maldives/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: National Mental Health Helpline (Ministry of Health)
+    phones:
+    - '1677'
+    hours: 24/7, free
+    url: https://blogs.presidency.gov.mv/daily-blogs/national-mental-health-helpline-offers-247-confidential-support
+    source: https://blogs.presidency.gov.mv/daily-blogs/national-mental-health-helpline-offers-247-confidential-support
+    verified_on: 2026-10-08
+- code: NP
+  name: Nepal
+  region: South Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '102'
+  - service: Fire
+    numbers:
+    - '101'
+  - service: Police
+    numbers:
+    - '100'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/nepal/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: National Suicide Prevention Helpline (Mental Hospital Lagankhel)
+    phones:
+    - '1166'
+    hours: toll-free
+    url: https://mhl.gov.np/pages/hotline-3/
+    source: https://mhl.gov.np/pages/hotline-3/
+    verified_on: 2026-10-08
+- code: PK
+  name: Pakistan
+  region: South Asia
+  emergency:
+  - service: Ambulance and fire
+    numbers:
+    - '1122'
+  - service: Police
+    numbers:
+    - '15'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/pakistan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: LK
+  name: Sri Lanka
+  region: South Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '1990'
+    - 011 2691111
+  - service: Fire and rescue
+    numbers:
+    - '111'
+  - service: Police
+    numbers:
+    - '118'
+    - '119'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/sri-lanka/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 1926 National Mental Health Helpline (NIMH)
+    phones:
+    - '1926'
+    url: https://nimh.health.gov.lk/en/1926-national-mental-health-helpline/
+    source: https://nimh.health.gov.lk/en/
+    verified_on: 2026-10-08
+- code: CN
+  name: China
+  region: East Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '120'
+  - service: Fire
+    numbers:
+    - '119'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/china/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 12356 National Psychological Assistance Hotline
+    phones:
+    - '12356'
+    hours: at least 18 hours a day
+    url: https://www.beijing.gov.cn/ywdt/zybwdt/202412/t20241226_3973938.html
+    source: https://www.beijing.gov.cn/ywdt/zybwdt/202412/t20241226_3973938.html
+    verified_on: 2026-10-08
+- code: HK
+  name: Hong Kong
+  region: East Asia
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/hong-kong/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 18111 Mental Health Support Hotline (HK Government)
+    phones:
+    - '18111'
+    hours: 24/7
+    url: https://www.info.gov.hk/gia/general/202312/27/P2023122700238.htm
+    source: https://www.info.gov.hk/gia/general/202312/27/P2023122700238.htm
+    verified_on: 2026-10-08
+- code: JP
+  name: Japan
+  region: East Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '119'
+  - service: Fire
+    numbers:
+    - '119'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/japan/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: TELL Lifeline (English)
+    phones:
+    - 0800-300-8355
+    hours: Sat 09:00-Mon 23:00; Tue-Thu 09:00-23:00; Fri 09:00-02:00 (toll-free)
+    url: https://www.telljp.com/lifeline/
+    source: https://www.telljp.com/lifeline/
+    verified_on: 2026-10-08
+- code: MO
+  name: Macao
+  region: East Asia
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/macao/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MN
+  name: Mongolia
+  region: East Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '103'
+  - service: Fire
+    numbers:
+    - '101'
+  - service: Police
+    numbers:
+    - '102'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/mongolia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: KP
+  name: North Korea
+  region: East Asia
+  emergency: []
+  emergency_note: No emergency number is listed by the source.
+  emergency_source: https://www.gov.uk/foreign-travel-advice/north-korea/getting-help
+  emergency_verified_on: 2026-10-07
+- code: KR
+  name: South Korea
+  region: East Asia
+  emergency:
+  - service: Ambulance and fire
+    numbers:
+    - '119'
+  - service: Police
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/south-korea/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Suicide Prevention Counselling Line 109 (Ministry of Health and Welfare)
+    phones:
+    - '109'
+    hours: 24/7
+    url: https://www.korea.kr/news/policyNewsView.do?newsId=148954797
+    source: https://www.korea.kr/news/policyNewsView.do?newsId=148954797
+    verified_on: 2026-10-08
+- code: TW
+  name: Taiwan
+  region: East Asia
+  emergency:
+  - service: Ambulance and fire
+    numbers:
+    - '119'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/taiwan/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 1925 Anxin Hotline (Ministry of Health and Welfare)
+    phones:
+    - '1925'
+    hours: 24/7, free
+    url: https://www.mohw.gov.tw/cp-2626-19209-1.html
+    source: https://www.mohw.gov.tw/cp-2626-19209-1.html
+    verified_on: 2026-10-08
+- code: BN
+  name: Brunei
+  region: Southeast Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '991'
+  - service: Fire
+    numbers:
+    - '995'
+  - service: Police
+    numbers:
+    - '993'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/brunei/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Talian Harapan (Ministry of Health)
+    phones:
+    - '145'
+    url: https://moh.gov.bn/services/psychology-services/
+    source: https://moh.gov.bn/services/psychology-services/
+    verified_on: 2026-10-08
+- code: KH
+  name: Cambodia
+  region: Southeast Asia
+  emergency:
+  - service: Police
+    numbers:
+    - '117'
+  - service: Fire
+    numbers:
+    - '118'
+  - service: Ambulance
+    numbers:
+    - '119'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/cambodia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: ID
+  name: Indonesia
+  region: Southeast Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '118'
+  - service: Fire
+    numbers:
+    - '112'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/indonesia/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Healing119 (Ministry of Health)
+    phones:
+    - 119 ext. 8
+    url: https://healing119.id/
+    source: https://healing119.id/
+    verified_on: 2026-10-08
+- code: LA
+  name: Laos
+  region: Southeast Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '1195'
+  - service: Fire
+    numbers:
+    - '1190'
+  - service: Police
+    numbers:
+    - '1191'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/laos/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MY
+  name: Malaysia
+  region: Southeast Asia
+  emergency:
+  - service: Police and ambulance
+    numbers:
+    - '999'
+  - service: Fire
+    numbers:
+    - '994'
+  - service: Ambulance (from a mobile)
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/malaysia/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Befrienders Kuala Lumpur
+    phones:
+    - +603-7627 2929
+    hours: 24/7
+    url: https://www.befrienders.org.my/
+    source: https://www.befrienders.org.my/
+    verified_on: 2026-10-08
+- code: MM
+  name: Myanmar
+  region: Southeast Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '192'
+  - service: Fire
+    numbers:
+    - '191'
+  - service: Police
+    numbers:
+    - '199'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/myanmar/getting-help
+  emergency_verified_on: 2026-10-07
+- code: PH
+  name: Philippines
+  region: Southeast Asia
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/philippines/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SG
+  name: Singapore
+  region: Southeast Asia
+  emergency:
+  - service: Ambulance and fire
+    numbers:
+    - '995'
+  - service: Police
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/singapore/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: national mindline 1771 (Ministry of Health)
+    phones:
+    - '1771'
+    text: WhatsApp +65 6669 1771
+    hours: 24/7
+    url: https://www.mindline.sg/1771
+    source: https://www.moh.gov.sg/newsroom/national-mindline-1771-to-provide--round-the-clock-support-for-mental-health/
+    verified_on: 2026-10-08
+- code: TH
+  name: Thailand
+  region: Southeast Asia
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '191'
+  - service: Ambulance
+    numbers:
+    - '1669'
+  - service: Fire
+    numbers:
+    - '199'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/thailand/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Department of Mental Health Hotline
+    phones:
+    - '1323'
+    hours: 24/7, free
+    url: https://ddc.moph.go.th/odpc12/journal_detail.php?publish=10201
+    source: https://ddc.moph.go.th/odpc12/journal_detail.php?publish=10201
+    verified_on: 2026-10-08
+- code: TL
+  name: Timor-Leste
+  region: Southeast Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '110'
+  - service: Fire
+    numbers:
+    - '115'
+  - service: Police
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/timor-leste/getting-help
+  emergency_verified_on: 2026-10-07
+- code: VN
+  name: Vietnam
+  region: Southeast Asia
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '115'
+  - service: Fire
+    numbers:
+    - '114'
+  - service: Police
+    numbers:
+    - '113'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/vietnam/getting-help
+  emergency_verified_on: 2026-10-07
+- code: AM
+  name: Armenia
+  region: Russia, Central Asia & Caucasus
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/armenia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: AZ
+  name: Azerbaijan
+  region: Russia, Central Asia & Caucasus
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '103'
+  - service: Fire
+    numbers:
+    - '101'
+  - service: Police
+    numbers:
+    - '102'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/azerbaijan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GE
+  name: Georgia
+  region: Russia, Central Asia & Caucasus
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/georgia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: KZ
+  name: Kazakhstan
+  region: Russia, Central Asia & Caucasus
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '103'
+  - service: Fire
+    numbers:
+    - '101'
+  - service: Police
+    numbers:
+    - '102'
+  - service: Rescue
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/kazakhstan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: KG
+  name: Kyrgyzstan
+  region: Russia, Central Asia & Caucasus
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '103'
+  - service: Fire
+    numbers:
+    - '101'
+  - service: Police
+    numbers:
+    - '102'
+  - service: Rescue
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/kyrgyzstan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: RU
+  name: Russia
+  region: Russia, Central Asia & Caucasus
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/russia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TJ
+  name: Tajikistan
+  region: Russia, Central Asia & Caucasus
+  emergency:
+  - service: Ambulance (mobile / landline)
+    numbers:
+    - '103'
+    - '03'
+  - service: Fire (mobile / landline)
+    numbers:
+    - '101'
+    - '01'
+  - service: Police (mobile / landline)
+    numbers:
+    - '102'
+    - '02'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/tajikistan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TM
+  name: Turkmenistan
+  region: Russia, Central Asia & Caucasus
+  emergency:
+  - service: Ambulance (mobile / landline)
+    numbers:
+    - '003'
+    - '03'
+  - service: Fire (mobile / landline)
+    numbers:
+    - '001'
+    - '01'
+  - service: Police (mobile / landline)
+    numbers:
+    - '002'
+    - '02'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/turkmenistan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: UZ
+  name: Uzbekistan
+  region: Russia, Central Asia & Caucasus
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '103'
+  - service: Fire
+    numbers:
+    - '101'
+  - service: Police
+    numbers:
+    - '102'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/uzbekistan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: DZ
+  name: Algeria
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '1021'
+  - service: Fire
+    numbers:
+    - '14'
+  - service: Police
+    numbers:
+    - '17'
+    - '1548'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/algeria/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BH
+  name: Bahrain
+  region: Middle East & North Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/bahrain/getting-help
+  emergency_verified_on: 2026-10-07
+- code: EG
+  name: Egypt
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '123'
+  - service: Fire
+    numbers:
+    - '180'
+  - service: Police
+    numbers:
+    - '122'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/egypt/getting-help
+  emergency_verified_on: 2026-10-07
+- code: IR
+  name: Iran
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '115'
+  - service: Fire
+    numbers:
+    - '125'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/iran/getting-help
+  emergency_verified_on: 2026-10-07
+- code: IQ
+  name: Iraq
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '122'
+  - service: Fire
+    numbers:
+    - '115'
+  - service: Police
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/iraq/getting-help
+  emergency_verified_on: 2026-10-07
+- code: IL
+  name: Israel
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '101'
+  - service: Fire
+    numbers:
+    - '102'
+  - service: Police
+    numbers:
+    - '100'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/israel/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: ERAN Emotional First Aid
+    phones:
+    - '1201'
+    url: https://www.eran.org.il/
+    source: https://www.eran.org.il/
+    verified_on: 2026-10-08
+- code: JO
+  name: Jordan
+  region: Middle East & North Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/jordan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: KW
+  name: Kuwait
+  region: Middle East & North Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/kuwait/getting-help
+  emergency_verified_on: 2026-10-07
+- code: LB
+  name: Lebanon
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '140'
+  - service: Fire
+    numbers:
+    - '175'
+  - service: Police
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/lebanon/getting-help
+  emergency_verified_on: 2026-10-07
+- code: LY
+  name: Libya
+  region: Middle East & North Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '1415'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/libya/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MA
+  name: Morocco
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance and fire
+    numbers:
+    - '150'
+  - service: Police
+    numbers:
+    - '190'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/morocco/getting-help
+  emergency_verified_on: 2026-10-07
+- code: OM
+  name: Oman
+  region: Middle East & North Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '9999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/oman/getting-help
+  emergency_verified_on: 2026-10-07
+- code: PS
+  name: Palestine
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '101'
+  - service: Fire
+    numbers:
+    - '102'
+  - service: Police
+    numbers:
+    - '100'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/palestine/getting-help
+  emergency_verified_on: 2026-10-07
+- code: QA
+  name: Qatar
+  region: Middle East & North Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/qatar/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: National Mental Health Helpline (Hamad Medical Corporation)
+    phones:
+    - 16000 (option 4)
+    hours: Sat-Thu 08:00-18:00
+    url: https://hamad.qa/HMHS
+    source: https://hamad.qa/EN/news/2026/April/Pages/National-Mental-Health-Helpline-marks-six-years-of-supporting-Qatar’s-population.aspx
+    verified_on: 2026-10-08
+- code: SA
+  name: Saudi Arabia
+  region: Middle East & North Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/saudi-arabia/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Psychological Consultation Center (Ministry of Health)
+    phones:
+    - '920033360'
+    hours: 08:00-20:00; Sat 13:00-20:00
+    url: https://www.moh.gov.sa/en/Ministry/Information-and-services/Pages/psychiatry.aspx
+    source: https://www.moh.gov.sa/en/Ministry/Information-and-services/Pages/psychiatry.aspx
+    verified_on: 2026-10-08
+- code: SY
+  name: Syria
+  region: Middle East & North Africa
+  emergency: []
+  emergency_note: Emergency services may be very limited; no number is listed by the source.
+  emergency_source: https://www.gov.uk/foreign-travel-advice/syria/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TN
+  name: Tunisia
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '190'
+  - service: Fire
+    numbers:
+    - '198'
+  - service: Police
+    numbers:
+    - '197'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/tunisia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TR
+  name: Turkey
+  region: Middle East & North Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/turkey/getting-help
+  emergency_verified_on: 2026-10-07
+- code: AE
+  name: United Arab Emirates
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '998'
+  - service: Fire
+    numbers:
+    - '997'
+  - service: Police
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/united-arab-emirates/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 800-SAKINA (Abu Dhabi Department of Health)
+    phones:
+    - 800 725462
+    hours: 24/7
+    url: https://www.doh.gov.ae/en/news/doh-activates-247-mental-health-support-hotline-800-sakina-(725462)
+    source: https://www.doh.gov.ae/en/news/doh-activates-247-mental-health-support-hotline-800-sakina-(725462)
+    verified_on: 2026-10-08
+- code: EH
+  name: Western Sahara
+  region: Middle East & North Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '150'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/western-sahara/getting-help
+  emergency_verified_on: 2026-10-07
+- code: YE
+  name: Yemen
+  region: Middle East & North Africa
+  emergency:
+  - service: Ambulance and fire
+    numbers:
+    - '191'
+  - service: Police
+    numbers:
+    - '199'
+    - '194'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/yemen/getting-help
+  emergency_verified_on: 2026-10-07
+- code: AL
+  name: Albania
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '127'
+  - service: Fire
+    numbers:
+    - '128'
+  - service: Police
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/albania/getting-help
+  emergency_verified_on: 2026-10-07
+- code: AD
+  name: Andorra
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '116'
+  - service: Fire
+    numbers:
+    - '118'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/andorra/getting-help
+  emergency_verified_on: 2026-10-07
+- code: AT
+  name: Austria
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  - service: Ambulance
+    numbers:
+    - '144'
+  - service: Fire
+    numbers:
+    - '122'
+  - service: Police
+    numbers:
+    - '133'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/austria/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BY
+  name: Belarus
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '103'
+  - service: Fire
+    numbers:
+    - '101'
+  - service: Police
+    numbers:
+    - '102'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/belarus/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BE
+  name: Belgium
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/belgium/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BA
+  name: Bosnia and Herzegovina
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '124'
+  - service: Fire
+    numbers:
+    - '123'
+  - service: Police
+    numbers:
+    - '122'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/bosnia-and-herzegovina/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BG
+  name: Bulgaria
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/bulgaria/getting-help
+  emergency_verified_on: 2026-10-07
+- code: HR
+  name: Croatia
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/croatia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CY
+  name: Cyprus
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/cyprus/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CZ
+  name: Czechia
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/czechia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: DK
+  name: Denmark
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/denmark/getting-help
+  emergency_verified_on: 2026-10-07
+- code: EE
+  name: Estonia
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/estonia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: FI
+  name: Finland
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/finland/getting-help
+  emergency_verified_on: 2026-10-07
+- code: FR
+  name: France
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers: &id001
+    - '112'
+  - service: Ambulance
+    numbers: &id002
+    - '15'
+  - service: Fire
+    numbers: &id003
+    - '18'
+  - service: Police
+    numbers: &id004
+    - '17'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/france/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 3114 Numéro national de prévention du suicide
+    phones:
+    - '3114'
+    hours: 24/7, free
+    url: https://3114.fr/
+    source: https://3114.fr/
+    verified_on: 2026-10-08
+- code: DE
+  name: Germany
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '112'
+  - service: Fire
+    numbers:
+    - '112'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/germany/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: TelefonSeelsorge
+    phones:
+    - 0800 111 0 111
+    - 0800 111 0 222
+    - 116 123
+    hours: 24/7, free
+    url: https://www.telefonseelsorge.de/
+    source: https://www.telefonseelsorge.de/
+    verified_on: 2026-10-08
+- code: GI
+  name: Gibraltar
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/gibraltar/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GR
+  name: Greece
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/greece/getting-help
+  emergency_verified_on: 2026-10-07
+- code: HU
+  name: Hungary
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/hungary/getting-help
+  emergency_verified_on: 2026-10-07
+- code: IS
+  name: Iceland
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/iceland/getting-help
+  emergency_verified_on: 2026-10-07
+- code: IE
+  name: Ireland
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/ireland/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Pieta
+    phones:
+    - 1800 247 247
+    text: HELP to 51444
+    hours: 24/7
+    url: https://www.pieta.ie/
+    source: https://www.pieta.ie/
+    verified_on: 2026-10-07
+- code: IT
+  name: Italy
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '118'
+  - service: Fire
+    numbers:
+    - '115'
+  - service: Police
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/italy/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Telefono Amico Italia
+    phones:
+    - 02 2327 2327
+    hours: 24/7
+    url: https://www.telefonoamico.it/
+    source: https://www.telefonoamico.it/
+    verified_on: 2026-10-08
+- code: XK
+  name: Kosovo
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  - service: Ambulance
+    numbers:
+    - '194'
+  - service: Fire
+    numbers:
+    - '193'
+  - service: Police
+    numbers:
+    - '192'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/kosovo/getting-help
+  emergency_verified_on: 2026-10-07
+- code: LV
+  name: Latvia
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '113'
+  - service: Fire
+    numbers:
+    - '112'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/latvia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: LI
+  name: Liechtenstein
+  region: Europe
+  emergency:
+  - service: Fire
+    numbers:
+    - '118'
+  - service: Police
+    numbers:
+    - '117'
+  - service: Ambulance
+    numbers:
+    - '144'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/liechtenstein/getting-help
+  emergency_verified_on: 2026-10-07
+- code: LT
+  name: Lithuania
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/lithuania/getting-help
+  emergency_verified_on: 2026-10-07
+- code: LU
+  name: Luxembourg
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '112'
+  - service: Fire
+    numbers:
+    - '112'
+  - service: Police
+    numbers:
+    - '113'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/luxembourg/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MT
+  name: Malta
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/malta/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MD
+  name: Moldova
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/moldova/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MC
+  name: Monaco
+  region: Europe
+  emergency:
+  - service: All emergencies (mobile)
+    numbers:
+    - '112'
+  - service: All emergencies (landline)
+    numbers:
+    - '18'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/monaco/getting-help
+  emergency_verified_on: 2026-10-07
+- code: ME
+  name: Montenegro
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/montenegro/getting-help
+  emergency_verified_on: 2026-10-07
+- code: NL
+  name: Netherlands
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/netherlands/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 113 Zelfmoordpreventie
+    phones:
+    - '113'
+    hours: 24/7, free
+    url: https://www.113.nl/
+    source: https://www.113.nl/hulp-nodig
+    verified_on: 2026-10-08
+- code: MK
+  name: North Macedonia
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '194'
+  - service: Police
+    numbers:
+    - '192'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/north-macedonia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: 'NO'
+  name: Norway
+  region: Europe
+  emergency:
+  - service: Fire
+    numbers:
+    - '110'
+  - service: Police
+    numbers:
+    - '112'
+  - service: Ambulance
+    numbers:
+    - '113'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/norway/getting-help
+  emergency_verified_on: 2026-10-07
+- code: PL
+  name: Poland
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '999'
+  - service: Fire
+    numbers:
+    - '998'
+  - service: Police
+    numbers:
+    - '997'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/poland/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Centrum Wsparcia (Ministry of Health)
+    phones:
+    - 800 70 2222
+    hours: 24/7, free
+    url: https://centrumwsparcia.pl/
+    source: https://centrumwsparcia.pl/
+    verified_on: 2026-10-08
+- code: PT
+  name: Portugal
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/portugal/getting-help
+  emergency_verified_on: 2026-10-07
+- code: RO
+  name: Romania
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/romania/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SM
+  name: San Marino
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '118'
+  - service: Fire
+    numbers:
+    - '115'
+  - service: Police
+    numbers:
+    - '112'
+    - '113'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/san-marino/getting-help
+  emergency_verified_on: 2026-10-07
+- code: RS
+  name: Serbia
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  - service: Ambulance
+    numbers:
+    - '194'
+  - service: Fire
+    numbers:
+    - '193'
+  - service: Police
+    numbers:
+    - '192'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/serbia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SK
+  name: Slovakia
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '155'
+  - service: Fire
+    numbers:
+    - '150'
+  - service: Police
+    numbers:
+    - '158'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/slovakia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SI
+  name: Slovenia
+  region: Europe
+  emergency:
+  - service: Ambulance and fire
+    numbers:
+    - '112'
+  - service: Police
+    numbers:
+    - '113'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/slovenia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: ES
+  name: Spain
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/spain/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 024 Línea de atención a la conducta suicida
+    phones:
+    - '024'
+    hours: 24/7, free
+    url: https://www.sanidad.gob.es/linea024/home.htm
+    source: https://www.sanidad.gob.es/linea024/home.htm
+    verified_on: 2026-10-08
+- code: SE
+  name: Sweden
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/sweden/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Mind Självmordslinjen
+    phones:
+    - '90101'
+    url: https://mind.se/
+    source: https://www.1177.se/sjukdomar--besvar/psykiska-sjukdomar-och-besvar/sjalvmordstankar/till-dig-som-har-sjalvmordstankar/
+    verified_on: 2026-10-08
+- code: CH
+  name: Switzerland
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  - service: Ambulance
+    numbers:
+    - '144'
+  - service: Fire
+    numbers:
+    - '118'
+  - service: Police
+    numbers:
+    - '117'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/switzerland/getting-help
+  emergency_verified_on: 2026-10-07
+- code: UA
+  name: Ukraine
+  region: Europe
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '103'
+  - service: Fire
+    numbers:
+    - '101'
+  - service: Police
+    numbers:
+    - '102'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/ukraine/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Lifeline Ukraine
+    phones:
+    - '7333'
+    hours: 24/7
+    url: https://lifelineukraine.com/en
+    source: https://lifelineukraine.com/en
+    verified_on: 2026-10-08
+- code: GB
+  name: United Kingdom
+  region: Europe
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+    - '112'
+  emergency_source: https://www.gov.uk/guidance/999-and-112-the-uks-national-emergency-numbers
+  emergency_verified_on: 2026-10-08
+  lines:
+  - name: Samaritans
+    phones:
+    - 116 123
+    hours: 24/7, free
+    url: https://www.samaritans.org/
+    source: https://www.samaritans.org/how-we-can-help/contact-samaritan/
+    verified_on: 2026-10-07
+- code: BM
+  name: Bermuda
+  region: North America
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/bermuda/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CA
+  name: Canada
+  region: North America
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/canada/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 9-8-8 Suicide Crisis Helpline
+    phones:
+    - '988'
+    text: '988'
+    hours: 24/7
+    url: https://988.ca/
+    source: https://988.ca/
+    verified_on: 2026-10-07
+- code: MX
+  name: Mexico
+  region: North America
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/mexico/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Línea de la Vida (CONASAMA)
+    phones:
+    - 800 911 2000
+    hours: 24/7, free
+    url: https://www.gob.mx/conasama/articulos/linea-de-la-vida-800-911-2000
+    source: https://www.gob.mx/conasama/articulos/linea-de-la-vida-800-911-2000
+    verified_on: 2026-10-08
+- code: PM
+  name: St Pierre and Miquelon
+  region: North America
+  emergency:
+  - service: All emergencies
+    numbers: *id001
+  - service: Ambulance
+    numbers: *id002
+  - service: Fire
+    numbers: *id003
+  - service: Police
+    numbers: *id004
+  emergency_source: https://www.gov.uk/foreign-travel-advice/st-pierre-and-miquelon/getting-help
+  emergency_verified_on: 2026-10-07
+- code: US
+  name: United States
+  region: North America
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/usa/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 988 Suicide & Crisis Lifeline
+    phones:
+    - '988'
+    text: '988'
+    hours: 24/7
+    url: https://988lifeline.org/
+    source: https://988lifeline.org/
+    verified_on: 2026-10-07
+- code: AI
+  name: Anguilla
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/anguilla/getting-help
+  emergency_verified_on: 2026-10-07
+- code: AG
+  name: Antigua and Barbuda
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/antigua-and-barbuda/getting-help
+  emergency_verified_on: 2026-10-07
+- code: AR
+  name: Argentina
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '107'
+  - service: Fire
+    numbers:
+    - '100'
+  - service: Police
+    numbers:
+    - '911'
+    - '101'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/argentina/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Línea Nacional de Salud Mental
+    phones:
+    - 0800-999-0091
+    hours: 24/7, free
+    url: https://www.argentina.gob.ar/dispositivo-0800
+    source: https://www.argentina.gob.ar/dispositivo-0800
+    verified_on: 2026-10-08
+- code: AW
+  name: Aruba
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance and fire
+    numbers:
+    - '911'
+  - service: Police
+    numbers:
+    - '100'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/aruba/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BS
+  name: Bahamas
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+    - '919'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/bahamas/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BB
+  name: Barbados
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '511'
+  - service: Fire
+    numbers:
+    - '311'
+  - service: Police
+    numbers:
+    - '211'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/barbados/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BZ
+  name: Belize
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+    - '90'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/belize/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BO
+  name: Bolivia
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '118'
+  - service: Police
+    numbers:
+    - '110'
+  - service: Fire
+    numbers:
+    - '119'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/bolivia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BQ
+  name: Bonaire, St Eustatius and Saba
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '911'
+    - '913'
+  - service: Fire
+    numbers:
+    - '911'
+    - '912'
+  - service: Police
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/bonaire-st-eustatius-saba/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BR
+  name: Brazil
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '192'
+  - service: Fire
+    numbers:
+    - '193'
+  - service: Police
+    numbers:
+    - '190'
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/brazil/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: CVV (Centro de Valorização da Vida)
+    phones:
+    - '188'
+    hours: 24/7, free
+    url: https://cvv.org.br/
+    source: https://cvv.org.br/
+    verified_on: 2026-10-07
+- code: VG
+  name: British Virgin Islands
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/british-virgin-islands/getting-help
+  emergency_verified_on: 2026-10-07
+- code: KY
+  name: Cayman Islands
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/cayman-islands/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CL
+  name: Chile
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '131'
+  - service: Fire
+    numbers:
+    - '132'
+  - service: Police
+    numbers:
+    - '133'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/chile/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CO
+  name: Colombia
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '123'
+  - service: Fire
+    numbers:
+    - '119'
+  - service: Police
+    numbers:
+    - '123'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/colombia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CR
+  name: Costa Rica
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/costa-rica/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CU
+  name: Cuba
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '104'
+  - service: Fire
+    numbers:
+    - '105'
+  - service: Police
+    numbers:
+    - '106'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/cuba/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CW
+  name: Curaçao
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '912'
+  - service: Fire
+    numbers:
+    - '911'
+  - service: Police
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/curacao/getting-help
+  emergency_verified_on: 2026-10-07
+- code: DM
+  name: Dominica
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/dominica/getting-help
+  emergency_verified_on: 2026-10-07
+- code: DO
+  name: Dominican Republic
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/dominican-republic/getting-help
+  emergency_verified_on: 2026-10-07
+- code: EC
+  name: Ecuador
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/ecuador/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SV
+  name: El Salvador
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/el-salvador/getting-help
+  emergency_verified_on: 2026-10-07
+- code: FK
+  name: Falkland Islands
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/falkland-islands/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GF
+  name: French Guiana
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers: *id001
+  - service: Ambulance
+    numbers: *id002
+  - service: Fire
+    numbers: *id003
+  - service: Police
+    numbers: *id004
+  emergency_source: https://www.gov.uk/foreign-travel-advice/french-guiana/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GD
+  name: Grenada
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance (St George's hospital)
+    numbers:
+    - '434'
+  - service: Fire
+    numbers:
+    - '911'
+  - service: Police
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/grenada/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GP
+  name: Guadeloupe
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers: *id001
+  - service: Ambulance
+    numbers: *id002
+  - service: Fire
+    numbers: *id003
+  - service: Police
+    numbers: *id004
+  emergency_source: https://www.gov.uk/foreign-travel-advice/guadeloupe/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GT
+  name: Guatemala
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance and fire
+    numbers:
+    - '122'
+    - '123'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/guatemala/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GY
+  name: Guyana
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '913'
+  - service: Fire
+    numbers:
+    - '912'
+  - service: Police
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/guyana/getting-help
+  emergency_verified_on: 2026-10-07
+- code: HT
+  name: Haiti
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '116'
+  - service: Fire
+    numbers:
+    - '115'
+  - service: Police
+    numbers:
+    - '122'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/haiti/getting-help
+  emergency_verified_on: 2026-10-07
+- code: HN
+  name: Honduras
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/honduras/getting-help
+  emergency_verified_on: 2026-10-07
+- code: JM
+  name: Jamaica
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '110'
+  - service: Fire
+    numbers:
+    - '110'
+  - service: Police
+    numbers:
+    - '119'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/jamaica/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MQ
+  name: Martinique
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers: *id001
+  - service: Ambulance
+    numbers: *id002
+  - service: Fire
+    numbers: *id003
+  - service: Police
+    numbers: *id004
+  emergency_source: https://www.gov.uk/foreign-travel-advice/martinique/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MS
+  name: Montserrat
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/montserrat/getting-help
+  emergency_verified_on: 2026-10-07
+- code: NI
+  name: Nicaragua
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/nicaragua/getting-help
+  emergency_verified_on: 2026-10-07
+- code: PA
+  name: Panama
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/panama/getting-help
+  emergency_verified_on: 2026-10-07
+- code: PY
+  name: Paraguay
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '141'
+  - service: Fire
+    numbers:
+    - '132'
+  - service: Police
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/paraguay/getting-help
+  emergency_verified_on: 2026-10-07
+- code: PE
+  name: Peru
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '106'
+  - service: Fire
+    numbers:
+    - '116'
+  - service: Police
+    numbers:
+    - '105'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/peru/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 'Línea 113 Salud, option 5: mental health (MINSA)'
+    phones:
+    - 113 (option 5)
+    hours: 24/7, free
+    url: https://www.gob.pe/555-recibir-informacion-y-orientacion-en-salud
+    source: https://www.gob.pe/555-recibir-informacion-y-orientacion-en-salud
+    verified_on: 2026-10-08
+- code: KN
+  name: St Kitts and Nevis
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '911'
+  - service: Fire
+    numbers:
+    - '333'
+  - service: Police
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/st-kitts-and-nevis/getting-help
+  emergency_verified_on: 2026-10-07
+- code: LC
+  name: St Lucia
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/st-lucia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SX
+  name: St Maarten
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '911'
+  - service: Fire
+    numbers:
+    - '919'
+  - service: Police
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/st-maarten/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MF
+  name: St Martin and St Barthélemy
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers: *id001
+  - service: Ambulance
+    numbers: *id002
+  - service: Fire
+    numbers: *id003
+  - service: Police
+    numbers: *id004
+  emergency_source: https://www.gov.uk/foreign-travel-advice/st-martin-and-st-barthelemy/getting-help
+  emergency_verified_on: 2026-10-07
+- code: VC
+  name: St Vincent and the Grenadines
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/st-vincent-and-the-grenadines/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SR
+  name: Suriname
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '115'
+  - service: Ambulance
+    numbers:
+    - '113'
+  - service: Fire
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/suriname/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TT
+  name: Trinidad and Tobago
+  region: Latin America & Caribbean
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '811'
+  - service: Fire
+    numbers:
+    - '990'
+  - service: Police
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/trinidad-and-tobago/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TC
+  name: Turks and Caicos Islands
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/turks-and-caicos-islands/getting-help
+  emergency_verified_on: 2026-10-07
+- code: UY
+  name: Uruguay
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/uruguay/getting-help
+  emergency_verified_on: 2026-10-07
+- code: VE
+  name: Venezuela
+  region: Latin America & Caribbean
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/venezuela/getting-help
+  emergency_verified_on: 2026-10-07
+- code: AO
+  name: Angola
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '112'
+  - service: Fire
+    numbers:
+    - '118'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/angola/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BJ
+  name: Benin
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Fire and ambulance
+    numbers:
+    - '118'
+  - service: Police
+    numbers:
+    - '117'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/benin/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BW
+  name: Botswana
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '997'
+  - service: Fire
+    numbers:
+    - '998'
+  - service: Police
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/botswana/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BF
+  name: Burkina Faso
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '18'
+  - service: Fire
+    numbers:
+    - '18'
+  - service: Police
+    numbers:
+    - '17'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/burkina-faso/getting-help
+  emergency_verified_on: 2026-10-07
+- code: BI
+  name: Burundi
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/burundi/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CM
+  name: Cameroon
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '112'
+  - service: Fire
+    numbers:
+    - '119'
+  - service: Police
+    numbers:
+    - '117'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/cameroon/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CV
+  name: Cape Verde
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '130'
+  - service: Fire
+    numbers:
+    - '131'
+  - service: Police
+    numbers:
+    - '132'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/cape-verde/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CF
+  name: Central African Republic
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '117'
+  - service: Fire
+    numbers:
+    - '118'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/central-african-republic/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TD
+  name: Chad
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance and fire
+    numbers:
+    - '1212'
+  - service: Police
+    numbers:
+    - '2020'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/chad/getting-help
+  emergency_verified_on: 2026-10-07
+- code: KM
+  name: Comoros
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Fire
+    numbers:
+    - '113'
+    - '114'
+  - service: Police
+    numbers:
+    - '117'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/comoros/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CI
+  name: Côte d'Ivoire
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '185'
+  - service: Fire
+    numbers:
+    - '180'
+  - service: Police
+    numbers:
+    - '110'
+    - '111'
+    - '170'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/cote-d-ivoire/getting-help
+  emergency_verified_on: 2026-10-07
+- code: CD
+  name: Democratic Republic of the Congo
+  region: Sub-Saharan Africa
+  emergency: []
+  emergency_note: There is no general emergency medical number.
+  emergency_source: https://www.gov.uk/foreign-travel-advice/democratic-republic-of-the-congo/getting-help
+  emergency_verified_on: 2026-10-07
+- code: DJ
+  name: Djibouti
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - 21 35 09 62
+    - 21 35 27 12
+  - service: Fire
+    numbers:
+    - '18'
+  - service: Police
+    numbers:
+    - '17'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/djibouti/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GQ
+  name: Equatorial Guinea
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '3101'
+  - service: Police
+    numbers:
+    - 666 404040
+    - 666 303030
+  emergency_source: https://www.gov.uk/foreign-travel-advice/equatorial-guinea/getting-help
+  emergency_verified_on: 2026-10-07
+- code: ER
+  name: Eritrea
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '122244'
+  - service: Fire
+    numbers:
+    - '116'
+  - service: Police
+    numbers:
+    - '113'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/eritrea/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SZ
+  name: Eswatini
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '977'
+  - service: Fire
+    numbers:
+    - '933'
+  - service: Police
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/eswatini/getting-help
+  emergency_verified_on: 2026-10-07
+- code: ET
+  name: Ethiopia
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Police and emergency
+    numbers:
+    - '911'
+  - service: Ambulance (Addis Ababa)
+    numbers:
+    - '907'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/ethiopia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GA
+  name: Gabon
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '117'
+  - service: Fire
+    numbers:
+    - '177'
+  - service: Police
+    numbers:
+    - '177'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/gabon/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GH
+  name: Ghana
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+    - '112'
+  - service: Police
+    numbers:
+    - '192'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/ghana/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GN
+  name: Guinea
+  region: Sub-Saharan Africa
+  emergency: []
+  emergency_note: There are no national emergency services; contact the nearest clinic.
+  emergency_source: https://www.gov.uk/foreign-travel-advice/guinea/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GW
+  name: Guinea-Bissau
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '1313'
+  - service: Fire
+    numbers:
+    - '1313'
+  - service: Police
+    numbers:
+    - '117'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/guinea-bissau/getting-help
+  emergency_verified_on: 2026-10-07
+- code: KE
+  name: Kenya
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/kenya/getting-help
+  emergency_verified_on: 2026-10-07
+- code: LS
+  name: Lesotho
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/lesotho/getting-help
+  emergency_verified_on: 2026-10-07
+- code: LR
+  name: Liberia
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Police
+    numbers:
+    - +231 770 800 911
+  emergency_source: https://www.gov.uk/foreign-travel-advice/liberia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MG
+  name: Madagascar
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance or police (mobile / landline)
+    numbers:
+    - '117'
+    - '17'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/madagascar/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MW
+  name: Malawi
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '998'
+  - service: Fire
+    numbers:
+    - '999'
+  - service: Police
+    numbers:
+    - '990'
+    - '997'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/malawi/getting-help
+  emergency_verified_on: 2026-10-07
+- code: ML
+  name: Mali
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '15'
+  - service: Fire
+    numbers:
+    - '18'
+  - service: Police
+    numbers:
+    - '17'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/mali/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MR
+  name: Mauritania
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '101'
+  - service: Fire
+    numbers:
+    - '118'
+  - service: Police
+    numbers:
+    - '117'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/mauritania/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MU
+  name: Mauritius
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  - service: Ambulance
+    numbers:
+    - '114'
+  - service: Fire
+    numbers:
+    - '115'
+  - service: Police
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/mauritius/getting-help
+  emergency_verified_on: 2026-10-07
+- code: YT
+  name: Mayotte
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers: *id001
+  - service: Ambulance
+    numbers: *id002
+  - service: Fire
+    numbers: *id003
+  - service: Police
+    numbers: *id004
+  emergency_source: https://www.gov.uk/foreign-travel-advice/mayotte/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MZ
+  name: Mozambique
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/mozambique/getting-help
+  emergency_verified_on: 2026-10-07
+- code: NA
+  name: Namibia
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '10111'
+    - '999'
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/namibia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: NE
+  name: Niger
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '15'
+  - service: Fire
+    numbers:
+    - '18'
+  - service: Police
+    numbers:
+    - '17'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/niger/getting-help
+  emergency_verified_on: 2026-10-07
+- code: NG
+  name: Nigeria
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/nigeria/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: SURPIN Helpline
+    phones:
+    - +234 800 078 7746
+    - +234 908 021 7555
+    hours: 24/7
+    url: https://www.surpinng.com/
+    source: https://www.surpinng.com/
+    verified_on: 2026-10-08
+- code: CG
+  name: Republic of the Congo
+  region: Sub-Saharan Africa
+  emergency: []
+  emergency_note: There is no central emergency number.
+  emergency_source: https://www.gov.uk/foreign-travel-advice/congo/getting-help
+  emergency_verified_on: 2026-10-07
+- code: RW
+  name: Rwanda
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '112'
+  - service: Police
+    numbers:
+    - '112'
+  - service: Fire
+    numbers:
+    - '111'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/rwanda/getting-help
+  emergency_verified_on: 2026-10-07
+- code: RE
+  name: Réunion
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers: *id001
+  - service: Ambulance
+    numbers: *id002
+  - service: Fire
+    numbers: *id003
+  - service: Police
+    numbers: *id004
+  emergency_source: https://www.gov.uk/foreign-travel-advice/reunion/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SN
+  name: Senegal
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '15'
+  - service: Fire
+    numbers:
+    - '18'
+  - service: Police
+    numbers:
+    - '17'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/senegal/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SC
+  name: Seychelles
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/seychelles/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SL
+  name: Sierra Leone
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '117'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/sierra-leone/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SO
+  name: Somalia
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '999'
+  - service: Fire
+    numbers:
+    - '555'
+  - service: Police
+    numbers:
+    - '888'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/somalia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: ZA
+  name: South Africa
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies (mobile)
+    numbers:
+    - '112'
+  - service: Ambulance and fire
+    numbers:
+    - '10177'
+  - service: Police
+    numbers:
+    - '10111'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/south-africa/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: SADAG Suicide Crisis Helpline
+    phones:
+    - 0800 567 567
+    hours: 24/7, toll-free
+    url: https://www.sadag.org/
+    source: https://www.sadag.org/
+    verified_on: 2026-10-07
+- code: SS
+  name: South Sudan
+  region: Sub-Saharan Africa
+  emergency: []
+  emergency_note: There are no central emergency numbers.
+  emergency_source: https://www.gov.uk/foreign-travel-advice/south-sudan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SH
+  name: St Helena, Ascension and Tristan da Cunha
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies (St Helena and Ascension)
+    numbers:
+    - '999'
+  - service: Ambulance (Tristan da Cunha)
+    numbers:
+    - '5000'
+  - service: Police (Tristan da Cunha)
+    numbers:
+    - '5111'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/st-helena-ascension-and-tristan-da-cunha/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SD
+  name: Sudan
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/sudan/getting-help
+  emergency_verified_on: 2026-10-07
+- code: ST
+  name: São Tomé and Príncipe
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - 222 22 22
+  - service: Fire
+    numbers:
+    - '112'
+  - service: Police
+    numbers:
+    - '113'
+    - 222 22 22
+  emergency_source: https://www.gov.uk/foreign-travel-advice/sao-tome-and-principe/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TZ
+  name: Tanzania
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/tanzania/getting-help
+  emergency_verified_on: 2026-10-07
+- code: GM
+  name: The Gambia
+  region: Sub-Saharan Africa
+  emergency: []
+  emergency_note: There is no national emergency number; contact the nearest police or fire station.
+  emergency_source: https://www.gov.uk/foreign-travel-advice/the-gambia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TG
+  name: Togo
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '8200'
+  - service: Fire
+    numbers:
+    - '118'
+  - service: Police
+    numbers:
+    - '117'
+    - '177'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/togo/getting-help
+  emergency_verified_on: 2026-10-07
+- code: UG
+  name: Uganda
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/uganda/getting-help
+  emergency_verified_on: 2026-10-07
+- code: ZM
+  name: Zambia
+  region: Sub-Saharan Africa
+  emergency:
+  - service: Police
+    numbers:
+    - '991'
+  - service: Ambulance
+    numbers:
+    - '992'
+  - service: Fire
+    numbers:
+    - '993'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/zambia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: ZW
+  name: Zimbabwe
+  region: Sub-Saharan Africa
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/zimbabwe/getting-help
+  emergency_verified_on: 2026-10-07
+- code: AU
+  name: Australia
+  region: Oceania
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '000'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/australia/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: Lifeline Australia
+    phones:
+    - 13 11 14
+    text: 0477 13 11 14
+    hours: 24/7
+    url: https://www.lifeline.org.au/
+    source: https://www.lifeline.org.au/
+    verified_on: 2026-10-07
+- code: CK
+  name: Cook Islands, Tokelau and Niue
+  region: Oceania
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/cook-islands-tokelau-and-niue/getting-help
+  emergency_verified_on: 2026-10-07
+- code: FJ
+  name: Fiji
+  region: Oceania
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  - service: Fire
+    numbers:
+    - '910'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/fiji/getting-help
+  emergency_verified_on: 2026-10-07
+- code: PF
+  name: French Polynesia
+  region: Oceania
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '15'
+  - service: Fire
+    numbers:
+    - '18'
+  - service: Police
+    numbers:
+    - '17'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/french-polynesia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: KI
+  name: Kiribati
+  region: Oceania
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '999'
+  - service: Ambulance
+    numbers:
+    - '994'
+  - service: Fire
+    numbers:
+    - '993'
+  - service: Police
+    numbers:
+    - '992'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/kiribati/getting-help
+  emergency_verified_on: 2026-10-07
+- code: MH
+  name: Marshall Islands
+  region: Oceania
+  emergency:
+  - service: Ambulance
+    numbers:
+    - 625 4142
+  - service: Police
+    numbers:
+    - 625 8666
+  emergency_source: https://www.gov.uk/foreign-travel-advice/marshall-islands/getting-help
+  emergency_verified_on: 2026-10-07
+- code: FM
+  name: Micronesia
+  region: Oceania
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/federated-states-of-micronesia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: NR
+  name: Nauru
+  region: Oceania
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '111'
+  - service: Fire
+    numbers:
+    - '112'
+  - service: Police
+    numbers:
+    - '110'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/nauru/getting-help
+  emergency_verified_on: 2026-10-07
+- code: NC
+  name: New Caledonia
+  region: Oceania
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '15'
+  - service: Fire
+    numbers:
+    - '18'
+  - service: Police
+    numbers:
+    - '17'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/new-caledonia/getting-help
+  emergency_verified_on: 2026-10-07
+- code: NZ
+  name: New Zealand
+  region: Oceania
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '111'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/new-zealand/getting-help
+  emergency_verified_on: 2026-10-07
+  lines:
+  - name: 1737 Need to talk?
+    phones:
+    - '1737'
+    text: '1737'
+    hours: 24/7, free
+    url: https://1737.org.nz/
+    source: https://1737.org.nz/
+    verified_on: 2026-10-07
+- code: PW
+  name: Palau
+  region: Oceania
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/palau/getting-help
+  emergency_verified_on: 2026-10-07
+- code: PG
+  name: Papua New Guinea
+  region: Oceania
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '111'
+  - service: Fire
+    numbers:
+    - '110'
+  - service: Police
+    numbers:
+    - '112'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/papua-new-guinea/getting-help
+  emergency_verified_on: 2026-10-07
+- code: PN
+  name: Pitcairn Island
+  region: Oceania
+  emergency: []
+  emergency_note: No emergency services other than a police officer; tell the nearest islander.
+  emergency_source: https://www.gov.uk/foreign-travel-advice/pitcairn-island/getting-help
+  emergency_verified_on: 2026-10-07
+- code: WS
+  name: Samoa
+  region: Oceania
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/samoa/getting-help
+  emergency_verified_on: 2026-10-07
+- code: SB
+  name: Solomon Islands
+  region: Oceania
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '111'
+  - service: Fire
+    numbers:
+    - '988'
+  - service: Police
+    numbers:
+    - '999'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/solomon-islands/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TO
+  name: Tonga
+  region: Oceania
+  emergency:
+  - service: All emergencies
+    numbers:
+    - '911'
+  - service: Fire
+    numbers:
+    - '999'
+  - service: Police
+    numbers:
+    - '922'
+  - service: Ambulance
+    numbers:
+    - '933'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/tonga/getting-help
+  emergency_verified_on: 2026-10-07
+- code: TV
+  name: Tuvalu
+  region: Oceania
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '999'
+  - service: Fire
+    numbers:
+    - '000'
+  - service: Police
+    numbers:
+    - '911'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/tuvalu/getting-help
+  emergency_verified_on: 2026-10-07
+- code: VU
+  name: Vanuatu
+  region: Oceania
+  emergency:
+  - service: Ambulance
+    numbers:
+    - '115'
+  - service: Fire
+    numbers:
+    - '113'
+  - service: Police
+    numbers:
+    - '111'
+    - '22222'
+  emergency_source: https://www.gov.uk/foreign-travel-advice/vanuatu/getting-help
+  emergency_verified_on: 2026-10-07
+- code: WF
+  name: Wallis and Futuna
+  region: Oceania
+  emergency:
+  - service: All emergencies
+    numbers: *id001
+  - service: Ambulance
+    numbers: *id002
+  - service: Fire
+    numbers: *id003
+  - service: Police
+    numbers: *id004
+  emergency_source: https://www.gov.uk/foreign-travel-advice/wallis-and-futuna/getting-help
+  emergency_verified_on: 2026-10-07

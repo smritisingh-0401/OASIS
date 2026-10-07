@@ -1,0 +1,45 @@
+# Idiom allow-list: the ONLY false-positive reduction in the safety layer (rules S6).
+# Clinician review pending: CR-02.
+#
+# An entry removes a hit only when the idiom's span COVERS the hit's span, so
+# "I killed myself laughing, but I want to kill myself" still triggers.
+# Each entry must be unambiguous, and ships with a positive example (suppressed) and a
+# negative example (still triggers) — both are checked at startup and in tests.
+version: "2026.10.0"
+review_status: needs_clinician_review
+entries:
+  - id: allow.suicide_squad
+    pattern: '\bsuicide squad\b'
+    suppresses: [explicit.suicide_word]
+    positive_example: "have you seen suicide squad"
+    negative_example: "i have been feeling suicidal"
+  - id: allow.suicide_mission
+    pattern: '\bsuicide mission\b'
+    suppresses: [explicit.suicide_word]
+    positive_example: "this deadline is a suicide mission"
+    negative_example: "this deadline makes me think of suicide"
+  - id: allow.suicide_doors
+    pattern: '\bsuicide doors?\b'
+    suppresses: [explicit.suicide_word]
+    positive_example: "that old car has suicide doors"
+    negative_example: "that old car makes me think about suicide"
+  - id: allow.killed_laughing
+    pattern: '\bkill(?:ed|ing)? ?(?:my ?self) laughing\b'
+    suppresses: [explicit.kill_self]
+    positive_example: "i killed myself laughing at that video"
+    negative_example: "i want to kill myself"
+  - id: allow.hope_to_die
+    pattern: '\bcross my heart and hope to die\b'
+    suppresses: [passive.want_die]
+    positive_example: "i will be there, cross my heart and hope to die"
+    negative_example: "i just hope to die soon"
+  - id: allow.overdose_food
+    pattern: '\boverdos\w* on (?:coffee|caffeine|sugar|chocolate|cake|candy|netflix|tv|anime|memes|carbs|pizza)\b'
+    suppresses: [plan.overdose]
+    positive_example: "im overdosing on coffee today"
+    negative_example: "im going to overdose on my pills"
+  - id: allow.cut_accident
+    pattern: '\bcut (?:my ?self) (?:shaving|while shaving|cooking|while cooking|on (?:a|the) (?:knife|paper|glass|can|tin))\b'
+    suppresses: [self_harm.explicit]
+    positive_example: "i cut myself shaving this morning"
+    negative_example: "i cut myself again last night"

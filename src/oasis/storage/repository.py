@@ -21,9 +21,22 @@ class StorageBusy(StorageError):
     pass
 
 
+AUDIT_EVENTS = frozenset(
+    {"crisis_handoff", "consent_given", "consent_withdrawn", "export", "settings_changed"}
+)
+
+
 @dataclass(frozen=True)
 class SessionInfo:
     user_id: str
+    post_crisis: bool = False
+
+
+@dataclass(frozen=True)
+class AuditRecord:
+    event: str
+    detail: str  # JSON; never message text
+    created_at: str
 
 
 class Repository(Protocol):
@@ -47,6 +60,14 @@ class Repository(Protocol):
 
     async def recent_turns(self, user_id: str, session_hash: str, limit: int) -> list[TurnRecord]:
         """The last `limit` turns of the session, oldest first."""
+        ...
+
+    async def set_post_crisis(self, user_id: str, session_hash: str, value: bool) -> None: ...
+
+    async def append_audit(self, user_id: str, event: str, detail_json: str) -> None: ...
+
+    async def list_audit(self, user_id: str) -> list[AuditRecord]:
+        """Oldest first."""
         ...
 
     async def ping(self) -> bool: ...

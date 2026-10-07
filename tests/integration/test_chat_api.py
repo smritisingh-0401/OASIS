@@ -13,7 +13,6 @@ from fastapi.testclient import TestClient
 import oasis
 from oasis.api.app import create_app
 from oasis.llm.fake import FakeLLM
-from oasis.safety.gate import SafetyStubNotAllowed
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
 from oasis.types import ChatMessage, SafetyVerdict
@@ -142,7 +141,7 @@ def test_security_headers_on_every_response(client: TestClient, path: str) -> No
 def test_chat_page_has_help_card_and_dev_banner(client: TestClient) -> None:
     html = client.get("/").text
     assert "Need help now?" in html
-    assert "Development build" in html
+    assert "Prototype" in html
     assert "not a diagnosis" in html
 
 
@@ -192,11 +191,6 @@ def test_unexpected_engine_error_returns_templated_reply(settings: Settings) -> 
     assert resp.status_code == 200
     assert resp.json()["templated"] is True
     assert "internal.error" in resp.json()["degraded"]
-
-
-def test_stub_safety_refuses_to_start_without_dev_flag(settings: Settings) -> None:
-    with pytest.raises(SafetyStubNotAllowed):
-        create_app(settings.model_copy(update={"dev_mode": False}))
 
 
 def test_history_survives_restart(settings: Settings) -> None:

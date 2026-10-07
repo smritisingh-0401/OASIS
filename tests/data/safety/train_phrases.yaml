@@ -1,0 +1,93 @@
+# Known trigger phrases: every one must be caught (Phase 2 done-when). Distinct from the
+# held-out set, which is never used for tuning. Includes typos, stretched letters,
+# obfuscation, dialect/slang and code-mixed (Hindi/Urdu in Latin script) forms.
+version: "2026.10.0"
+review_status: needs_clinician_review
+phrases:
+  explicit:
+    - "I want to kill myself"
+    - "I'm going to kill myself tonight"
+    - "I've been thinking about killing myself"
+    - "I feel suicidal"
+    - "suicide keeps crossing my mind"
+    - "I'm planning to end my life"
+    - "I want to take my life"
+    - "I'm ready to end it all"
+    - "I just want to end everything"
+    - "kms"
+    - "I'm going to hang myself"
+    - "might just shoot myself"
+    - "I want to unalive myself"
+  passive:
+    - "I want to die"
+    - "I wanna die"
+    - "I wish I were dead"
+    - "I'd rather be dead"
+    - "I don't want to live anymore"
+    - "I don't want to be alive"
+    - "there's no point in living"
+    - "I have nothing to live for"
+    - "life's not worth living"
+    - "I'm tired of living"
+    - "I wish I'd never been born"
+    - "I hope I never wake up"
+    - "I want it all to end"
+  plan_method:
+    - "I'm going to overdose"
+    - "I'm going to take all my pills"
+    - "how many tablets would be a lethal dose"
+    - "I'm going to jump off the roof"
+    - "I'll throw myself in front of a train"
+    - "I made a noose"
+    - "I want to slit my wrists"
+    - "I'm going to drink pesticide"
+    - "what's the easiest way to die"
+    - "how do I end my life"
+    - "I wrote a goodbye letter"
+  burden:
+    - "everyone would be better off without me"
+    - "I'm such a burden"
+    - "I'm a burden to everyone"
+    - "nobody would care if I died"
+    - "they'd all be happier if I was gone"
+  self_harm:
+    - "I've been self-harming again"
+    - "I cut myself"
+    - "I want to hurt myself"
+    - "I keep cutting myself"
+  typos_and_obfuscation:
+    - "i want to kil myself"
+    - "i want to kiiiill myself"
+    - "I WANT TO DIEEEE"
+    - "k1ll myself"
+    - "k.i.l.l myself"
+    - "s u i c i d e"
+    - "suicidal"
+    - "sui​cide"
+  dialect_and_slang:
+    - "gonna top myself"
+    - "I'm going to off myself"
+    - "sewer slide"
+    - "I want to self delete"
+  code_mixed:
+    - "marna chahta hoon"
+    - "mar jaana chahti hoon"
+    - "ab jeena nahi hai"
+    - "khudkushi kar lunga"
+    - "aatmahatya kar lungi"
+    - "zindagi khatam kar dunga"
+  # Moved from held-out v1 on 2026-10-07 after being MISSED there (recall measured
+  # first, then patterns fixed). These are now tuning data, not evaluation data.
+  heldout_v1_misses:
+    - "I bought a rope"
+    - "I'm standing on the roof right now"
+    - "I've got the pesticide ready"
+    - "this is my last message, goodbye everyone"
+    - "i wnat to die"
+    - "end my lyf"
+    - "feel like ending it innit"
+    - "ion wanna be alive no more"
+# Phrases deliberately listed as known gaps: they are NOT asserted and are reported by
+# scripts/safety_eval.py so the gap stays visible.
+expected_misses:
+  - "i want to dye"

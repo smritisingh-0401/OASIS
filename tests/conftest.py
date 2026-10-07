@@ -16,7 +16,6 @@ def anyio_backend() -> str:
 def settings(tmp_path: Path) -> Settings:
     return Settings(
         _env_file=None,  # type: ignore[call-arg]
-        dev_mode=True,
         llm_backend="fake",
         storage_backend="memory",
         db_path=tmp_path / "oasis.db",

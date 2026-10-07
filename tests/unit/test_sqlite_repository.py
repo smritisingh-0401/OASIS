@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+import oasis.storage
+
 from oasis.storage.repository import StorageBusy, StorageUnavailable
 from oasis.storage.sqlite import SQLiteRepository
 
@@ -43,7 +45,12 @@ async def test_migrations_are_recorded_and_idempotent(tmp_path: Path) -> None:
     await SQLiteRepository(path).close()
     with closing(sqlite3.connect(path)) as conn:
         versions = [row[0] for row in conn.execute("SELECT version FROM schema_migrations")]
-    assert versions == [1]
+    shipped = sorted(
+        int(f.name.split("_")[0])
+        for f in (Path(oasis.storage.__file__).parent / "migrations").glob("*.sql")
+    )
+    assert versions == shipped
+    assert shipped == list(range(1, len(shipped) + 1))  # numbered without gaps
 
 
 @pytest.mark.anyio

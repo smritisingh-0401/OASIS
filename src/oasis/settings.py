@@ -12,9 +12,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OASIS_", env_file=".env", extra="ignore")
 
-    # Development flag. Required while the safety layer is a stub (rules S13).
-    dev_mode: bool = False
-
     # Storage
     storage_backend: Literal["sqlite", "memory"] = "sqlite"
     db_path: Path = Path("data/oasis.db")

@@ -1,0 +1,162 @@
+# Crisis detection patterns (design §2.2). Clinician review pending: CR-01.
+#
+# Matching rules:
+# - Patterns run on NORMALISED text: case-folded, apostrophes removed (don't -> dont,
+#   i'm -> im), whitespace collapsed, letter runs of 3+ reduced to 2.
+# - Patterns are compiled TOLERANT: every literal letter accepts repeats, so "kill" also
+#   matches "kil", "kiill". Write a double letter as e.g. f{2} where it must stay double
+#   ("of{2}" keeps "off myself" from matching "proud of myself").
+# - ANY match triggers the handoff. No negation handling, by design (rules S6).
+# - Not allowed: named groups, inline flags, unbounded nested quantifiers.
+# - Every pattern lists examples; each example must trigger, or the app refuses to start.
+version: "2026.10.0"
+review_status: needs_clinician_review
+patterns:
+  # --- explicit intent -----------------------------------------------------------
+  - id: explicit.kill_self
+    tier: explicit
+    pattern: '\bkill(?:ing|ed|s)? ?(?:my ?self|me ?self)\b'
+    examples: ["i am going to kill myself", "i want to kill my self", "thinking of killing myself"]
+  - id: explicit.kms
+    tier: explicit
+    pattern: '\bkms\b'
+    examples: ["honestly kms", "i might just kms"]
+  - id: explicit.suicide_word
+    tier: explicit
+    pattern: '\bsuicid\w*'
+    examples: ["i have been thinking about suicide", "i feel suicidal", "suicide is on my mind"]
+  - id: explicit.end_life
+    tier: explicit
+    pattern: '\b(?:end|ending|ended|take|taking|took) (?:my|my own) (?:li(?:fe|ves)|lyfe?)\b'
+    examples: ["i want to end my life", "thinking about taking my own life"]
+  - id: explicit.end_it_all
+    tier: explicit
+    pattern: '\bend(?:ing)? (?:it all|everything|it for good|it once and for all|all of it)\b'
+    examples: ["i just want to end it all", "ready to end everything", "thinking of ending it all"]
+  - id: explicit.ending_it
+    tier: explicit
+    # Sense disambiguation, not negation: "end it with him" is about a relationship.
+    pattern: '\b(?:feel like|feeling like|thinking (?:of|about)|want to|wanna|going to|gonna|about to|ready to|might|could) end(?:ing)? it\b(?! (?:with|between|off|early|here|there))'
+    examples: ["i feel like ending it", "i might end it tonight", "im about to end it"]
+  - id: explicit.method_self
+    tier: explicit
+    pattern: '\b(?:of{2}|top|hang|hanging|shoot|shooting|drown|drowning|poison|poisoning|stab|stabbing|gas|murder) ?(?:my ?self|me ?self)\b'
+    examples: ["i want to hang myself", "gonna top myself", "i could shoot myself", "i will off myself"]
+  - id: explicit.unalive
+    tier: explicit
+    pattern: '\b(?:un ?alive|self ?delete|commit die|kill self)\b'
+    examples: ["i want to unalive", "time to self delete", "i want to commit die"]
+  - id: explicit.sewerslide
+    tier: explicit
+    pattern: '\bsewer ?slide\b'
+    examples: ["thinking about sewerslide"]
+  - id: explicit.code_mixed
+    tier: explicit
+    # Hindi/Urdu in Latin script: khudkushi / aatmahatya (suicide), khud ko maar (kill self).
+    pattern: '\b(?:khud ?k(?:h)?ushi|a{1,2}tm ?a?hatya|khud ko (?:maar|mar|khatam))\w*'
+    examples: ["khudkushi ka soch raha hoon", "atmahatya karna hai", "khud ko maar dunga"]
+
+  # --- passive ideation ----------------------------------------------------------
+  - id: passive.want_die
+    tier: passive
+    pattern: '\b(?:want|wnat|wanna|wana|wish|ready|deserve|need|hope|like|longing|prefer) (?:to )?die\b'
+    examples: ["i just want to die", "i wanna die", "ready to die", "i deserve to die"]
+  - id: passive.be_dead
+    tier: passive
+    pattern: '\b(?:want|wanna|wish|rather|prefer|better off|better) (?:to )?be dead\b|\bwish(?:ing)? (?:that )?i (?:was|were|could be|would be|could just be|was just) dead\b|\bbetter of{2} dead\b|\brather (?:be )?dead\b|\b(?:id|i would) rather die\b'
+    examples: ["i wish i were dead", "i would rather be dead", "better off dead", "id rather die than wake up"]
+  - id: passive.not_wake
+    tier: passive
+    pattern: '\b(?:wish|hope|want|pray)\w*(?: \w+){0,4} (?:not|never|dont) (?:to )?wake up\b|\b(?:sleep|asleep)(?: \w+){0,2} (?:and )?never wake up\b|\bnever wake up again\b'
+    examples: ["i hope i never wake up", "i wish i would not wake up tomorrow", "i want to fall asleep and never wake up"]
+  - id: passive.not_live
+    tier: passive
+    pattern: '\b(?:dont|do not|no longer|dont even|dont really) (?:want|wanna|wish)(?: to)? (?:live|go on|keep living|continue living)(?: ?(?:anymore|any more|any longer|no more))?\s*(?:[.!?,]|$)|\b(?:dont|do not|no longer|dont even|ion) (?:want|wanna|wish)(?: to)? (?:be alive|exist|be here anymore|be here any more|be on this earth)\b'
+    examples: ["i dont want to live anymore", "i dont want to be alive", "i dont wanna exist", "i no longer want to live."]
+  - id: passive.no_point
+    tier: passive
+    pattern: '\b(?:no|nothing|no reason|no point|whats the point|what is the point|no purpose|why)(?: \w+){0,3} (?:to live|living|in living|of living|being alive|of being alive|to keep living|to keep going|to go on|in going on)\b|\b(?:not|isnt|aint|no longer) worth living\b|\blife (?:is |s )?(?:not|isnt|no longer|aint) worth (?:it|living)\b'
+    examples: ["there is no reason to keep living", "i have nothing to live for", "life is not worth living", "why bother living"]
+  - id: passive.tired_of_life
+    tier: passive
+    pattern: '\b(?:tired|sick|exhausted|done|finished|fed up) (?:of|with) (?:living|life|being alive|existing)\b'
+    examples: ["im tired of living", "im done with life", "so sick of being alive"]
+  - id: passive.never_born
+    tier: passive
+    pattern: '\bwish(?:ing)? (?:i |id )?(?:had never been|never been|was never|were never|never was|wasnt|werent) born\b|\bshould(?:nt| not)(?: have)? (?:been born|exist|be alive)\b|\bwish i (?:didnt|did not) exist\b|\bwish i could (?:just )?(?:disappear forever|stop existing|cease to exist)\b'
+    examples: ["i wish i was never born", "i shouldnt be alive", "i wish i didnt exist", "i wish i could stop existing"]
+  - id: passive.want_end
+    tier: passive
+    pattern: '\b(?:want|wish|need) (?:it all|everything|all of this|my life) to (?:end|stop|be over)\b|\b(?:disappear|vanish|be gone) forever\b|\bdont care if i (?:die|live or die|wake up)\b'
+    examples: ["i want it all to end", "i want to disappear forever", "i dont care if i die"]
+  - id: passive.code_mixed
+    tier: passive
+    # Hindi/Urdu in Latin script: marna chahta (want to die), jeena nahi (don't want to live).
+    pattern: '\b(?:marna|mar ?ja{1,2}na|mar ?ja{1,2}u(?:n|nga|ngi)?|mar ?ja{1,2}te)\b|\b(?:jeena|jina) nahi\b|\bnahi (?:jeena|jina)\b|\bjeene ka (?:mann?|mood) nahi\b|\bzindagi (?:khatam|se (?:thak|tang))\b'
+    examples: ["marna chahta hoon", "ab jeena nahi chahti", "jeene ka mann nahi hai", "zindagi se thak gaya hoon"]
+
+  # --- plan / method references ----------------------------------------------------
+  - id: plan.overdose
+    tier: plan_method
+    pattern: '\b(?:overdos\w*|od(?:ing)? on)\b'
+    examples: ["i am going to overdose", "thinking of ODing on my meds"]
+  - id: plan.pills
+    tier: plan_method
+    pattern: '\b(?:take|took|taking|swallow\w*|down) (?:all|a bunch of|a lot of|all of|all the|every|the whole bottle of|a handful of|enough|a whole bottle of) (?:my |the |these |those |of my )?(?:pills|tablets|meds|medication|sleeping pills|painkillers|paracetamol|tylenol)\b|\b(?:saving|saved|stockpil\w*|hoard\w*|collecting) (?:up )?(?:\w+ )?(?:pills|tablets|meds)\b|\bhow many (?:\w+ )?(?:pills|tablets|paracetamol|tylenol)\b|\b(?:lethal|fatal|deadly) dose\b'
+    examples: ["i want to take all my pills", "ive been stockpiling pills", "what is a lethal dose", "how many sleeping pills would kill me"]
+  - id: plan.jump
+    tier: plan_method
+    pattern: '\bjump(?:ing|ed)? (?:of{2}|from|in front of|under|onto|into) (?:a |the |my |this |that )?(?:\w+ )?(?:bridge|building|roof|rooftop|cliff|balcony|tower|train|bus|truck|lorry|metro|tracks|river|window|terrace|flyover)\b|\b(?:step|walk|throw (?:my ?self)|lie down|lay down)\w* (?:out )?in front of (?:a |the )?(?:train|bus|truck|car|lorry)\b|\bon the (?:edge|ledge) of (?:the |a )?(?:roof|bridge|building|cliff|balcony)\b|\bstanding on (?:the |a )?(?:roof|rooftop|ledge|edge|bridge|railing|parapet)\b'
+    examples: ["i want to jump off a building", "i will step in front of a bus", "im on the ledge of the roof"]
+  - id: plan.hanging
+    tier: plan_method
+    pattern: '\bnoose\b|\b(?:bought|got|tied|tie|have|buying) (?:a |the |some )?rope\b|\brope (?:around|round) my neck\b'
+    examples: ["i made a noose", "i tied a rope to the ceiling fan", "rope around my neck", "i bought a rope"]
+  - id: plan.wrists
+    tier: plan_method
+    pattern: '\b(?:slit|slash|slice|cut|slitting|slashing|slicing|cutting) (?:open )?(?:my |both )?(?:wrists?|throat|veins?)\b'
+    examples: ["i want to slit my wrists", "cutting my wrists"]
+  - id: plan.poison
+    tier: plan_method
+    pattern: '\b(?:drink|drinking|drank|swallow\w*|ate|eat|eating|consume) (?:the |some |a bottle of |a cup of )?(?:bleach|poison|pesticide|rat poison|weed ?killer|insecticide|phenyl|acid|antifreeze)\b|\b(?:bought|kept|hid|hidden|stored|got|have) (?:the |some )?(?:pesticide|rat poison|insecticide|poison)\b|\b(?:pesticide|poison|pills|rope|blade|gun) (?:is |are )?(?:ready|here with me|in my hand)\b'
+    examples: ["i am going to drink bleach", "i bought rat poison for myself"]
+  - id: plan.gun
+    tier: plan_method
+    pattern: '\b(?:gun|pistol|revolver) (?:to|against|in) my (?:head|mouth|temple)\b'
+    examples: ["i held a gun to my head"]
+  - id: plan.method_search
+    tier: plan_method
+    pattern: '\b(?:painless|quick|quickest|easy|easiest|best|fastest|surest|least painful) (?:way|ways|method|methods) to (?:die|kill (?:my ?self)|end (?:it|my life))\b|\bhow (?:to|do i|can i|could i|would i|should i) (?:die|kill (?:my ?self)|end (?:it all|my life))\b'
+    examples: ["what is the easiest way to die", "how do i kill myself", "how can i end my life"]
+  - id: plan.goodbye
+    tier: plan_method
+    pattern: '\b(?:goodbye|farewell) (?:note|letter|forever|world|cruel world)\b|\b(?:final|last) goodbye\b|\bmy (?:last|final) message\b|\bgiv(?:e|ing|en) away (?:all )?(?:of )?my (?:stuff|things|belongings|possessions)\b'
+    examples: ["i wrote a goodbye letter", "this is my final goodbye", "im giving away all my stuff"]
+
+  # --- burden ----------------------------------------------------------------------
+  - id: burden.without_me
+    tier: burden
+    pattern: '\b(?:better|better of{2}|happier|easier|lighter) without me\b'
+    examples: ["everyone would be better off without me", "my family would be happier without me"]
+  - id: burden.burden
+    tier: burden
+    pattern: '\b(?:im|i am|feel like|feel like im|i feel like|being|just) (?:just |such |nothing but |only |a total |a huge )?(?:a )?(?:burden|waste of (?:space|air|oxygen|life))\b|\bburden (?:to|on|for) (?:everyone|everybody|my|them|you|others|people|the world)\b'
+    examples: ["i am such a burden", "im a waste of space", "i am a burden to everyone"]
+  - id: burden.nobody_cares
+    tier: burden
+    pattern: '\b(?:no ?one|nobody|noone)(?: \w+){0,3} (?:miss|notice|care)\w*(?: \w+){0,4} if i (?:died|die|was gone|were gone|disappeared|disappear|wasnt here|was dead|were dead|killed my ?self|left forever)\b'
+    examples: ["nobody would care if i died", "no one would notice if i disappeared"]
+  - id: burden.if_gone
+    tier: burden
+    pattern: '\b(?:better|happier|easier|relieved|lighter)(?: \w+){0,6} if i (?:wasnt (?:around|here|alive)|was gone|were gone|didnt exist|disappeared|died|was dead|were dead)\b'
+    examples: ["they would all be happier if i was gone", "life would be easier for them if i died"]
+
+  # --- self-harm -------------------------------------------------------------------
+  - id: self_harm.explicit
+    tier: self_harm
+    pattern: '\bself ?-?(?:harm|injur)\w*|\b(?:cut|cutting|cuts|carve|carving|harm|harmed|harming) ?(?:my ?self|me ?self)\b'
+    examples: ["i have been self harming", "i cut myself", "i keep cutting myself", "self-harm again"]
+  - id: self_harm.intent
+    tier: self_harm
+    pattern: '\b(?:want|wanna|going|gonna|need|urge|urges|feel like|tempted|thinking about|thinking of|keep|keeps|started|start|trying not)\w* (?:to )?(?:hurt|hurting|hit|hitting|punch|punching|burn|burning|starve|starving|scratch|scratching) ?(?:my ?self)\b|\bburn(?:ed|t|ing)? (?:my ?self) (?:on purpose|deliberately|intentionally|again)\b'
+    examples: ["i want to hurt myself", "i have the urge to burn myself", "i burned myself on purpose"]

@@ -101,3 +101,46 @@ async def test_zero_limit_returns_nothing(repo: Repository) -> None:
 @pytest.mark.anyio
 async def test_ping(repo: Repository) -> None:
     assert await repo.ping() is True
+
+
+@pytest.mark.anyio
+async def test_post_crisis_flag_round_trip(repo: Repository) -> None:
+    uid = await repo.create_user_session("h")
+    info = await repo.get_session("h")
+    assert info is not None
+    assert info.post_crisis is False
+    await repo.set_post_crisis(uid, "h", True)
+    info = await repo.get_session("h")
+    assert info is not None
+    assert info.post_crisis is True
+    await repo.set_post_crisis(uid, "h", False)
+    info = await repo.get_session("h")
+    assert info is not None
+    assert info.post_crisis is False
+
+
+@pytest.mark.anyio
+async def test_post_crisis_flag_is_scoped_to_the_user(repo: Repository) -> None:
+    await repo.create_user_session("ha")
+    bob = await repo.create_user_session("hb")
+    with pytest.raises(StorageError):
+        await repo.set_post_crisis(bob, "ha", True)
+
+
+@pytest.mark.anyio
+async def test_audit_log_is_append_only_and_scoped(repo: Repository) -> None:
+    alice = await repo.create_user_session("ha")
+    bob = await repo.create_user_session("hb")
+    await repo.append_audit(alice, "crisis_handoff", '{"tiers": ["explicit"]}')
+    await repo.append_audit(alice, "crisis_handoff", '{"tiers": ["passive"]}')
+    audits = await repo.list_audit(alice)
+    assert [a.detail for a in audits] == ['{"tiers": ["explicit"]}', '{"tiers": ["passive"]}']
+    assert all(a.created_at.endswith("Z") for a in audits)
+    assert await repo.list_audit(bob) == []
+
+
+@pytest.mark.anyio
+async def test_unknown_audit_event_is_rejected(repo: Repository) -> None:
+    uid = await repo.create_user_session("h")
+    with pytest.raises(StorageError):
+        await repo.append_audit(uid, "made_up_event", "{}")

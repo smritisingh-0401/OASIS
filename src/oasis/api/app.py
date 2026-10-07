@@ -8,17 +8,19 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
 from oasis.api.middleware import error_response, security_middleware
+from oasis.api.pages import render_index
 from oasis.api.routes import ApiError, build_router
 from oasis.core.engine import ChatEngine
 from oasis.llm.client import BoundedLLM, LLMClient
 from oasis.llm.fake import FakeLLM
 from oasis.llm.llama_server import LlamaServerClient
-from oasis.safety.gate import SafetyGate, StubSafetyGate, ensure_allowed
+from oasis.safety.gate import RuleBasedSafetyGate, SafetyGate
+from oasis.safety.resources import Resources, load_resources
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import Repository
@@ -55,10 +57,16 @@ def create_app(
     safety: SafetyGate | None = None,
     llm: LLMClient | None = None,
     repo: Repository | None = None,
+    crisis_resources: Resources | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
-    safety = safety or StubSafetyGate()
-    ensure_allowed(safety, dev_mode=settings.dev_mode)  # refuse to start, before any I/O
+    # Safety content is loaded and validated before anything else; invalid patterns or
+    # resources stop the app here (rules S5).
+    safety = safety or RuleBasedSafetyGate.load()
+    index_html = render_index(
+        (WEB_DIR / "index.html").read_text(encoding="utf-8"),
+        crisis_resources or load_resources(),
+    )
 
     bounded = BoundedLLM(
         llm or _default_llm(settings),
@@ -100,5 +108,11 @@ def create_app(
         return error_response(exc.status_code, code, str(exc.detail))
 
     app.include_router(build_router(engine))
+
+    @app.get("/", include_in_schema=False)
+    @app.get("/index.html", include_in_schema=False)
+    async def index() -> HTMLResponse:
+        return HTMLResponse(index_html)
+
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app

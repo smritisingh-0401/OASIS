@@ -1,33 +1,46 @@
-"""Safety gate interface, fail-closed wrapper and startup tripwire.
+"""Safety gate: rule-based crisis detection that runs first on every message.
 
-Phase 1 ships only a stub detector. The tripwire stops anyone running the stub outside
-development (rules S13); Phase 2 replaces the stub with the rule-based detector.
+Pure Python: no LLM, network or database imports (rules S8, enforced by import-linter
+and an AST test). Fails closed: any internal error is a crisis verdict (rules S5).
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from typing import Protocol
 
+from oasis.safety.rules import RuleSet, load_ruleset
 from oasis.types import SafetyVerdict
+
+# Optional extra detector. It may only ADD alerts (rules S7): it receives the raw text and
+# returns alert names; an empty result never clears a rule-based match.
+Classifier = Callable[[str], Sequence[str]]
 
 
 class SafetyGate(Protocol):
-    is_stub: bool
-
     def check(self, text: str) -> SafetyVerdict: ...
 
 
-class StubSafetyGate:
-    """Development placeholder: never detects anything."""
+class RuleBasedSafetyGate:
+    def __init__(self, ruleset: RuleSet, classifier: Classifier | None = None) -> None:
+        self.ruleset = ruleset
+        self._classifier = classifier
 
-    is_stub = True
+    @classmethod
+    def load(cls) -> RuleBasedSafetyGate:
+        return cls(load_ruleset())
 
     def check(self, text: str) -> SafetyVerdict:
-        return SafetyVerdict(is_crisis=False, ruleset_version="stub")
-
-
-class SafetyStubNotAllowed(RuntimeError):
-    pass
+        hits = self.ruleset.hits(text)
+        if self._classifier is not None:
+            for alert in self._classifier(text):
+                hits[f"classifier.{alert}"] = "classifier"
+        return SafetyVerdict(
+            is_crisis=bool(hits),
+            tiers=frozenset(hits.values()),
+            pattern_ids=tuple(sorted(hits)),
+            ruleset_version=self.ruleset.version,
+        )
 
 
 def check_fail_closed(gate: SafetyGate, text: str) -> SafetyVerdict:
@@ -37,12 +50,4 @@ def check_fail_closed(gate: SafetyGate, text: str) -> SafetyVerdict:
     except Exception:  # fail-closed boundary: a broken detector must never let a turn through
         return SafetyVerdict(
             is_crisis=True, tiers=frozenset({"internal_error"}), pattern_ids=("internal_error",)
-        )
-
-
-def ensure_allowed(gate: SafetyGate, *, dev_mode: bool) -> None:
-    if gate.is_stub and not dev_mode:
-        raise SafetyStubNotAllowed(
-            "The safety layer is a development stub. Set OASIS_DEV_MODE=1 to run it locally; "
-            "it must not be used by anyone until the Phase 2 safety layer is in place."
         )

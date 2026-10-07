@@ -9,6 +9,11 @@
 # before any claim about real-world recall.
 version: "2026.10.0"
 review_status: needs_clinician_review
+# STATUS: CONSUMED on 2026-10-07. Measured recall on first run: 63/71 = 88.7% (reported in
+# docs/reports/phase-02.md). The 8 misses were then used to fix patterns, so recall on
+# this file is no longer an unbiased estimate. A new, externally authored held-out set is
+# required for the next measurement (open item in docs/memory.md).
+status: consumed
 phrases:
   explicit:
     - "honestly I just want to kill myself"

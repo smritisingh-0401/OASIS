@@ -70,6 +70,14 @@ class TurnRecord:
 
 
 @dataclass(frozen=True)
+class ConversationState:
+    """What the planner may read about the conversation (loaded after the safety gate)."""
+
+    history: tuple[TurnRecord, ...] = ()
+    post_crisis: bool = False
+
+
+@dataclass(frozen=True)
 class StageTiming:
     name: str
     duration_ms: float

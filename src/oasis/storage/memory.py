@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import uuid
 
-from oasis.storage.repository import SessionInfo, StorageUnavailable, utc_now
+from oasis.storage.repository import (
+    AUDIT_EVENTS,
+    AuditRecord,
+    SessionInfo,
+    StorageUnavailable,
+    utc_now,
+)
 from oasis.types import Mode, Role, TurnRecord
 
 
@@ -14,6 +20,8 @@ class MemoryRepository:
     def __init__(self) -> None:
         self._sessions: dict[str, str] = {}  # session_hash -> user_id
         self._turns: dict[str, list[TurnRecord]] = {}  # session_hash -> turns
+        self._post_crisis: set[str] = set()  # session hashes
+        self._audit: dict[str, list[AuditRecord]] = {}  # user_id -> records
 
     async def create_user_session(self, session_hash: str) -> str:
         user_id = uuid.uuid4().hex
@@ -23,7 +31,7 @@ class MemoryRepository:
 
     async def get_session(self, session_hash: str) -> SessionInfo | None:
         user_id = self._sessions.get(session_hash)
-        return SessionInfo(user_id) if user_id else None
+        return SessionInfo(user_id, session_hash in self._post_crisis) if user_id else None
 
     async def append_turn(
         self,
@@ -47,6 +55,22 @@ class MemoryRepository:
         if self._sessions.get(session_hash) != user_id or limit <= 0:
             return []
         return list(self._turns[session_hash][-limit:])
+
+    async def set_post_crisis(self, user_id: str, session_hash: str, value: bool) -> None:
+        if self._sessions.get(session_hash) != user_id:
+            raise StorageUnavailable("session not found for user")
+        if value:
+            self._post_crisis.add(session_hash)
+        else:
+            self._post_crisis.discard(session_hash)
+
+    async def append_audit(self, user_id: str, event: str, detail_json: str) -> None:
+        if event not in AUDIT_EVENTS or user_id not in self._sessions.values():
+            raise StorageUnavailable("invalid audit entry")
+        self._audit.setdefault(user_id, []).append(AuditRecord(event, detail_json, utc_now()))
+
+    async def list_audit(self, user_id: str) -> list[AuditRecord]:
+        return list(self._audit.get(user_id, []))
 
     async def ping(self) -> bool:
         return True

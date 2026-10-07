@@ -12,12 +12,19 @@ from oasis.core.engine import ChatEngine, InvalidSession
 from oasis.core.templates import TEMPLATES
 from oasis.llm.client import LLMFailure
 from oasis.llm.fake import FakeLLM
-from oasis.safety.gate import StubSafetyGate
+from oasis.safety.gate import RuleBasedSafetyGate
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import StorageBusy, StorageUnavailable
-from oasis.types import ChatMessage, GuardVerdict, Plan, SafetyVerdict, TurnRecord
+from oasis.types import (
+    ChatMessage,
+    ConversationState,
+    GuardVerdict,
+    Plan,
+    SafetyVerdict,
+    TurnRecord,
+)
 
 
 class RecordingGate:
@@ -88,9 +95,12 @@ class BrokenRepo(MemoryRepository):
         return await super().append_turn(*args, **kwargs)
 
 
+GATE = RuleBasedSafetyGate.load()
+
+
 def _engine(settings: Settings, **overrides: Any) -> ChatEngine:
     parts: dict[str, Any] = {
-        "safety": StubSafetyGate(),
+        "safety": GATE,
         "llm": FakeLLM(),
         "repo": MemoryRepository(),
         "settings": settings,
@@ -287,7 +297,7 @@ async def test_guard_retry_skipped_when_budget_is_short(settings: Settings) -> N
 
 @pytest.mark.anyio
 async def test_templated_plan_skips_the_llm(settings: Settings) -> None:
-    def planner(history: Sequence[TurnRecord]) -> Plan:
+    def planner(message: str, state: ConversationState) -> Plan:
         return Plan(mode="assessment", templated=True, template_id="llm_unavailable")
 
     engine = _engine(settings, llm=UntouchableLLM(), planner=planner)
@@ -298,7 +308,7 @@ async def test_templated_plan_skips_the_llm(settings: Settings) -> None:
 
 @pytest.mark.anyio
 async def test_planner_error_falls_back_to_template(settings: Settings) -> None:
-    def planner(history: Sequence[TurnRecord]) -> Plan:
+    def planner(message: str, state: ConversationState) -> Plan:
         raise RuntimeError("planner bug")
 
     engine = _engine(settings, llm=UntouchableLLM(), planner=planner)
@@ -337,3 +347,89 @@ async def test_storage_failure_on_record_still_replies(settings: Settings) -> No
 
 def test_llm_failure_carries_reason() -> None:
     assert LLMFailure("down").reason == "down"
+
+
+# --- post-crisis mode and the crisis audit (rules S2, S10) ---------------------------
+
+
+@pytest.mark.anyio
+async def test_after_a_crisis_the_bot_stays_in_minimal_supportive_mode(settings: Settings) -> None:
+    llm = FakeLLM()
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+
+    crisis = await engine.handle_turn("h", "I want to kill myself")
+    assert crisis.mode == "crisis"
+    later = await engine.handle_turn("h", "ok")
+    assert (later.mode, later.reply) == ("post_crisis", TEMPLATES["post_crisis"])
+    assert llm.calls == 0
+
+
+@pytest.mark.anyio
+async def test_every_post_crisis_message_still_passes_the_safety_gate(settings: Settings) -> None:
+    engine = _engine(settings)
+    await _session(engine)
+    await engine.handle_turn("h", "I want to die")
+    again = await engine.handle_turn("h", "I still want to die")
+    assert again.mode == "crisis"
+
+
+@pytest.mark.anyio
+async def test_user_can_choose_to_continue_after_a_crisis(settings: Settings) -> None:
+    llm = FakeLLM(replies=["I'm glad you're still here. What's on your mind?"])
+    engine = _engine(settings, llm=llm)
+    uid = await _session(engine)
+    crisis = await engine.handle_turn("h", "I want to die")
+    await engine.record_crisis("h", crisis.verdict)
+
+    resumed = await engine.handle_turn("h", "I'd like to keep talking.")
+    assert resumed.mode == "companion"
+    assert llm.calls == 1
+    assert (await engine.repo.get_session("h")).post_crisis is False  # type: ignore[union-attr]
+    normal = await engine.handle_turn("h", "work was hard today")
+    assert normal.mode == "companion"
+    assert uid
+
+
+@pytest.mark.anyio
+async def test_post_crisis_mode_survives_storage_failure(settings: Settings) -> None:
+    repo = BrokenRepo("none")
+    engine = _engine(settings, repo=repo)
+    await _session(engine)
+    await engine.handle_turn("h", "I want to die")
+    repo.fail_on = "load"
+    later = await engine.handle_turn("h", "hello")
+    assert later.mode == "post_crisis"
+
+
+@pytest.mark.anyio
+async def test_record_crisis_writes_audit_flag_and_placeholder_without_text(
+    settings: Settings,
+) -> None:
+    engine = _engine(settings)
+    uid = await _session(engine)
+    crisis = await engine.handle_turn("h", "MARKER-551 I want to kill myself")
+    await engine.record_crisis("h", crisis.verdict)
+
+    session = await engine.repo.get_session("h")
+    assert session is not None
+    assert session.post_crisis is True
+    audits = await engine.repo.list_audit(uid)
+    assert [a.event for a in audits] == ["crisis_handoff"]
+    assert "explicit.kill_self" in audits[0].detail
+    assert "MARKER-551" not in audits[0].detail
+    turns = await engine.repo.recent_turns(uid, "h", limit=10)
+    assert [(t.role, t.content) for t in turns] == [("placeholder", "Crisis support was shown.")]
+
+
+@pytest.mark.anyio
+async def test_record_crisis_swallows_storage_errors(settings: Settings) -> None:
+    engine = _engine(settings, repo=BrokenRepo("load"))
+    verdict = SafetyVerdict(is_crisis=True, tiers=frozenset({"explicit"}))
+    await engine.record_crisis("h", verdict)  # must not raise
+
+
+@pytest.mark.anyio
+async def test_record_crisis_ignores_unknown_sessions(settings: Settings) -> None:
+    engine = _engine(settings)
+    await engine.record_crisis("nobody", SafetyVerdict(is_crisis=True))

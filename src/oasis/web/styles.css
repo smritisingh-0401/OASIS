@@ -115,6 +115,28 @@ body {
 .msg.bot { background: var(--warm); }
 .msg.user { background: var(--surface); margin-left: auto; }
 
+.continue {
+  align-self: flex-start;
+  font: inherit;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  background: transparent;
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.help-card { max-height: 70vh; overflow-y: auto; }
+.help-card details { margin: 4px 0; }
+.help-card details details { margin-left: 12px; }
+.help-card summary { cursor: pointer; }
+.help-card ul { margin: 6px 0 10px; padding-left: 20px; }
+.help-card li { margin: 4px 0; }
+.help-card .hours { color: var(--muted); font-size: 15px; }
+.help-card a { color: var(--accent); }
+.help-fallback { font-weight: 600; }
+
 .status { min-height: 1.6em; color: var(--muted); font-size: 15px; margin: 8px 0; }
 
 .composer { display: flex; gap: 8px; padding-bottom: 16px; }
