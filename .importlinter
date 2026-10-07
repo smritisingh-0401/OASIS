@@ -1,0 +1,59 @@
+[importlinter]
+root_package = oasis
+include_external_packages = True
+
+[importlinter:contract:safety-isolated]
+name = C1 Safety is isolated (no LLM, storage, API, core, network)
+type = forbidden
+source_modules =
+    oasis.safety
+forbidden_modules =
+    oasis.llm
+    oasis.storage
+    oasis.api
+    oasis.core
+    httpx
+    fastapi
+    uvicorn
+
+[importlinter:contract:decision-plane-pure]
+name = C2 Decision plane is LLM-free and storage-free
+type = forbidden
+source_modules =
+    oasis.core.planner
+forbidden_modules =
+    oasis.llm
+    oasis.storage
+    oasis.api
+
+[importlinter:contract:storage-leaf]
+name = C4 Storage is a leaf
+type = forbidden
+source_modules =
+    oasis.storage
+forbidden_modules =
+    oasis.api
+    oasis.core
+    oasis.llm
+    oasis.safety
+
+[importlinter:contract:llm-leaf]
+name = C5 LLM client is a leaf
+type = forbidden
+source_modules =
+    oasis.llm
+forbidden_modules =
+    oasis.storage
+    oasis.safety
+    oasis.api
+    oasis.core
+
+[importlinter:contract:layers]
+name = C6 Layering
+type = layers
+layers =
+    oasis.api
+    oasis.core
+    oasis.llm | oasis.storage | oasis.safety
+    oasis.settings
+    oasis.types

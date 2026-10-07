@@ -1,0 +1,85 @@
+[project]
+name = "oasis"
+version = "0.1.0"
+description = "Lightweight, explainable, safety-first mental health support chatbot"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "httpx>=0.27",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.100",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+    "import-linter>=2.0",
+    "pre-commit>=3.8",
+    # Cross-platform RSS measurement of llama-server in scripts/model_bakeoff.py.
+    "psutil>=6.0",
+    "types-psutil>=6.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.8,<1"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "ASYNC", "PT", "C4", "RET"]
+
+[tool.ruff.lint.per-file-ignores]
+# assert is the pytest idiom; tests use fixed fake tokens.
+"tests/**" = ["S101", "S105", "S106"]
+"scripts/**" = ["S603", "S607"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_decorators = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+filterwarnings = [
+    "error",
+    # Starlette's TestClient now recommends the separate httpx2 package; the app itself
+    # uses httpx for the llama-server client. Revisit when httpx2 is adopted upstream.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
+
+[tool.coverage.run]
+source = ["oasis"]
+branch = true
+
+[tool.coverage.report]
+# Overall threshold; per-package thresholds (safety, assessment, router >= 95%)
+# are enforced by scripts/verify.py because coverage.py has no per-package option.
+fail_under = 85
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.$",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
