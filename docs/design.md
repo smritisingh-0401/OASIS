@@ -15,49 +15,64 @@ All numeric weights, thresholds, window sizes and cooldowns below are **engineer
 Frozen dataclasses (or frozen Pydantic models at the API boundary). No user text appears in any type that reaches the trace or logs.
 
 ```python
-Mode = Literal["crisis", "post_crisis", "assessment", "psychoed",
-               "companion", "cbt", "dbt", "mindfulness", "grounding"]
+Mode = Literal[
+    "crisis",
+    "post_crisis",
+    "assessment",
+    "psychoed",
+    "companion",
+    "cbt",
+    "dbt",
+    "mindfulness",
+    "grounding",
+]
+
 
 @dataclass(frozen=True)
 class SafetyVerdict:
     is_crisis: bool
-    tiers: frozenset[str]          # {"explicit", "passive", "plan_method", "burden", "internal_error", "item9"}
-    pattern_ids: tuple[str, ...]   # e.g. ("explicit.007",)
+    tiers: frozenset[
+        str
+    ]  # {"explicit", "passive", "plan_method", "burden", "internal_error", "item9"}
+    pattern_ids: tuple[str, ...]  # e.g. ("explicit.007",)
     ruleset_version: str
 
+
 @dataclass(frozen=True)
-class Signals:                     # all floats in [0, 1] unless stated
-    valence: float                 # [-1, 1], VADER compound baseline
+class Signals:  # all floats in [0, 1] unless stated
+    valence: float  # [-1, 1], VADER compound baseline
     emotions: Mapping[str, float]  # sadness, anxiety, anger, shame, loneliness
     dysregulation: float
     distortion: float
     distortion_types: frozenset[str]
     overwhelm: float
     acute_overwhelm: bool
-    wants_to_talk: float           # "I just want to talk / vent"
+    wants_to_talk: float  # "I just want to talk / vent"
     psychoed_cue: float
-    screening_cues: Mapping[str, float]   # per PHQ/GAD domain
+    screening_cues: Mapping[str, float]  # per PHQ/GAD domain
     explicit_screen_request: bool
-    continue_request: bool         # used only in post-crisis mode
+    continue_request: bool  # used only in post-crisis mode
     behaviour: BehaviourFeatures
-    degraded: frozenset[str]       # detectors that failed this turn
+    degraded: frozenset[str]  # detectors that failed this turn
+
 
 @dataclass(frozen=True)
 class Plan:
     mode: Mode
-    templated: bool                # True → no LLM
+    templated: bool  # True → no LLM
     template_id: str | None
     technique_id: str | None
     snippet_id: str | None
     assessment_step: AssessmentStep | None
-    constraints: tuple[str, ...]   # e.g. ("one_question", "no_advice", "socratic")
+    constraints: tuple[str, ...]  # e.g. ("one_question", "no_advice", "socratic")
     style: StyleProfile
     reason_codes: tuple[str, ...]  # e.g. ("router.margin_met", "hysteresis.3_of_3")
 
+
 @dataclass(frozen=True)
-class TurnTrace:                   # never contains text
+class TurnTrace:  # never contains text
     turn_id: str
-    stages: tuple[StageTiming, ...]   # name, start_ms, duration_ms, outcome
+    stages: tuple[StageTiming, ...]  # name, start_ms, duration_ms, outcome
     safety: SafetyVerdict
     plan_mode: Mode
     llm_attempts: int
@@ -507,10 +522,14 @@ class Repository(Protocol):
     async def create_user(self) -> str: ...
     async def create_session(self, user_id: str, session_id_hash: str) -> None: ...
     async def append_turn(self, user_id: str, turn: TurnRecord) -> None: ...
-    async def recent_turns(self, user_id: str, session_id_hash: str, limit: int) -> list[TurnRecord]: ...
+    async def recent_turns(
+        self, user_id: str, session_id_hash: str, limit: int
+    ) -> list[TurnRecord]: ...
     async def load_state(self, user_id: str, session_id_hash: str) -> ConversationState: ...
     async def save_explanation(self, user_id: str, e: ExplanationRecord) -> None: ...
-    async def get_explanation(self, user_id: str, explanation_id: str) -> ExplanationRecord | None: ...
+    async def get_explanation(
+        self, user_id: str, explanation_id: str
+    ) -> ExplanationRecord | None: ...
     async def export_user(self, user_id: str) -> UserExport: ...
     async def delete_user(self, user_id: str) -> None: ...
 ```

@@ -19,16 +19,37 @@ A review of 97 studies (16,620 participants) on mental health chatbots identifie
 - **Private** — local-only, pseudonymous, ephemeral mode, export and delete.
 - **Free to run** — quantised open model on a CPU laptop; no paid API.
 
-## Quick start
+## Quick start (development)
 
-_To be written in Phase 1 and verified on a fresh machine in Phase 14._
+> Development only. The safety layer is a stub until Phase 2, and the app refuses to start without `OASIS_DEV_MODE=1`.
+
+Requires [uv](https://docs.astral.sh/uv/). uv installs Python 3.12 itself.
+
+```bash
+uv sync
+cp .env.example .env
+uv run uvicorn oasis.api.app:create_app --factory --host 127.0.0.1 --port 8000
+```
+
+Open http://127.0.0.1:8000. With `OASIS_LLM_BACKEND=fake` (the `.env.example` default), replies come from a deterministic stand-in model.
+
+Run every check (lint, types, import rules, security scan, dependency audit, tests with coverage):
+
+```bash
+uv run python scripts/verify.py
+```
+
+**Real model (optional):** start a pinned llama.cpp `llama-server` with `--jinja`, set `OASIS_LLM_BACKEND=llama_server`, then run `uv run python scripts/model_smoke_test.py`. Compare candidate models with `scripts/model_bakeoff.py`.
+
+A fresh-machine install guide is verified in Phase 14.
 
 ## Project status
 
 | Phase | Status |
 |---|---|
-| Step A — project documents | In review |
-| 1–14 | Not started |
+| Step A — project documents | Approved |
+| 1 — Core chat loop | In review |
+| 2–14 | Not started |
 
 See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 

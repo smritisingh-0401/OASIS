@@ -10,15 +10,16 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 1 — core chat loop** (starting) |
-| Done | Step A approved 2026-10-07: PRD, architecture, rules, phases, design, memory, clinical review, README, `.gitignore`, diagram PNGs |
-| In progress | Phase 1 on branch `phase-01-core-chat-loop` |
-| Next | Phase 1 review |
-| Blocked on | Python 3.12 and `uv` on the development machine |
+| Current phase | **Phase 1 — core chat loop** (complete, awaiting review) |
+| Done | Step A (approved 2026-10-07). Phase 1 on branch `phase-01-core-chat-loop`: tooling, engine, LLM clients, storage, API, UI, scripts; `scripts/verify.py` all green; report in `docs/reports/phase-01.md` |
+| In progress | Review of Phase 1 by Smriti |
+| Next | Merge Phase 1 to `main` after approval → Phase 2 (safety layer) on `phase-02-safety-layer` |
+| Blocked on | Phase 1 approval |
 
 ### Environment notes (development machine, 2026-10-07)
-- Windows 11; Python **3.11.9** installed — Python **3.12** required (CD1), install before Phase 1.
-- `uv` not installed — install before Phase 1.
+- Windows 11. Python 3.12.15 managed by uv (system Python 3.11.9 is not used); uv 0.12.23 installed with `python -m pip install --user uv` and invoked as `python -m uv`.
+- No `make` on Windows: `uv run python scripts/verify.py` is the verify command; the Makefile is a thin wrapper for CI/Linux/macOS.
+- Local dev server: copy `.env.example` to `.env`, then `uv run uvicorn oasis.api.app:create_app --factory`.
 - Git identity: the global config (`smritisingh-0401`) is used, as approved 2026-10-07.
 - Assistant config files are excluded through `.git/info/exclude` (local, uncommitted).
 
@@ -55,6 +56,14 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-07 | Shared types in top-level `oasis.types` | Lets `oasis.safety` stay isolated from `oasis.core` | Types inside `oasis.core` |
 | 2026-10-07 | Crisis resources cover India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia; country chosen by the user (optional), never inferred | Target user regions; consistent with no-nationality inference | Single configured region; locale/IP inference |
 | 2026-10-07 | Assistant config files excluded via `.git/info/exclude` instead of `.gitignore` | Keeps them out of git without naming them in the repository | Listing them in `.gitignore` |
+| 2026-10-07 | Phase 1: turn recording lives in `ChatEngine` (no separate `core/recorder.py`) | One call site; a separate module would be a one-function wrapper | Separate recorder module |
+| 2026-10-07 | Phase 1: fallback templates are Python constants until the Phase 2 content loader | Avoids adding YAML loading before it has a second user | YAML now |
+| 2026-10-07 | Phase 1: storage backend chosen by settings; `POST /session` has no body; per-session ephemeral mode deferred to Phase 10 | Ephemeral end-to-end is Phase 10 scope | Per-session ephemeral now |
+| 2026-10-07 | Phase 1: `/history` supports `limit` only; `before` pagination deferred | No caller needs it yet | Implement now |
+| 2026-10-07 | Help card uses a native `<details>` element | Opens with no JavaScript and no server (S12, F2) | JS dialog |
+| 2026-10-07 | Pytest ignores Starlette's "use httpx2" TestClient deprecation (message-specific filter; all other warnings stay errors) | Avoids adopting a new package only for tests | Add httpx2 |
+| 2026-10-07 | pip-audit runs on `uv export` output with hashes and `--disable-pip` | Audits exactly the lockfile; uv venvs have no pip | Auditing the live environment |
+| 2026-10-07 | Dev dependency `psutil` (+ `types-psutil`) | Cross-platform RSS measurement in the model bake-off | Manual Task Manager readings |
 | 2026-10-07 | Git: commits authored as Smriti; no assistant attribution anywhere; assistant config files git-ignored; Conventional Commits; one branch per phase | Authorship and repository hygiene | — |
 
 ---
@@ -76,6 +85,8 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Item | Status |
 |---|---|
 | Real-model speed (first-token time, tokens/sec, RAM) | Not verified here — `scripts/model_bakeoff.py` to be run on the reference laptop |
+| Real-model reply + thinking disabled | Not verified here — `scripts/model_smoke_test.py` |
+| llama.cpp build pin | Pending the first bake-off run (record `llama-server --version`) |
 | Real-model tone (companion, guard, bias quality) | Not verified here |
 | Qwen3.5 thinking-disable mechanism and sampling settings | To be re-verified against the current model card in Phase 1 |
 | Model licences (Qwen3.5, Gemma 4, Phi-4-mini) | To be re-verified in Phase 1 |
@@ -88,7 +99,13 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 ## Measured results
 
-_None yet._
+| Date | Phase | Measure | Result |
+|---|---|---|---|
+| 2026-10-07 | 1 | Tests | 121 passed, 0 skipped |
+| 2026-10-07 | 1 | Coverage | 98.73% overall; `oasis.safety` 100% |
+| 2026-10-07 | 1 | Mutation spot-check | 5/5 deliberate faults caught |
+| 2026-10-07 | 1 | SQLite turn-pair write (dev machine) | p50 0.55 ms, p95 0.94 ms, p99 1.80 ms |
+| 2026-10-07 | 1 | SQLite last-6-turns read (dev machine) | p50 0.22 ms, p95 0.40 ms, p99 0.50 ms |
 
 ---
 
