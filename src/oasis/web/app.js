@@ -13,6 +13,7 @@ const sendButton = document.getElementById("send");
 const status = document.getElementById("status");
 const help = document.getElementById("help");
 const continueButton = document.getElementById("continue");
+const card = document.getElementById("card");
 const CONTINUE_TEXT = "I'd like to keep talking.";
 
 // After a crisis reply, open the help card and move focus to it so crisis lines are one
@@ -72,6 +73,7 @@ function addMessage(role, text, note) {
 
 function setBusy(busy) {
   sendButton.disabled = busy;
+  for (const button of card.querySelectorAll("button")) button.disabled = busy;
   messages.setAttribute("aria-busy", busy ? "true" : "false");
 }
 
@@ -94,7 +96,71 @@ async function loadHistory() {
   }
 }
 
-async function sendText(text) {
+function button(label, onClick, className) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.textContent = label;
+  if (className) b.className = className;
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function line(tag, text, className) {
+  const el = document.createElement(tag);
+  el.textContent = text;
+  if (className) el.className = className;
+  return el;
+}
+
+// Each button sends its label as the message (kept in history, still safety-checked)
+// and a structured action; answers are never parsed from free text (design §4.2).
+function act(label, action) {
+  return () => sendText(label, action);
+}
+
+function renderCard(step) {
+  card.replaceChildren();
+  card.hidden = !step || step.step === "result";
+  if (card.hidden) {
+    // The pressed button is gone; keep keyboard users in the conversation.
+    if (!help.contains(document.activeElement)) input.focus();
+    return;
+  }
+  const options = document.createElement("div");
+  options.className = "card-options";
+  const controls = document.createElement("div");
+  controls.className = "card-controls";
+  const stop = button("Stop", act("Stop", { type: "assessment_abort" }), "link");
+
+  if (step.step === "offer") {
+    card.append(line("p", step.name, "card-title"));
+    options.append(
+      button("Yes, let's start", act("Yes, let's start", { type: "assessment_consent", accept: true })),
+      button("Not now", act("Not now", { type: "assessment_consent", accept: false })),
+    );
+    card.append(options);
+  } else if (step.step === "paused") {
+    card.append(line("p", step.name + " is paused.", "card-title"));
+    options.append(button("Resume", act("Resume", { type: "assessment_resume" })));
+    controls.append(stop);
+    card.append(options, controls);
+  } else {
+    const title = step.step === "item"
+      ? step.name + " · Question " + step.item + " of " + step.item_count
+      : step.name + " · Last question";
+    card.append(line("p", title, "card-title"));
+    if (step.stem) card.append(line("p", step.stem, "card-stem"));
+    step.options.forEach((label, value) => {
+      const answer = { type: "assessment_answer", value, instrument: step.instrument, item: step.item };
+      options.append(button(label, act(label, answer)));
+    });
+    controls.append(button("Pause", act("Pause", { type: "assessment_pause" }), "link"), stop);
+    card.append(options, controls);
+  }
+  card.querySelector("button").focus();
+}
+
+async function sendText(text, action) {
   const pending = addMessage("user", text);
   setBusy(true);
   status.textContent = "OASIS is thinking…";
@@ -103,13 +169,14 @@ async function sendText(text) {
   }, SLOW_NOTICE_MS);
 
   try {
-    const resp = await send(text);
+    const resp = await send(text, action);
     if (!resp.ok) throw new Error("status " + resp.status);
     const body = await resp.json();
     // A crisis turn is never stored by design, so the not-saved note would only alarm.
     const note = body.persisted || body.mode === "crisis" ? "" : "This message may not have been saved.";
     addMessage("assistant", body.reply, note);
     status.textContent = "";
+    renderCard(body.assessment);
     if (body.mode === "crisis" || body.mode === "post_crisis") {
       showCrisisSupport();
     } else {
@@ -128,8 +195,12 @@ async function sendText(text) {
   }
 }
 
-async function send(text) {
-  const payload = JSON.stringify({ message: text, client_ts: new Date().toISOString() });
+async function send(text, action) {
+  const payload = JSON.stringify({
+    message: text,
+    client_ts: new Date().toISOString(),
+    action: action || null,
+  });
   const request = () =>
     api("/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
   let resp = await request();
