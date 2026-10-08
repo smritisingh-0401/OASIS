@@ -99,8 +99,11 @@ def test_decline_is_stored_with_reason_and_starts_a_cooldown() -> None:
     reason = json.loads(plan.assessment.offer_reason)
     assert reason["reason"] == "explicit_request"
     assert reason["declined_by"] == "button"
-    again = plan_turn("can I take a depression test?", _state(plan.assessment))
-    assert again.card is None  # declined within 24 h
+    unprompted = plan_turn("I've been feeling hopeless for weeks", _state(plan.assessment))
+    assert unprompted.card is None  # no new offer within 24 h
+    asked = plan_turn("can I take a depression test?", _state(plan.assessment))
+    assert asked.card is not None  # but the user can always ask
+    assert asked.card.step == "offer"
 
 
 def test_ignoring_an_offer_counts_as_not_now() -> None:

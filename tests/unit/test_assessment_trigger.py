@@ -71,7 +71,7 @@ def test_explicit_request_offers_immediately(text: str, inst: str) -> None:
     assert json.loads(offer.reason)["reason"] == "explicit_request"
 
 
-# --- guards: each one blocks even an explicit request ----------------------------------
+# --- guards: all but the decline cooldown also block an explicit request ---------------
 
 REQUEST = "can I take a depression test?"
 
@@ -83,11 +83,19 @@ def test_open_assessment_blocks_a_new_offer(status: str) -> None:
     )
 
 
-def test_recent_decline_blocks_for_24_hours() -> None:
+def test_recent_decline_blocks_unprompted_offers_for_24_hours() -> None:
     declined = _record("PHQ9", "declined", datetime.timedelta(hours=23))
-    assert decide((), REQUEST, (declined,), NOW) is None
+    assert decide(_history(*LOW_MOOD[:-1]), LOW_MOOD[-1], (declined,), NOW) is None
     older = _record("PHQ9", "declined", datetime.timedelta(hours=25))
-    assert decide((), REQUEST, (older,), NOW) is not None
+    assert decide(_history(*LOW_MOOD[:-1]), LOW_MOOD[-1], (older,), NOW) is not None
+
+
+def test_explicit_request_overrides_a_recent_decline() -> None:
+    # The cooldown stops OASIS from asking again; it never refuses a user who asks (CR-10).
+    declined = _record("PHQ9", "declined", datetime.timedelta(minutes=5))
+    offer = decide((), REQUEST, (declined,), NOW)
+    assert offer is not None
+    assert json.loads(offer.reason)["reason"] == "explicit_request"
 
 
 def test_completed_instrument_is_not_repeated_within_14_days() -> None:
