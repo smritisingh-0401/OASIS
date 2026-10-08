@@ -294,7 +294,7 @@ async def test_guard_retry_skipped_when_budget_is_short(settings: Settings) -> N
 
 @pytest.mark.anyio
 async def test_templated_plan_skips_the_llm(settings: Settings) -> None:
-    def planner(message: str, state: ConversationState) -> Plan:
+    def planner(message: str, state: ConversationState, action: object = None) -> Plan:
         return Plan(mode="assessment", templated=True, template_id="llm_unavailable")
 
     engine = _engine(settings, llm=UntouchableLLM(), planner=planner)
@@ -305,7 +305,7 @@ async def test_templated_plan_skips_the_llm(settings: Settings) -> None:
 
 @pytest.mark.anyio
 async def test_planner_error_falls_back_to_template(settings: Settings) -> None:
-    def planner(message: str, state: ConversationState) -> Plan:
+    def planner(message: str, state: ConversationState, action: object = None) -> Plan:
         raise RuntimeError("planner bug")
 
     engine = _engine(settings, llm=UntouchableLLM(), planner=planner)

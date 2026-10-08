@@ -288,8 +288,8 @@ def test_full_phq9_over_http(settings: Settings) -> None:
             body = _act(c, token, "Several days", {"type": "assessment_answer", "value": value,
                                                    "instrument": "PHQ9", "item": item})  # fmt: skip
         assert body["assessment"]["step"] == "functional"
-        result = _act(c, token, "Somewhat difficult", {"type": "assessment_answer", "value": 1,
-                                                       "instrument": "PHQ9", "item": None})  # fmt: skip
+        functional = {"type": "assessment_answer", "value": 1, "instrument": "PHQ9", "item": None}
+        result = _act(c, token, "Somewhat difficult", functional)
         turns = c.get("/history", headers={HEADER: token}).json()["turns"]
     card = result["assessment"]
     assert (card["step"], card["total"], card["band"]) == ("result", 5, "mild")

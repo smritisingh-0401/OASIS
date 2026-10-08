@@ -21,6 +21,7 @@ name = C2 Decision plane is LLM-free and storage-free
 type = forbidden
 source_modules =
     oasis.core.planner
+    oasis.assessment
 forbidden_modules =
     oasis.llm
     oasis.storage
@@ -54,6 +55,7 @@ type = layers
 layers =
     oasis.api
     oasis.core
+    oasis.assessment
     oasis.llm | oasis.storage | oasis.safety
     oasis.settings
     oasis.types

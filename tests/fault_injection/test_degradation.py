@@ -101,7 +101,12 @@ def test_item9_answer_hands_off_even_when_storage_is_down(settings: Settings) ->
             json={
                 "message": "Nearly every day",
                 "client_ts": "2026-10-07T10:00:00Z",
-                "action": {"type": "assessment_answer", "value": 3, "instrument": "PHQ9", "item": 9},
+                "action": {
+                    "type": "assessment_answer",
+                    "value": 3,
+                    "instrument": "PHQ9",
+                    "item": 9,
+                },
             },
             headers={HEADER: "unknown-session"},
         )
@@ -117,7 +122,12 @@ def test_assessment_action_with_storage_down_gets_a_fixed_reply(settings: Settin
             json={
                 "message": "Several days",
                 "client_ts": "2026-10-07T10:00:00Z",
-                "action": {"type": "assessment_answer", "value": 1, "instrument": "PHQ9", "item": 2},
+                "action": {
+                    "type": "assessment_answer",
+                    "value": 1,
+                    "instrument": "PHQ9",
+                    "item": 2,
+                },
             },
             headers={HEADER: "unknown-session"},
         )

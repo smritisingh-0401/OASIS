@@ -21,6 +21,12 @@ TEMPLATES: dict[str, str] = {
         'find them under "Need help now?". Whenever you feel ready to keep talking, just '
         'say so or press "Continue talking".'
     ),
+    # An assessment step could not be saved, or a card button arrived with no open
+    # questionnaire (CR-18).
+    "assessment_unavailable": (
+        "I can't keep track of the questionnaire right now, so let's leave it for the moment. "
+        "We can keep talking, and you can try it again later."
+    ),
     "guard_fallback": (
         "That sounds really hard to sit with. If a close friend told you they felt this way "
         "about themselves, what would you want them to know?"

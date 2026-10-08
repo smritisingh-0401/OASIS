@@ -15,6 +15,7 @@ from starlette.exceptions import HTTPException
 from oasis.api.middleware import error_response, security_middleware
 from oasis.api.pages import render_index
 from oasis.api.routes import ApiError, build_router
+from oasis.assessment.instruments import load_all as load_assessment_content
 from oasis.core.engine import ChatEngine
 from oasis.llm.client import BoundedLLM, LLMClient
 from oasis.llm.fake import FakeLLM
@@ -64,6 +65,7 @@ def create_app(
     # Safety content is loaded and validated before anything else; invalid patterns or
     # resources stop the app here (rules S5).
     safety = safety or RuleBasedSafetyGate(load_ruleset())
+    load_assessment_content()
     index_html = render_index(
         (WEB_DIR / "index.html").read_text(encoding="utf-8"),
         crisis_resources or load_resources(),
