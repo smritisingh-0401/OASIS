@@ -130,3 +130,16 @@ def test_evaluation_counts_early_and_wrong_instrument_offers() -> None:
         "FP (too early)",
         "TP (other instrument)",
     ]
+
+
+def test_symptoms_described_about_someone_else_do_not_count() -> None:
+    about_friend = [
+        "my friend has been feeling really down for weeks",
+        "she has lost interest in everything",
+        "she can barely sleep and is exhausted all day",
+        "she feels hopeless about everything",
+        "he has no energy and has stopped eating",
+    ]
+    assert decide(_history(*about_friend[:-1]), about_friend[-1], (), NOW) is None
+    # The same symptoms in the first person do lead to an offer.
+    assert decide(_history(*LOW_MOOD[:-1]), LOW_MOOD[-1], (), NOW) is not None

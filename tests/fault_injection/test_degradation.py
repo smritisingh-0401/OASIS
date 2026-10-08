@@ -94,7 +94,8 @@ def test_crisis_handoff_survives_dead_storage_and_dead_llm(settings: Settings, t
     assert resp.json()["reply"] == HANDOFF_REPLY
 
 
-def test_item9_answer_hands_off_even_when_storage_is_down(settings: Settings) -> None:
+@pytest.mark.parametrize("value", [1, 2, 3])
+def test_item9_answer_hands_off_even_when_storage_is_down(settings: Settings, value: int) -> None:
     with TestClient(create_app(settings, llm=UntouchableLLM(), repo=DeadRepo())) as c:
         resp = c.post(
             "/chat",
@@ -103,7 +104,7 @@ def test_item9_answer_hands_off_even_when_storage_is_down(settings: Settings) ->
                 "client_ts": "2026-10-07T10:00:00Z",
                 "action": {
                     "type": "assessment_answer",
-                    "value": 3,
+                    "value": value,
                     "instrument": "PHQ9",
                     "item": 9,
                 },
