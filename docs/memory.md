@@ -10,11 +10,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 1 — core chat loop** (complete, awaiting review) |
-| Done | Step A (approved 2026-10-07). Phase 1 on branch `phase-01-core-chat-loop`: tooling, engine, LLM clients, storage, API, UI, scripts; `scripts/verify.py` all green; report in `docs/reports/phase-01.md` |
-| In progress | Review of Phase 1 by Smriti |
-| Next | Merge Phase 1 to `main` after approval → Phase 2 (safety layer) on `phase-02-safety-layer` |
-| Blocked on | Phase 1 approval |
+| Current phase | **Phase 2 — safety layer** (complete, awaiting review) |
+| Done | Step A and Phase 1 (approved and merged 2026-10-07). Phase 2 on branch `phase-02-safety-layer`: normaliser, 34 crisis patterns in 5 tiers, idiom allow-list, fail-closed gate, 224-country help card, post-crisis mode, crisis audit; `scripts/verify.py` all green; report in `docs/reports/phase-02.md` |
+| In progress | Review of Phase 2 by Smriti |
+| Next | Merge Phase 2 to `main` after approval → Phase 3 (PHQ-9/GAD-7) on `phase-03-assessment` |
+| Blocked on | Phase 2 approval; browser check of 5 crisis lines (open item 8) |
 
 ### Environment notes (development machine, 2026-10-07)
 - Windows 11. Python 3.12.15 managed by uv (system Python 3.11.9 is not used); uv 0.12.23 installed with `python -m pip install --user uv` and invoked as `python -m uv`.
@@ -54,7 +54,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-07 | Session ID is a 256-bit bearer token in `X-OASIS-Session`, stored hashed; single uvicorn worker | Never in URLs; ephemeral store and SQLite writer need one process | Cookies; multi-worker |
 | 2026-10-07 | Assessment answers and consents are structured actions on `POST /chat` | Every turn passes the same engine and safety ordering | Separate assessment endpoint |
 | 2026-10-07 | Shared types in top-level `oasis.types` | Lets `oasis.safety` stay isolated from `oasis.core` | Types inside `oasis.core` |
-| 2026-10-07 | Crisis resources extended to two tiers: Tier 1 (verified crisis line + emergency number) for 64 countries across all inhabited regions; Tier 2 (emergency number only) for every other country | World coverage while keeping the set of crisis lines that must be re-verified manageable; v1 is English-only, so English-speaking countries were prioritised | Full entries for every country; Asia-only list |
+| 2026-10-07 | Crisis resources extended to two tiers: Tier 1 (verified crisis line + emergency number) targeted at 64 countries across all inhabited regions (built as 40; see 2026-10-08); Tier 2 (emergency number only) for every other country | World coverage while keeping the set of crisis lines that must be re-verified manageable; v1 is English-only, so English-speaking countries were prioritised | Full entries for every country; Asia-only list |
 | 2026-10-07 | (superseded) Crisis resources cover India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia; country chosen by the user (optional), never inferred | Target user regions; consistent with no-nationality inference | Single configured region; locale/IP inference |
 | 2026-10-07 | Assistant config files excluded via `.git/info/exclude` instead of `.gitignore` | Keeps them out of git without naming them in the repository | Listing them in `.gitignore` |
 | 2026-10-07 | Phase 1: turn recording lives in `ChatEngine` (no separate `core/recorder.py`) | One call site; a separate module would be a one-function wrapper | Separate recorder module |
@@ -65,12 +65,26 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-07 | Pytest ignores Starlette's "use httpx2" TestClient deprecation (message-specific filter; all other warnings stay errors) | Avoids adopting a new package only for tests | Add httpx2 |
 | 2026-10-07 | pip-audit runs on `uv export` output with hashes and `--disable-pip` | Audits exactly the lockfile; uv venvs have no pip | Auditing the live environment |
 | 2026-10-07 | Dev dependency `psutil` (+ `types-psutil`) | Cross-platform RSS measurement in the model bake-off | Manual Task Manager readings |
+| 2026-10-08 | Normalisation produces up to 4 variants (base, leetspeak, unspaced, both); patterns are made tolerant of repeated letters by a load-time rewrite | Catches obfuscation without hand-writing letter repeats in every pattern | One normalised string; hand-written `ki{1,2}ll` patterns |
+| 2026-10-08 | New `self_harm` tier: non-suicidal self-injury gets the full handoff | Self-injury disclosures need the same human support signposting (CR-01, to confirm) | Treat as non-crisis |
+| 2026-10-08 | Allow-list suppresses a hit only when the idiom span covers the hit span | "dying to see it, I want to kill myself" must still trigger | Message-level suppression |
+| 2026-10-08 | Invalid safety content stops the app at startup (validation plus example self-check) | Bad content fails at boot, never at turn time | Skip bad patterns with a warning |
+| 2026-10-08 | Help card rendered on the server into `index.html` as nested `<details>`; no JavaScript or fetch | Works with the backend down after page load (S12, F2) | JSON endpoint plus client rendering |
+| 2026-10-08 | Crisis resources: Tier 1 needs a line verified on the service's own or a government site; Tier 2 uses UK FCDO travel advice emergency numbers | One consistent, citable standard; no unverified numbers | Aggregator sites; unverified lists |
+| 2026-10-08 | Sites that blocked the fetcher were not bypassed (no user-agent spoofing or disabled certificate checks); those countries are Tier 2 until checked in a browser | Verification must be honest | Bypassing blocks |
+| 2026-10-08 | Crisis audit, post-crisis flag and history placeholder written by a background task after the response | Storage can never delay or block the handoff (S2) | Writing before responding |
+| 2026-10-08 | Post-crisis state: in-memory set plus persisted flag; cleared only by an explicit continue phrase or the "Continue talking" button | Holds when storage is down; never inferred | Time-based expiry |
+| 2026-10-08 | Templates stay Python constants (CR-18) | The Phase 2 content files are safety data with their own loaders; templates have no second user yet | YAML template loader now |
+| 2026-10-08 | No classifier hook in the gate until a classifier exists (S7 still applies to any future one) | No speculative interface | Pluggable classifier parameter |
 | 2026-10-07 | Git: commits authored as Smriti; no assistant attribution anywhere; assistant config files git-ignored; Conventional Commits; one branch per phase | Authorship and repository hygiene | — |
 
 ---
 
 ## Open items / questions for Smriti
 
+8. **Browser check of crisis lines** that could not be fetched here, to promote them to Tier 1: Philippines NCMH 1553, Chile *4141, Colombia 192 option 4, Pakistan Umang, and Sweden's Mind line hours.
+9. **Confirm the `self_harm` tier** (CR-01).
+10. **A fresh external held-out phrase set**: the Phase 2 held-out set was used for tuning and is now consumed.
 2. **Python 3.12 and uv** need installing on the development machine.
 3. **Repository licence** (e.g. MIT, Apache-2.0).
 4. **Clinician reviewer** for `clinical_review.md`.
@@ -91,8 +105,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Qwen3.5 thinking-disable mechanism and sampling settings | To be re-verified against the current model card in Phase 1 |
 | Model licences (Qwen3.5, Gemma 4, Phi-4-mini) | To be re-verified in Phase 1 |
 | PHQ-9 / GAD-7 item wording | To be verified against the published source in Phase 3 |
-| Crisis resource numbers | To be verified in Phase 2 |
-| Post-crisis flag after an app restart with storage down | Falls back to normal mode (documented, clinician review) |
+| Crisis resource numbers | Verified 2026-10-08 against official sources (Tier 1) and FCDO (Tier 2); re-verify before any participant use |
+| Post-crisis flag after an app restart with storage down | Falls back to normal mode (documented, CR-05) |
+| Gate latency on dense 2 000-character input | 10–35 ms on battery, over the 10 ms target; realistic messages p99 0.55 ms; combined pre-filter is the upgrade path |
+| Crisis detection recall on unseen phrasing | 88.7% on the held-out set before tuning; needs a fresh external set |
 | English-only; no fine-tuning; WEIRD-data caveat | By design for v1 |
 
 ---
@@ -106,6 +122,12 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-07 | 1 | Mutation spot-check | 5/5 deliberate faults caught |
 | 2026-10-07 | 1 | SQLite turn-pair write (dev machine) | p50 0.55 ms, p95 0.94 ms, p99 1.80 ms |
 | 2026-10-07 | 1 | SQLite last-6-turns read (dev machine) | p50 0.22 ms, p95 0.40 ms, p99 0.50 ms |
+| 2026-10-07 | 2 | Held-out crisis recall (before tuning) | 63/71 = 88.7% |
+| 2026-10-08 | 2 | Tests | 481 passed, 0 skipped |
+| 2026-10-08 | 2 | Benign false positives | everyday 0/50; idioms 0/30; third-party mentions 4/5 (by design) |
+| 2026-10-08 | 2 | Gate latency (battery) | realistic p99 0.55 ms; 2 000-char stress inputs 10–35 ms |
+| 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
+| 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |
 
 ---
 

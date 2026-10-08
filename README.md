@@ -21,7 +21,7 @@ A review of 97 studies (16,620 participants) on mental health chatbots identifie
 
 ## Quick start (development)
 
-> Development only. The safety layer is a stub until Phase 2, and the app refuses to start without `OASIS_DEV_MODE=1`.
+> Development only. The safety layer (Phase 2) awaits clinician review, and privacy controls arrive in Phase 10. Use test messages only.
 
 Requires [uv](https://docs.astral.sh/uv/). uv installs Python 3.12 itself.
 
@@ -48,8 +48,9 @@ A fresh-machine install guide is verified in Phase 14.
 | Phase | Status |
 |---|---|
 | Step A — project documents | Approved |
-| 1 — Core chat loop | In review |
-| 2–14 | Not started |
+| 1 — Core chat loop | Approved |
+| 2 — Safety layer | In review |
+| 3–14 | Not started |
 
 See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 
