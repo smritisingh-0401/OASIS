@@ -13,14 +13,22 @@ from oasis.assessment.trigger import decide, evaluate
 from oasis.types import AssessmentRecord, TurnRecord
 
 NOW = datetime.datetime(2026, 10, 8, 12, 0, tzinfo=datetime.UTC)
-LABELLED = Path(__file__).resolve().parents[1] / "data" / "assessment" / "labelled_conversations.yaml"
+LABELLED = (
+    Path(__file__).resolve().parents[1] / "data" / "assessment" / "labelled_conversations.yaml"
+)
 
+# With W = 6 and k = 3 (design §3.2) the earliest possible offer is the fifth turn.
 LOW_MOOD = [
     "I've been feeling really down for weeks",
     "nothing feels enjoyable anymore",
     "I can barely sleep and I'm exhausted all day",
     "I feel hopeless about everything",
+    "I've lost interest in seeing anyone",
 ]
+
+
+def test_sustained_readiness_needs_k_turns_above_threshold() -> None:
+    assert decide(_history(*LOW_MOOD[:3]), LOW_MOOD[3], (), NOW) is None
 
 
 def _history(*messages: str) -> tuple[TurnRecord, ...]:
@@ -70,7 +78,9 @@ REQUEST = "can I take a depression test?"
 
 @pytest.mark.parametrize("status", ["offered", "in_progress", "paused"])
 def test_open_assessment_blocks_a_new_offer(status: str) -> None:
-    assert decide((), REQUEST, (_record("GAD7", status, datetime.timedelta(minutes=5)),), NOW) is None
+    assert (
+        decide((), REQUEST, (_record("GAD7", status, datetime.timedelta(minutes=5)),), NOW) is None
+    )
 
 
 def test_recent_decline_blocks_for_24_hours() -> None:
@@ -101,3 +111,22 @@ def test_labelled_conversations_meet_the_reported_floor() -> None:
     result = evaluate(doc["conversations"])
     assert result["precision"] >= 0.8, result
     assert result["recall"] >= 0.8, result
+
+
+def test_sustained_offer_respects_the_14_day_repeat_rule() -> None:
+    done = _record("PHQ9", "scored", datetime.timedelta(days=3))
+    assert decide(_history(*LOW_MOOD[:-1]), LOW_MOOD[-1], (done,), NOW) is None
+
+
+def test_evaluation_counts_early_and_wrong_instrument_offers() -> None:
+    convs = [
+        {"id": "early", "should_offer": True, "earliest": 3, "instrument": "PHQ9",
+         "turns": ["can I take a depression test?"]},
+        {"id": "other", "should_offer": True, "earliest": 0, "instrument": "GAD7",
+         "turns": ["can I take a depression test?"]},
+    ]  # fmt: skip
+    result = evaluate(convs)
+    assert [c["outcome"] for c in result["conversations"]] == [
+        "FP (too early)",
+        "TP (other instrument)",
+    ]

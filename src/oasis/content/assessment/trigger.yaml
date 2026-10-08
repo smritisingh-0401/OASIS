@@ -1,0 +1,89 @@
+# Screening-offer trigger (design §3). Clinician review pending: CR-09 (lexicon, weights,
+# window, threshold, consecutive-turn rule) and CR-10 (cooldowns).
+# Patterns match the normalised text (lower case, apostrophes removed, single spaces) and
+# do not count in messages about someone else (a third-person subject and no first person).
+version: "2026.10.0"
+review_status: needs_clinician_review
+window: 6               # W: user turns in the readiness window, linear decay
+threshold: 0.45         # theta_offer
+consecutive: 3          # k: turns in a row at or above the threshold
+decline_cooldown_hours: 24
+repeat_after_days: 14
+paused_expiry_hours: 24
+max_evidence: 1.0       # cap on one turn's evidence
+# Weights were raised from 0.5 to 0.7 (duration and uncontrolled worry 0.3 to 0.4) after the
+# first measurement on the labelled conversations; see docs/reports/phase-03.md.
+domains:
+  # PHQ-9 items 1-8 (item 9 is handled by the safety layer)
+  anhedonia:
+    instrument: PHQ9
+    weight: 0.7
+    pattern: '\b(?:lost (?:all )?interest|losing interest|(?:no|little) (?:interest|pleasure|motivation)|(?:dont|do not|cant|cannot|not) enjoy|enjoy anything|nothing (?:really )?(?:feels good|feels enjoyable|is fun|matters|seems to matter)|cant be bothered)'
+  low_mood:
+    instrument: PHQ9
+    weight: 0.7
+    pattern: '\b(?:depressed|hopeless|empty|numb|miserable|(?:feel\w*|been|so|really|very|im) (?:really |so |very |kind of )?(?:down|low|sad))\b'
+  sleep:
+    instrument: PHQ9
+    weight: 0.7
+    pattern: '\b(?:cant sleep|cannot sleep|trouble (?:sleeping|falling asleep)|barely sleep|wake up at \d|insomnia|stay asleep|sleep (?:all day|\d+ hours|too much))'
+  fatigue:
+    instrument: PHQ9
+    weight: 0.7
+    pattern: '\b(?:tired all the time|exhausted|exhausting|drained|(?:no|little|low|the) energy|(?:cant|barely) get out of bed|fatigue)'
+  appetite:
+    instrument: PHQ9
+    weight: 0.7
+    pattern: '\b(?:no appetite|lost my appetite|not eating|(?:dont|not) (?:really )?feel hungry|overeating|eating too much)'
+  worthlessness:
+    instrument: PHQ9
+    weight: 0.7
+    pattern: '\b(?:failure|worthless|useless|hate myself|feel bad about myself|letting \w+ (?:\w+ )?down|let \w+ (?:\w+ )?down)'
+  concentration:
+    instrument: PHQ9
+    weight: 0.7
+    pattern: '\b(?:cant (?:focus|concentrate)|trouble (?:focusing|concentrating)|cant think straight|stare at)'
+  psychomotor:
+    instrument: PHQ9
+    weight: 0.7
+    pattern: '\b(?:slow|slowed down|moving slowly)\b'
+  # GAD-7 items 1-7
+  nervous:
+    instrument: GAD7
+    weight: 0.7
+    pattern: '\b(?:anxious|anxiety|nervous|on edge|tense|panic\w*|jumpy)\b'
+  worry:
+    instrument: GAD7
+    weight: 0.7
+    pattern: '\b(?:worr(?:y|ies|ied|ying)|mind (?:just )?races|racing thoughts|overthink\w*)\b'
+  uncontrolled_worry:
+    instrument: GAD7
+    weight: 0.4
+    pattern: '\b(?:cant (?:control|stop) (?:it|the|my|worrying)|cant switch (?:it )?off|worry about everything)'
+  trouble_relaxing:
+    instrument: GAD7
+    weight: 0.7
+    pattern: '\b(?:cant relax|trouble relaxing|cant unwind|never relax)'
+  restless:
+    instrument: GAD7
+    weight: 0.7
+    pattern: '\b(?:restless|cant sit still|fidget\w*)'
+  irritable:
+    instrument: GAD7
+    weight: 0.7
+    pattern: '\b(?:irritable|snapping at|easily annoyed|short tempered)'
+  dread:
+    instrument: GAD7
+    weight: 0.7
+    pattern: '\b(?:something (?:awful|terrible|bad) (?:is going to|will|might|could) happen|sense of dread|dread)'
+  # Persistence: raises evidence but does not choose the instrument.
+  duration:
+    instrument: null
+    weight: 0.4
+    pattern: '\b(?:for (?:a few |several |many |about a |a couple of |the past |the last )?(?:weeks|months|a month|ages|a while)|every (?:single )?day|most days|all the time|constantly|lately|since the|(?:been|its been) (?:going on|like this))'
+# Explicit requests offer at once (still subject to the guards).
+# Naming an instrument is not a request ("I read about the PHQ-9"); asking to take one is.
+explicit_request: '\b(?:(?:take|do|try|fill (?:in|out)|answer|start|complete)\b[^.?!]{0,20}\b(?:phq ?-?9|gad ?-?7)|(?:depression|anxiety|mental health|mood) (?:test|screen\w*|questionnaire|quiz|assessment|check)|(?:test|screen|check|questionnaire|quiz|assessment) (?:for|of|on|about) (?:my )?(?:depression|anxiety|mood))'
+anxiety_request: '\b(?:gad ?-?7|anxiety|anxious|worry)'
+first_person: '\b(?:i|im|ive|id|me|myself)\b'
+third_person: '\b(?:he|she|they|hes|shes|theyre|him|her|them|his|my (?:friend|partner|mum|mom|dad|mother|father|brother|sister|son|daughter|wife|husband|boyfriend|girlfriend|colleague|coworker|flatmate|roommate))\b'
