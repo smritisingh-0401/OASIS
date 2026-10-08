@@ -70,7 +70,19 @@ async def test_schema_constraints_are_enforced(tmp_path: Path) -> None:
         "INSERT INTO turns VALUES ('t2','u','h','one','user','x',NULL,'x',NULL)",
         # foreign key: unknown user
         "INSERT INTO turns VALUES ('t3','ghost','h',1,'user','x',NULL,'x',NULL)",
+        # assessment answers are 0-3 at the database level, not only in code
+        "INSERT INTO assessment_answers VALUES ('a','u',1,4,'x')",
+        "INSERT INTO assessment_answers VALUES ('a','u',10,1,'x')",
+        # a scored assessment must carry its total and band; GAD-7 totals stop at 21
+        "INSERT INTO assessments (assessment_id, user_id, instrument, status, offer_reason,"
+        " created_at) VALUES ('b','u','PHQ9','scored','{}','x')",
+        "INSERT INTO assessments (assessment_id, user_id, instrument, status, offer_reason,"
+        " total, band, created_at) VALUES ('c','u','GAD7','scored','{}',22,'severe','x')",
     ]
+    conn.execute(
+        "INSERT INTO assessments (assessment_id, user_id, instrument, status, offer_reason,"
+        " created_at) VALUES ('a','u','PHQ9','in_progress','{}','x')"
+    )
     for sql in bad_rows:
         with pytest.raises(sqlite3.IntegrityError):
             conn.execute(sql)

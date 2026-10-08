@@ -259,3 +259,82 @@ def test_crisis_writes_audit_and_holds_post_crisis_mode(settings: Settings) -> N
     assert detail["source"] == "text"
     assert detail["pattern_ids"] == ["explicit.kill_self"]
     assert CRISIS not in audit.detail
+
+
+# --- assessment through HTTP (design §4, §12) -------------------------------------------
+
+
+def _act(client: TestClient, token: str, label: str, action: dict[str, Any]) -> Any:
+    body = {"message": label, "client_ts": TS, "action": action}
+    resp = client.post("/chat", json=body, headers={HEADER: token})
+    assert resp.status_code == 200, resp.text
+    return resp.json()
+
+
+def _start_phq9(client: TestClient, token: str) -> None:
+    offer = _chat(client, token, "can I take a depression test?").json()
+    assert offer["mode"] == "assessment"
+    assert offer["assessment"]["step"] == "offer"
+    first = _act(client, token, "Yes", {"type": "assessment_consent", "accept": True})
+    assert (first["assessment"]["step"], first["assessment"]["item"]) == ("item", 1)
+
+
+def test_full_phq9_over_http(settings: Settings) -> None:
+    repo = MemoryRepository()
+    with TestClient(create_app(settings, repo=repo)) as c:
+        token = _session(c)
+        _start_phq9(c, token)
+        for item, value in enumerate([1, 1, 1, 1, 1, 0, 0, 0, 0], start=1):
+            body = _act(c, token, "Several days", {"type": "assessment_answer", "value": value,
+                                                   "instrument": "PHQ9", "item": item})  # fmt: skip
+        assert body["assessment"]["step"] == "functional"
+        result = _act(c, token, "Somewhat difficult", {"type": "assessment_answer", "value": 1,
+                                                       "instrument": "PHQ9", "item": None})  # fmt: skip
+        turns = c.get("/history", headers={HEADER: token}).json()["turns"]
+    card = result["assessment"]
+    assert (card["step"], card["total"], card["band"]) == ("result", 5, "mild")
+    assert "not a diagnosis" in result["reply"]
+    assert result["templated"] is True
+    [rec] = next(iter(repo._assessments.values()))
+    assert (rec.status, rec.total, rec.functional) == ("scored", 5, 1)
+    assert any(t["content"] == "Somewhat difficult" for t in turns)
+
+
+def test_item9_over_http_hands_off_and_audits_the_source(settings: Settings) -> None:
+    repo = MemoryRepository()
+    with TestClient(create_app(settings, repo=repo)) as c:
+        token = _session(c)
+        _start_phq9(c, token)
+        for item in range(1, 9):
+            _act(c, token, "Not at all", {"type": "assessment_answer", "value": 0,
+                                          "instrument": "PHQ9", "item": item})  # fmt: skip
+        crisis = _act(c, token, "Several days", {"type": "assessment_answer", "value": 1,
+                                                 "instrument": "PHQ9", "item": 9})  # fmt: skip
+        held = _chat(c, token, "ok").json()
+    assert crisis["mode"] == "crisis"
+    assert crisis["reply"] == HANDOFF_REPLY
+    assert crisis["assessment"] is None
+    assert held["mode"] == "post_crisis"
+    user_id = next(iter(repo._sessions.values()))
+    [audit] = repo._audit[user_id]
+    assert json.loads(audit.detail)["source"] == "item9"
+    [rec] = repo._assessments[user_id]
+    assert (rec.status, rec.total) == ("escalated", None)
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        {"type": "assessment_answer", "value": 4, "instrument": "PHQ9", "item": 1},
+        {"type": "assessment_answer", "value": 1, "instrument": "PHQ9", "item": 0},
+        {"type": "assessment_answer", "value": 1, "instrument": "BDI", "item": 1},
+        {"type": "assessment_dance"},
+    ],
+)
+def test_invalid_actions_get_typed_422(client: TestClient, action: dict[str, Any]) -> None:
+    token = _session(client)
+    resp = client.post(
+        "/chat", json={"message": "x", "client_ts": TS, "action": action}, headers={HEADER: token}
+    )
+    assert resp.status_code == 422
+    assert resp.json()["error"]["code"] == "invalid_turn"

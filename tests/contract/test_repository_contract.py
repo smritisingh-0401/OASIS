@@ -6,6 +6,7 @@ A new backend is added to BACKENDS and must pass unchanged.
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Callable
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ import pytest
 from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import Repository, StorageError
 from oasis.storage.sqlite import SQLiteRepository
+from oasis.types import AssessmentRecord
 
 BACKENDS: dict[str, Callable[[Path], Repository]] = {
     "memory": lambda tmp: MemoryRepository(),
@@ -144,3 +146,64 @@ async def test_unknown_audit_event_is_rejected(repo: Repository) -> None:
     uid = await repo.create_user_session("h")
     with pytest.raises(StorageError):
         await repo.append_audit(uid, "made_up_event", "{}")
+
+
+def _assessment(aid: str = "a1", **changes: object) -> AssessmentRecord:
+    rec = AssessmentRecord(aid, "PHQ9", "in_progress", '{"reason": "explicit_request"}', "2026-10-08T12:00:00.000Z")
+    return replace(rec, **changes)  # type: ignore[arg-type]
+
+
+@pytest.mark.anyio
+async def test_assessment_round_trip_and_update(repo: Repository) -> None:
+    uid = await repo.create_user_session("h")
+    await repo.save_assessment(uid, _assessment(answers=(1, 2)))
+    assert await repo.list_assessments(uid) == [_assessment(answers=(1, 2))]
+    done = _assessment(answers=(1, 2, 0, 0, 0, 0, 0, 0, 0), functional=1, status="scored",
+                       total=3, band="minimal", completed_at="2026-10-08T12:05:00.000Z")  # fmt: skip
+    await repo.save_assessment(uid, done)
+    assert await repo.list_assessments(uid) == [done]
+
+
+@pytest.mark.anyio
+async def test_aborting_discards_stored_answers(repo: Repository) -> None:
+    uid = await repo.create_user_session("h")
+    await repo.save_assessment(uid, _assessment(answers=(3, 3, 3)))
+    await repo.save_assessment(uid, _assessment(status="aborted", answers=()))
+    [rec] = await repo.list_assessments(uid)
+    assert (rec.status, rec.answers) == ("aborted", ())
+
+
+@pytest.mark.anyio
+async def test_assessments_are_scoped_to_the_user(repo: Repository) -> None:
+    alice = await repo.create_user_session("ha")
+    bob = await repo.create_user_session("hb")
+    await repo.save_assessment(alice, _assessment())
+    assert await repo.list_assessments(bob) == []
+    with pytest.raises(StorageError):
+        await repo.save_assessment(bob, _assessment(status="aborted"))
+    assert [r.status for r in await repo.list_assessments(alice)] == ["in_progress"]
+
+
+@pytest.mark.anyio
+async def test_assessments_come_back_oldest_first(repo: Repository) -> None:
+    uid = await repo.create_user_session("h")
+    await repo.save_assessment(uid, _assessment("b", created_at="2026-10-08T13:00:00.000Z"))
+    await repo.save_assessment(uid, _assessment("a", created_at="2026-10-08T12:00:00.000Z"))
+    assert [r.assessment_id for r in await repo.list_assessments(uid)] == ["a", "b"]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"answers": (1, 4)},
+        {"answers": (0,) * 10},
+        {"status": "scored", "total": None, "band": None},
+        {"instrument": "GAD7", "status": "scored", "total": 22, "band": "severe"},
+    ],
+)
+async def test_invalid_assessments_are_rejected(repo: Repository, bad: dict[str, object]) -> None:
+    uid = await repo.create_user_session("h")
+    with pytest.raises((StorageError, ValueError)):
+        await repo.save_assessment(uid, _assessment(**bad))
+    assert await repo.list_assessments(uid) == []
