@@ -16,7 +16,7 @@ Reviewer: _not yet assigned (open item O3)._
 | CR-07 | PHQ-9 item-9 handling (any answer ≥ 1 → crisis protocol; questionnaire marked escalated and never scored) | `assessment/flow.py`, `core/engine.py` | 3 | pending | Checked before storage so a database failure cannot block it |
 | CR-08 | Plain-language score explanations, the "see a professional" threshold (10, the published threshold for further evaluation), the offer and step wording | `content/assessment/result_text.yaml` | 3 | pending | |
 | CR-09 | Screening trigger: domain lexicons, weights (raised from 0.5 to 0.7 after the first measurement), window, threshold, consecutive-turn rule, third-person exclusion | `content/assessment/trigger.yaml` | 3 | pending | Precision/recall reported in `docs/reports/phase-03.md` |
-| CR-10 | Assessment cooldowns (14-day re-administration, 24-hour decline cooldown that also blocks explicit requests, 24-hour paused expiry, typing after an offer counts as "not now") | `content/assessment/trigger.yaml`, `assessment/flow.py` | 3 | pending | |
+| CR-10 | Assessment cooldowns (14-day re-administration, 24-hour decline cooldown for unprompted offers only (an explicit request overrides it), 24-hour paused expiry, typing after an offer counts as "not now") | `content/assessment/trigger.yaml`, `assessment/flow.py` | 3 | pending | |
 | CR-11 | Router weights, margin, hysteresis N, acute-overwhelm threshold | `content/router/weights.yaml` | 4 | pending | |
 | CR-12 | Technique scripts (v1: low-risk skills only — no cold exposure, breath-holding or intense exercise) | `content/techniques/*.yaml` | 4 | pending | |
 | CR-13 | Psychoeducation text | `content/psychoed/items.yaml` | 5 | pending | Each item has source and reading level |

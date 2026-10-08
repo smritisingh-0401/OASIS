@@ -3,7 +3,8 @@
 Per user turn, evidence e = min(cap, sum of weights of the symptom domains it mentions).
 Readiness R is the linearly decayed mean of e over the last W user turns. An offer is made
 on an explicit request, or when R stays at or above the threshold for k turns in a row,
-and only if every guard passes. The stored reason is a code plus the numbers behind it.
+and only if every guard passes; a recent decline blocks only offers the user did not ask
+for. The stored reason is a code plus the numbers behind it.
 """
 
 from __future__ import annotations
@@ -100,7 +101,9 @@ def decide(
     now: datetime.datetime,
 ) -> Offer | None:
     cfg = config()
-    if any(t.role == "placeholder" for t in history) or _blocked(records, now, cfg):
+    if any(t.role == "placeholder" for t in history) or any(
+        r.status in ACTIVE_STATUSES for r in records
+    ):
         return None
 
     norm = base_form(message)
@@ -109,6 +112,10 @@ def decide(
         if _recently_completed(records, inst, now, cfg):
             return None
         return Offer(inst, json.dumps({"reason": "explicit_request"}))
+
+    # The decline cooldown stops OASIS asking again; it never refuses a user who asks.
+    if any(r.status == "declined" and now - _when(r) < cfg.decline_cooldown for r in records):
+        return None
 
     messages = [t.content for t in history if t.role == "user"] + [message]
     per_turn = [cues(m, cfg) for m in messages]
@@ -137,17 +144,6 @@ def _instrument(window: Iterable[list[Domain]]) -> InstrumentId:
             if d.instrument:
                 totals[d.instrument] += d.weight
     return "GAD7" if totals["GAD7"] > totals["PHQ9"] else "PHQ9"  # tie -> PHQ-9
-
-
-def _blocked(
-    records: Sequence[AssessmentRecord], now: datetime.datetime, cfg: TriggerConfig
-) -> bool:
-    for r in records:
-        if r.status in ACTIVE_STATUSES:
-            return True
-        if r.status == "declined" and now - _when(r) < cfg.decline_cooldown:
-            return True
-    return False
 
 
 def _recently_completed(

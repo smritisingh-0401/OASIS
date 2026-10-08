@@ -81,6 +81,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-08 | PHQ-9 item 9 is checked on the action before storage | A database failure must never block the crisis handoff | Checking only after loading the questionnaire |
 | 2026-10-08 | Trigger weights raised 0.5 → 0.7 after the first measurement; threshold kept at the design's 0.45; messages about someone else excluded | Recall 0.31 → 0.93 with no false positives on the labelled set | Lowering the threshold; first-person-only rule (missed elided subjects) |
 | 2026-10-08 | Typing while an offer is open counts as "not now"; typing mid-questionnaire pauses it | Consent must be explicit; the user is never trapped in a questionnaire | Keeping the offer open |
+| 2026-10-08 | An explicit request overrides the 24-hour decline cooldown (Smriti) | The cooldown exists to stop OASIS asking again, not to refuse a user who changes their mind | Cooldown blocks explicit requests too (design as first written) |
 | 2026-10-08 | Paused questionnaires expire 24 h after they started and their answers are discarded | No separate pause timestamp needed; data minimisation | Storing a pause time |
 | 2026-10-07 | Git: commits authored as Smriti; no assistant attribution anywhere; assistant config files git-ignored; Conventional Commits; one branch per phase | Authorship and repository hygiene | — |
 
@@ -91,8 +92,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 8. **Browser check of crisis lines** that could not be fetched here, to promote them to Tier 1: Philippines NCMH 1553, Chile *4141, Colombia 192 option 4, Pakistan Umang, and Sweden's Mind line hours.
 9. **Confirm the `self_harm` tier** (CR-01).
 10. **A fresh external held-out phrase set**: the Phase 2 held-out set was used for tuning and is now consumed.
-11. **Decline cooldown vs explicit request** (CR-10): a decline currently blocks even an explicit request for 24 hours, as the design says. Should an explicit request override it?
-12. **Push `main`**: Phases 2 and 3 are merged locally only.
+11. **Push `main`**: Phases 2 and 3 are merged locally only.
 2. **Python 3.12 and uv** need installing on the development machine.
 3. **Repository licence** (e.g. MIT, Apache-2.0).
 4. **Clinician reviewer** for `clinical_review.md`.
@@ -135,7 +135,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-08 | 2 | Tests | 481 passed, 0 skipped |
 | 2026-10-08 | 2 | Benign false positives | everyday 0/50; idioms 0/30; third-party mentions 4/5 (by design) |
 | 2026-10-08 | 2 | Gate latency (battery) | realistic p99 0.55 ms; 2 000-char stress inputs 10–35 ms |
-| 2026-10-08 | 3 | Tests | 591 passed, 0 skipped |
+| 2026-10-08 | 3 | Tests | 592 passed, 0 skipped |
 | 2026-10-08 | 3 | Coverage | 97.5% overall; `oasis.assessment` 99.0%; `oasis.safety` 97.1% |
 | 2026-10-08 | 3 | Trigger (24 labelled conversations) | before tuning P 0.80 / R 0.31; after P 1.00 / R 0.93, mean latency 0.85 turns |
 | 2026-10-08 | 3 | Mutation spot-check | 13/13 caught after two new tests (11/13 before) |

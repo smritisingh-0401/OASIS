@@ -189,7 +189,7 @@ The stored offer reason is a reason code plus the numeric score, e.g. `{"reason"
 - The valence term `w_v · max(0, −valence_t)` waits for the Phase 4 signals object (no valence detector yet), so it contributes 0.
 - A message counts only if it is not about someone else: one with a third-person subject ("my friend", "she") and no first-person word contributes nothing.
 - Naming an instrument is not a request ("I read about the PHQ-9"); an explicit request needs a verb such as take, do or try, or a phrase such as "depression test".
-- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, the same instrument completed in the last 14 days, or a crisis placeholder among the loaded turns. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. Guards apply to explicit requests too.
+- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, the same instrument completed in the last 14 days, or a crisis placeholder among the loaded turns. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. All guards apply to explicit requests except the decline cooldown: it stops OASIS from asking again, but a user who asks is never refused (decided 2026-10-08).
 - Readiness uses the design formula with the full-window denominator, so the earliest sustained offer is the fifth symptomatic turn (W = 6, k = 3, θ = 0.45). The engine loads up to 20 turns for the trigger.
 
 ### 3.3 Evaluation

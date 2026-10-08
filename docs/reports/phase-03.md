@@ -22,7 +22,7 @@ Key mechanisms:
 - **Answers are buttons, never free text.** Each button sends its label as the message (so history reads naturally and the safety gate still sees text) plus a structured action naming the instrument and item. A click for any item other than the current one changes nothing, which makes double clicks and stale cards harmless.
 - **Item 9 before storage (rules S11).** The engine checks the action for PHQ-9 item 9 with a value of 1 or more before any storage call, so the handoff works with the database down. The questionnaire is then marked `escalated` (never scored or shown) and the audit entry records `source: "item9"`, both after the response.
 - **Consent first.** Nothing starts without "Yes, let's start". Typing while an offer is open counts as "not now"; typing mid-questionnaire pauses it and the message is answered normally. Pause, Resume and Stop are always on the card; Stop discards the answers.
-- **Offer trigger.** Per-turn evidence is the capped sum of the weights of the symptom domains a message mentions (one domain per PHQ-9 item 1-8 and GAD-7 item 1-7, plus duration). Readiness is the decayed mean over six user turns; an offer needs three turns in a row at or above 0.45, or an explicit request. Messages about someone else do not count. Guards: an open assessment, a decline within 24 hours, the same instrument completed within 14 days, or a crisis earlier in the loaded conversation. The stored reason is a code plus the numbers (for example `{"reason": "sustained_readiness", "R": 0.62, "turns": 3, "top_domains": ["worry", "nervous", "trouble_relaxing"]}`), never message text.
+- **Offer trigger.** Per-turn evidence is the capped sum of the weights of the symptom domains a message mentions (one domain per PHQ-9 item 1-8 and GAD-7 item 1-7, plus duration). Readiness is the decayed mean over six user turns; an offer needs three turns in a row at or above 0.45, or an explicit request. Messages about someone else do not count. Guards: an open assessment, a decline within 24 hours (unprompted offers only — an explicit request overrides it), the same instrument completed within 14 days, or a crisis earlier in the loaded conversation. The stored reason is a code plus the numbers (for example `{"reason": "sustained_readiness", "R": 0.62, "turns": 3, "top_domains": ["worry", "nervous", "trouble_relaxing"]}`), never message text.
 
 ## 2. Evaluation method
 
@@ -36,7 +36,7 @@ Key mechanisms:
 | Check | Result |
 |---|---|
 | `scripts/verify.py` | All 8 steps pass |
-| Tests | 591 passed, 0 skipped |
+| Tests | 592 passed, 0 skipped |
 | Coverage | 97.5% overall; `oasis.assessment` 99.0%, `oasis.safety` 97.1% (target ≥ 95%) |
 | Trigger, before tuning | Precision 0.80, recall 0.31 (4 of 13 conversations found at the time; the one false positive was "I read about the PHQ-9" counted as a request) |
 | Trigger, after tuning | Precision 1.00, recall 0.93 (13 of 14), mean offer latency 0.85 turns after the earliest appropriate turn; 0 of 10 false offers |
@@ -51,7 +51,6 @@ Key mechanisms:
 
 - **Trigger quality on real conversations is unmeasured.** 24 synthetic conversations, used for tuning; a fresh labelled set is needed. The valence term waits for the Phase 4 signals object.
 - **Earliest sustained offer is the fifth symptomatic turn** under the design's window and threshold; shorter conversations rely on an explicit request.
-- **Decline cooldown also blocks explicit requests** for 24 hours, as the design states. Whether a user who changes their mind should be able to ask again sooner is a question for CR-10.
 - **Paused expiry is measured from the start** of the questionnaire, not from the pause.
 - **The card is not restored after a page reload;** typing pauses the questionnaire and the paused card appears on that turn.
 - **English only.** Translations of both instruments exist on phqscreeners.com but are not used.

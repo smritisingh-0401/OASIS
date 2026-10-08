@@ -7,7 +7,7 @@ review_status: needs_clinician_review
 window: 6               # W: user turns in the readiness window, linear decay
 threshold: 0.45         # theta_offer
 consecutive: 3          # k: turns in a row at or above the threshold
-decline_cooldown_hours: 24
+decline_cooldown_hours: 24   # blocks unprompted offers only; the user can always ask
 repeat_after_days: 14
 paused_expiry_hours: 24
 max_evidence: 1.0       # cap on one turn's evidence
