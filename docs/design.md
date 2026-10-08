@@ -85,69 +85,76 @@ class TurnTrace:  # never contains text
 
 ## 2. Safety layer
 
-### 2.1 Normaliser
-Applied in this order; each step is a pure function with golden tests.
+Implemented in Phase 2 (`src/oasis/safety/`). Pure Python, stdlib plus PyYAML; no LLM, network or database imports (rules S8, enforced by import-linter and an AST test).
 
-1. **Unicode:** `unicodedata.normalize("NFKC", text)`; map common confusables (Cyrillic/Greek look-alikes) to ASCII via a small table; strip zero-width characters (`U+200B..U+200D`, `U+2060`, `U+FEFF`).
+### 2.1 Normaliser (`safety/normalize.py`)
+
+`base_form(text)` applies, in order:
+
+1. **Unicode:** `unicodedata.normalize("NFKC", text)` (folds full-width and compatibility forms), then strip invisible characters (`U+200B..U+200D`, `U+2060`, `U+FEFF`, soft hyphen, `U+180E`).
 2. **Case:** `str.casefold()`.
-3. **Leetspeak:** map `0→o, 1→i, 3→e, 4→a, 5→s, 7→t, @→a, $→s` — only inside tokens that contain at least one letter (so "I have 3 kids" is unchanged).
-4. **Spacing / punctuation tricks:** collapse runs of single characters separated by spaces, dots, dashes or underscores (`k i l l`, `k.i.l.l`, `k-i-l-l` → `kill`) when the run is ≥ 3 characters.
-5. **Stretched letters:** reduce any run of ≥ 3 identical letters to 2 (`kiiiill` → `kiill`). Patterns are written so that both single- and double-letter forms match (e.g. `ki{1,2}ll`), which avoids corrupting legitimate double letters.
-6. **Whitespace:** collapse to single spaces; replace curly quotes/apostrophes with ASCII; keep apostrophes so "can't" stays one token, and also produce an apostrophe-free variant (`cant`) for matching.
+3. **Confusables:** a small table maps Cyrillic and Greek look-alike letters to Latin.
+4. **Apostrophes:** every apostrophe form (straight, curly, reversed, modifier letter, grave, acute, prime) is removed, so "can't" and "cant" are the same token. Patterns are written without apostrophes.
+5. **Stretched letters:** runs of 3 or more identical letters are reduced to 2 (`kiiiill` → `kiill`).
+6. **Whitespace:** collapsed to single spaces.
 
-Output: `NormalisedText(primary: str, variants: tuple[str, ...])`. Matching runs over every variant.
+`normalise(text)` returns the distinct variants that are matched: the base form; a **leetspeak** decoding (`0→o, 1→i, 3→e, 4→a, 5→s, 7→t, @→a, $→s, !→i`, only inside tokens that already contain a letter, so "3 kids" is unchanged); an **unspaced** form (runs of 3 or more single letters separated by one space, dot, dash, underscore or star are joined: `k i l l`, `k.i.l.l` → `kill`); and leetspeak plus unspaced. Ordinary text yields one variant, so the extra cost is only paid on unusual input.
 
-### 2.2 Pattern files (`content/safety/patterns.yaml`)
+**Tolerant patterns.** Instead of hand-writing `ki{1,2}ll`, every pattern is rewritten once at load by `tolerant()`: each literal letter `c` becomes `c+` and an optional letter `c?` becomes `c*`, so `kill` matches `kil`, `kill` and `kiill`. Letters with any other explicit quantifier, escapes and character classes are copied unchanged.
+
+### 2.2 Pattern files (`content/safety/patterns.yaml`, `allowlist.yaml`)
 
 ```yaml
 version: "2026.10.0"
 review_status: needs_clinician_review
-tiers:
-  explicit:      # stated intent to die / kill oneself
-    - id: explicit.001
-      pattern: '\b(kill|end)\s+(my\s*self|me)\b'
-      examples: ["i want to kill myself"]
-      source: "team-authored; clinician review pending"
-  passive:       # wish to be dead, not wake up
-  plan_method:   # references to means, timing, preparation
-  burden:        # "everyone would be better off without me"
+patterns:
+  - id: explicit.kill_self
+    tier: explicit
+    pattern: '\b(?:kill|end) (?:my ?self|me)\b'
+    examples: ["i want to kill myself"]
 ```
 
-- Patterns are Python `re` regexes compiled once with `re.IGNORECASE`, anchored by word boundaries, and linted at load (compile, no catastrophic backtracking constructs such as nested quantifiers — checked by a simple static rule and a timing test).
-- Every pattern lists at least one `examples` entry, and a test asserts each example matches.
+- **Tiers:** `explicit` (stated intent), `passive` (wish to be dead), `plan_method` (means, timing, preparation; ID prefix `plan.`), `burden` ("better off without me") and `self_harm` (non-suicidal self-injury: "I cut myself", "I want to hurt myself"; added in Phase 2, CR-01). A self-harm disclosure gets the same handoff as the other tiers.
+- Patterns are written against the normalised text (lower case, no apostrophes, single spaces).
+- **Load-time validation** (`safety/rules.py`) raises `SafetyConfigError`, and the app refuses to start, on: invalid YAML, a missing version, an unknown tier, an ID without its tier prefix, a duplicate ID, a pattern with no example, a pattern that does not compile, named groups or inline flags, or an unbounded nested quantifier (backtracking risk).
+- **Startup self-check:** every example must trigger its own rule through the full matcher; every allow-list `positive_example` must match a suppressed rule without the allow-list and be suppressed with it; every `negative_example` must still trigger.
 
-### 2.3 Matcher
+### 2.3 Matcher (`safety/gate.py`)
 
 ```text
-function check(text) -> SafetyVerdict:
-    try:
-        variants = normalise(text)
-        hits = []
-        for tier in [explicit, plan_method, passive, burden]:
-            for p in patterns[tier]:
-                if any(p.regex.search(v) for v in variants):
-                    hits.append(p)
-        hits = [h for h in hits if not allowlisted(h, variants)]
-        hits += classifier_alerts(variants)          # add-only; empty in v1
-        return Verdict(is_crisis = len(hits) > 0, ...)
-    except Exception:
-        return Verdict(is_crisis=True, tiers={"internal_error"}, ...)   # fail closed
+RuleSet.hits(text) -> {rule_id: tier}:
+    for variant in normalise(text):
+        idiom_spans = [(entry.suppresses, span) for every allow-list match in variant]
+        for rule in rules:
+            for match in rule.regex.finditer(variant):
+                if no idiom span that may suppress rule.id covers match.span:
+                    record rule.id -> rule.tier; go to next rule
+
+check_fail_closed(gate, text):
+    try: return gate.check(text)                  # is_crisis = any hit
+    except Exception: return Verdict(is_crisis=True, tiers={"internal_error"})
 ```
 
-- **No negation handling.** Text like "not", "never", "wouldn't" is ignored by design.
-- **Allow-list** (`allowlist.yaml`): each entry is a full idiom regex (e.g. `\bkill(ing)? it\b` in a performance sense, `\bdying to (see|know|try)\b`) **plus** the pattern IDs it may suppress. An allow-list entry only removes a hit if the idiom span *covers* the hit span, so "I'm dying to see it end, I want to kill myself" still triggers on the second clause. Each entry has a positive and a negative test.
-- **Complexity:** O(patterns × variants × length); with ~200 patterns and ≤ 4 variants on ≤ 2 000-character input, well under 10 ms.
+- **No negation handling.** "not", "never", "wouldn't" are ignored by design.
+- **Allow-list:** each entry is an idiom regex plus the rule IDs it may suppress. It only removes a hit when the idiom span covers the hit span, so "I'm dying to see it, I want to kill myself" still triggers on the second clause.
+- **Classifier (rules S7):** none in v1. A future classifier may only add alerts.
+- **Latency:** p99 under 10 ms per message, asserted in `tests/performance/test_gate_latency.py` and reported by `scripts/safety_eval.py`.
 
 ### 2.4 Crisis handoff and post-crisis state
-- Reply = fixed text from `content/safety/handoff.yaml` + resources from `resources.yaml` (each entry: name, number/URL, hours, region, `verified_on`, `source_url`). A compiled-in constant copy is used if the file is unreadable.
-- **Regions (decided 2026-10-07, extended same day):** **Tier 1** (verified crisis line + emergency number), 64 countries — South Asia: India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Maldives, Afghanistan; East Asia: China, Hong Kong, Taiwan, Japan, South Korea, Mongolia; Southeast Asia: Myanmar, Thailand, Vietnam, Cambodia, Laos, Malaysia, Singapore, Indonesia, Philippines, Brunei, Timor-Leste; Central Asia & Russia: Russia, Kazakhstan, Uzbekistan; Middle East & North Africa: UAE, Saudi Arabia, Qatar, Turkey, Israel, Egypt, Jordan, Iran, Morocco; Europe: United Kingdom, Ireland, Germany, France, Spain, Italy, Netherlands, Poland, Sweden, Ukraine; North America: United States, Canada, Mexico; Latin America: Brazil, Argentina, Colombia, Chile, Peru; Sub-Saharan Africa: South Africa, Nigeria, Kenya, Ghana, Uganda, Ethiopia, Tanzania; Oceania: Australia, New Zealand. **Tier 2**: every other country — emergency number only. Every card ends with "If your country isn't listed, call your local emergency number." `resources.yaml` holds, per country (ISO 3166-1 alpha-2 code), the emergency number and any verified crisis/helpline entries.
-- **Country selection is user-chosen, never inferred** (consistent with the no-nationality-inference rule): an optional country picker in onboarding and settings. The crisis card and the static help card show the chosen country first, with an expandable list of all supported countries; with no choice made, the full list is shown, headed by "If you are in immediate danger, call your local emergency number."
-- Where no crisis line can be verified for a country, only the emergency number is listed and the gap is recorded in `docs/reports/phase-02.md` — no unverified numbers are ever shipped.
-- After a handoff, the session's `post_crisis` flag is set in memory immediately and persisted best-effort.
-- **Post-crisis mode (provisional):** every message still goes through safety first. If clear, the planner emits `Plan(mode="post_crisis", templated=True)`: a short supportive template that restates resources and asks whether the user wants to continue talking. The flag clears only when `continue_request` is detected (explicit phrases such as "I want to keep talking", or the UI's "Continue" button), never by inference.
-- **If storage fails** and the post-crisis flag cannot be read, the in-memory session cache is authoritative; if that too is missing (e.g. app restart), the session behaves as normal (documented limitation; flagged in clinical review).
-- **Audit entry** (saved mode only, written after the reply is built): `{user_id, session_id, created_at, tiers, pattern_ids, ruleset_version, source: "text"|"item9"}`. The message text is **not** stored in the audit log.
-- **Self-harm disclosure policy:** a crisis message is not passed to the turn recorder, so its text is not written to history; history shows a placeholder "Crisis support was shown." This is stated in the first-use disclosure.
+
+- **Reply:** the fixed text `HANDOFF_REPLY` in `safety/handoff.py`, a compiled-in constant so it works even if content files cannot be read. It points the user to the "Need help now?" card, which the UI opens next to the reply.
+- **Help card:** `resources.yaml` is validated at startup (`safety/resources.py`) and rendered into `index.html` on the server (`api/pages.py`) as nested `<details>` elements, region then country. Opening it needs no JavaScript and no network request, so it keeps working if the backend goes down after the page has loaded. Phone numbers are `tel:` links; each crisis line links to its website. All text is HTML-escaped. The card ends with "If your country isn't listed, call your local emergency number."
+- **Coverage:** 224 countries and territories across all inhabited regions.
+  - **Tier 1 (40):** at least one crisis line verified on the service's own site or a government site, plus the emergency number.
+  - **Tier 2 (184):** emergency number(s) from UK FCDO travel advice (gov.uk Content API). 8 entries carry an `emergency_note` instead of a number where FCDO gives none.
+  - Every entry stores its `source` URL and `verified_on` date. No unverified number is shipped. Countries whose official sites could not be fetched for verification are Tier 2, with the reason recorded in `docs/reports/phase-02.md`.
+- **Country selection** is user-driven (open the region, then the country), never inferred. Showing a chosen country first is deferred to the settings work in Phase 10.
+- **Ordering:** a crisis verdict returns the handoff immediately: no storage read, planning, LLM call or guard. The session is added to the engine's in-memory post-crisis set at once.
+- **After the response is sent,** `/chat` runs `ChatEngine.record_crisis` as a background task (saved mode only). It persists the `post_crisis` flag, appends an audit entry and appends a history placeholder. Any storage error is logged by exception type only; it cannot affect the reply.
+- **Audit entry** (`audit_log`, event `crisis_handoff`): `{tiers, pattern_ids, ruleset_version, source: "text"}`. The message text is **not** stored.
+- **History:** the crisis message is never written; a `placeholder` turn reads "Crisis support was shown."
+- **Post-crisis mode (provisional, CR-05):** every message still goes through safety first. If clear, the planner emits `Plan(mode="post_crisis", templated=True, template_id="post_crisis")`: a short supportive template that points to the help card and explains how to continue. The flag clears only on an explicit wish to continue ("I'd like to keep talking", "can we keep talking", "I'm ready to continue talking", or the UI's "Continue talking" button, which sends "I'd like to keep talking."), matched on `base_form()` text.
+- **If storage fails,** the in-memory set is authoritative. If the app restarts while storage is down, the session behaves as normal (documented limitation, CR-05).
 
 ---
 

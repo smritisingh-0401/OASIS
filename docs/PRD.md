@@ -88,7 +88,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 | FR-SAF-8 | Post-crisis (provisional, clinician review): every later message still passes the safety gate first; the bot stays in minimal supportive mode until the user says they want to continue. |
 | FR-SAF-9 | A positive answer (≥ 1) to PHQ-9 item 9 triggers the crisis protocol regardless of the total. |
 | FR-SAF-10 | A static "Need help now?" button on every page shows crisis resources without any backend call. |
-| FR-SAF-11 | Until Phase 2 passes, a startup tripwire refuses to start with the safety stub unless a development flag is set, and the UI shows a development banner. |
+| FR-SAF-11 | Until Phase 2 passes, a startup tripwire refuses to start with the safety stub unless a development flag is set, and the UI shows a development banner. (Retired in Phase 2 with the stub.) |
 
 ### 5.2 Symptom screening — PHQ-9 / GAD-7 (FR-ASM)
 | ID | Requirement |
@@ -235,7 +235,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 | # | Item | Owner | Needed by |
 |---|---|---|---|
 | O1 | Open-source licence choice for the repository | Smriti | Before first public push |
-| O2 | Crisis resource list — two tiers decided 2026-10-07 (64 Tier 1 countries; emergency number for all others; originally India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia); numbers verified against official sources at build time | Build | Phase 2 |
+| O2 | Crisis resource list — two tiers decided 2026-10-07; built in Phase 2 as 40 Tier 1 countries with a verified crisis line and 184 Tier 2 countries and territories with the emergency number (target was 64 Tier 1; the rest could not be verified on an official site); originally India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia); numbers verified against official sources at build time | Build | Phase 2 |
 | O3 | Qualified clinician reviewer for [clinical_review.md](clinical_review.md) | Smriti | Before any real use |
 | O4 | Institutional ethics approval for any human-participant testing | Smriti | Before usability testing with participants |
 | O5 | Optional PostgreSQL adapter | Smriti decides | Phase 14, only if requested |
