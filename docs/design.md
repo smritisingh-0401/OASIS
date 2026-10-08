@@ -184,6 +184,14 @@ Offer the instrument whose domains contributed more (PHQ-9 vs GAD-7; tie → PHQ
 
 The stored offer reason is a reason code plus the numeric score, e.g. `{"reason": "sustained_readiness", "R": 0.52, "turns": 3, "top_domains": ["anhedonia","sleep"]}`.
 
+### 3.2a As built (Phase 3)
+- Lexicon, weights and parameters live in `content/assessment/trigger.yaml` (CR-09, CR-10). Each PHQ-9 item 1-8 and GAD-7 item 1-7 has a domain pattern (weight 0.7; uncontrolled worry 0.4); a `duration` domain (weight 0.4) raises evidence without choosing the instrument. Per-turn evidence is capped at 1. PHQ-9 item 9 has no trigger domain: the safety layer handles it.
+- The valence term `w_v · max(0, −valence_t)` waits for the Phase 4 signals object (no valence detector yet), so it contributes 0.
+- A message counts only if it is not about someone else: one with a third-person subject ("my friend", "she") and no first-person word contributes nothing.
+- Naming an instrument is not a request ("I read about the PHQ-9"); an explicit request needs a verb such as take, do or try, or a phrase such as "depression test".
+- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, the same instrument completed in the last 14 days, or a crisis placeholder among the loaded turns. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. Guards apply to explicit requests too.
+- Readiness uses the design formula with the full-window denominator, so the earliest sustained offer is the fifth symptomatic turn (W = 6, k = 3, θ = 0.45). The engine loads up to 20 turns for the trigger.
+
 ### 3.3 Evaluation
 Labelled sample conversations (`should_offer` per turn) → precision, recall and offer latency (turns from first eligible point) reported in Phase 3.
 
@@ -224,6 +232,16 @@ stateDiagram-v2
 | GAD-7 | 0–21 | 0–4 minimal · 5–9 mild · 10–14 moderate · 15–21 severe |
 
 - **Result text:** fixed plain-language text per band (`result_text.yaml`, clinician review), always with the non-diagnostic statement and a suggestion to talk to a professional where the band text says so.
+
+### 4.3 As built (Phase 3)
+- **Content:** `content/assessment/phq9.yaml` and `gad7.yaml` hold the stem, the four options, the items and the bands verbatim from the official phqscreeners.com forms (verified 2026-10-08); bands match the official instruction manual. The published **GAD-7 form has no functional-difficulty question**, so only PHQ-9 asks one (rules CL1 over this section's state diagram).
+- **Code:** `assessment/instruments.py` (load, validate, score), `assessment/flow.py` (state machine, pure functions), `assessment/trigger.py` (offer rule). The planner composes them; the engine persists each step before replying.
+- **Actions:** the card sends the pressed button's label as `message` plus a structured `action` (`assessment_consent`, `assessment_answer` with `instrument` and `item`, `assessment_pause`, `assessment_resume`, `assessment_abort`). The label keeps history readable and still passes the safety gate. A click for an item other than the current one changes nothing and shows the current step again.
+- **Item 9:** the engine checks `instrument = PHQ9, item = 9, value ≥ 1` on the action **before any storage access**, so a dead database cannot block the handoff. The questionnaire is marked `escalated` and the audit entry gets `source: "item9"` after the response, in the same background task as other crisis audits.
+- **Free text:** typing while an offer is open counts as "not now" (`declined_by: "free_text"`); typing mid-questionnaire pauses it and the message is answered normally.
+- **Expiry:** a paused questionnaire is aborted 24 h after it **started** (the record has no separate pause time); aborting discards the answers.
+- **Storage failure:** if a step cannot be saved, the reply is the fixed `assessment_unavailable` text and no card is shown.
+- **Reload:** the card is not restored after a page reload; typing pauses the questionnaire, and the paused card with Resume appears on that turn.
 
 ---
 

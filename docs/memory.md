@@ -10,11 +10,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 2 — safety layer** (complete, awaiting review) |
-| Done | Step A and Phase 1 (approved and merged 2026-10-07). Phase 2 on branch `phase-02-safety-layer`: normaliser, 34 crisis patterns in 5 tiers, idiom allow-list, fail-closed gate, 224-country help card, post-crisis mode, crisis audit; `scripts/verify.py` all green; report in `docs/reports/phase-02.md` |
-| In progress | Review of Phase 2 by Smriti |
-| Next | Merge Phase 2 to `main` after approval → Phase 3 (PHQ-9/GAD-7) on `phase-03-assessment` |
-| Blocked on | Phase 2 approval; browser check of 5 crisis lines (open item 8) |
+| Current phase | **Phase 3 — assessment (PHQ-9 / GAD-7)** (complete, awaiting review) |
+| Done | Step A, Phase 1 and Phase 2 (merged to local `main` 2026-10-08, not pushed). Phase 3 on branch `phase-03-assessment`: verified PHQ-9/GAD-7 content, scoring, questionnaire state machine, screening-offer trigger, storage, API action and assessment card; `scripts/verify.py` all green; report in `docs/reports/phase-03.md` |
+| In progress | Review of Phase 3 by Smriti |
+| Next | Merge Phase 3 to `main` after approval → Phase 4 (therapy router, signals, guard hook) on `phase-04-router` |
+| Blocked on | Phase 3 approval; push of `main` (not yet requested); open items 8-11 |
 
 ### Environment notes (development machine, 2026-10-07)
 - Windows 11. Python 3.12.15 managed by uv (system Python 3.11.9 is not used); uv 0.12.23 installed with `python -m pip install --user uv` and invoked as `python -m uv`.
@@ -76,6 +76,12 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-08 | Post-crisis state: in-memory set plus persisted flag; cleared only by an explicit continue phrase or the "Continue talking" button | Holds when storage is down; never inferred | Time-based expiry |
 | 2026-10-08 | Templates stay Python constants (CR-18) | The Phase 2 content files are safety data with their own loaders; templates have no second user yet | YAML template loader now |
 | 2026-10-08 | No classifier hook in the gate until a classifier exists (S7 still applies to any future one) | No speculative interface | Pluggable classifier parameter |
+| 2026-10-08 | PHQ-9 and GAD-7 text verified against the official phqscreeners.com forms; GAD-7 asks no functional question because its published form has none | Rules CL1: published items only | Following the design diagram for both |
+| 2026-10-08 | Assessment buttons send their label as the message plus a structured action | History stays readable and the safety gate still sees text; answers are never parsed from free text | Action-only requests |
+| 2026-10-08 | PHQ-9 item 9 is checked on the action before storage | A database failure must never block the crisis handoff | Checking only after loading the questionnaire |
+| 2026-10-08 | Trigger weights raised 0.5 → 0.7 after the first measurement; threshold kept at the design's 0.45; messages about someone else excluded | Recall 0.31 → 0.93 with no false positives on the labelled set | Lowering the threshold; first-person-only rule (missed elided subjects) |
+| 2026-10-08 | Typing while an offer is open counts as "not now"; typing mid-questionnaire pauses it | Consent must be explicit; the user is never trapped in a questionnaire | Keeping the offer open |
+| 2026-10-08 | Paused questionnaires expire 24 h after they started and their answers are discarded | No separate pause timestamp needed; data minimisation | Storing a pause time |
 | 2026-10-07 | Git: commits authored as Smriti; no assistant attribution anywhere; assistant config files git-ignored; Conventional Commits; one branch per phase | Authorship and repository hygiene | — |
 
 ---
@@ -85,6 +91,8 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 8. **Browser check of crisis lines** that could not be fetched here, to promote them to Tier 1: Philippines NCMH 1553, Chile *4141, Colombia 192 option 4, Pakistan Umang, and Sweden's Mind line hours.
 9. **Confirm the `self_harm` tier** (CR-01).
 10. **A fresh external held-out phrase set**: the Phase 2 held-out set was used for tuning and is now consumed.
+11. **Decline cooldown vs explicit request** (CR-10): a decline currently blocks even an explicit request for 24 hours, as the design says. Should an explicit request override it?
+12. **Push `main`**: Phases 2 and 3 are merged locally only.
 2. **Python 3.12 and uv** need installing on the development machine.
 3. **Repository licence** (e.g. MIT, Apache-2.0).
 4. **Clinician reviewer** for `clinical_review.md`.
@@ -104,7 +112,8 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Real-model tone (companion, guard, bias quality) | Not verified here |
 | Qwen3.5 thinking-disable mechanism and sampling settings | To be re-verified against the current model card in Phase 1 |
 | Model licences (Qwen3.5, Gemma 4, Phi-4-mini) | To be re-verified in Phase 1 |
-| PHQ-9 / GAD-7 item wording | To be verified against the published source in Phase 3 |
+| PHQ-9 / GAD-7 item wording | Verified 2026-10-08 against the official phqscreeners.com forms and instruction manual |
+| Screening-offer trigger on unseen conversations | Precision 1.00 / recall 0.93 on the labelled set after tuning (0.80 / 0.31 before); needs a fresh labelled set |
 | Crisis resource numbers | Verified 2026-10-08 against official sources (Tier 1) and FCDO (Tier 2); re-verify before any participant use |
 | Post-crisis flag after an app restart with storage down | Falls back to normal mode (documented, CR-05) |
 | Gate latency on dense 2 000-character input | 10–35 ms on battery, over the 10 ms target; realistic messages p99 0.55 ms; combined pre-filter is the upgrade path |
@@ -126,6 +135,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-08 | 2 | Tests | 481 passed, 0 skipped |
 | 2026-10-08 | 2 | Benign false positives | everyday 0/50; idioms 0/30; third-party mentions 4/5 (by design) |
 | 2026-10-08 | 2 | Gate latency (battery) | realistic p99 0.55 ms; 2 000-char stress inputs 10–35 ms |
+| 2026-10-08 | 3 | Tests | 591 passed, 0 skipped |
+| 2026-10-08 | 3 | Coverage | 97.5% overall; `oasis.assessment` 99.0%; `oasis.safety` 97.1% |
+| 2026-10-08 | 3 | Trigger (24 labelled conversations) | before tuning P 0.80 / R 0.31; after P 1.00 / R 0.93, mean latency 0.85 turns |
+| 2026-10-08 | 3 | Mutation spot-check | 13/13 caught after two new tests (11/13 before) |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
 | 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |
 
