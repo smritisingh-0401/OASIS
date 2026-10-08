@@ -63,7 +63,9 @@ def _answers_summing_to(total: int, n: int) -> list[int]:
 @given(st.sampled_from(INSTRUMENT_IDS), st.data())
 def test_total_is_the_sum_and_in_range(inst_id: str, data: st.DataObject) -> None:
     inst = instrument(inst_id)
-    answers = data.draw(st.lists(st.integers(0, 3), min_size=len(inst.items), max_size=len(inst.items)))
+    answers = data.draw(
+        st.lists(st.integers(0, 3), min_size=len(inst.items), max_size=len(inst.items))
+    )
     total, band = score(inst, answers)
     assert total == sum(answers)
     assert 0 <= total <= inst.max_total

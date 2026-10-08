@@ -1,0 +1,38 @@
+# PHQ-9: standard published items, options and severity bands (rules CL1). Do not edit the
+# wording: it must match the published form word for word.
+schema: oasis.content/v1
+kind: assessment_instrument
+instrument: PHQ9
+name: PHQ-9
+version: "2026.10.0"
+review_status: standard_published_instrument
+citation: >-
+  Kroenke K, Spitzer RL, Williams JBW. The PHQ-9: validity of a brief depression severity
+  measure. J Gen Intern Med. 2001;16(9):606-613. Developed by Drs. Robert L. Spitzer,
+  Janet B.W. Williams, Kurt Kroenke and colleagues, with an educational grant from Pfizer Inc.
+  No permission required to reproduce, translate, display or distribute.
+source: https://www.phqscreeners.com/images/sites/g/files/g10060481/f/201412/PHQ-9_English.pdf
+bands_source: https://www.phqscreeners.com/images/sites/g/files/g10016261/f/201412/instructions.pdf
+verified_on: 2026-10-08
+stem: "Over the last 2 weeks, how often have you been bothered by any of the following problems?"
+options: ["Not at all", "Several days", "More than half the days", "Nearly every day"]
+items:
+  - "Little interest or pleasure in doing things"
+  - "Feeling down, depressed, or hopeless"
+  - "Trouble falling or staying asleep, or sleeping too much"
+  - "Feeling tired or having little energy"
+  - "Poor appetite or overeating"
+  - "Feeling bad about yourself — or that you are a failure or have let yourself or your family down"
+  - "Trouble concentrating on things, such as reading the newspaper or watching television"
+  - "Moving or speaking so slowly that other people could have noticed? Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual"
+  - "Thoughts that you would be better off dead or of hurting yourself in some way"
+# Recorded, never scored.
+functional:
+  question: "If you checked off any problems, how difficult have these problems made it for you to do your work, take care of things at home, or get along with other people?"
+  options: ["Not difficult at all", "Somewhat difficult", "Very difficult", "Extremely difficult"]
+bands:
+  - {min: 0, max: 4, label: minimal}
+  - {min: 5, max: 9, label: mild}
+  - {min: 10, max: 14, label: moderate}
+  - {min: 15, max: 19, label: moderately severe}
+  - {min: 20, max: 27, label: severe}

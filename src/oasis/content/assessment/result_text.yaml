@@ -1,0 +1,50 @@
+# Plain-language result text per band (design §4.2). Clinician review pending: CR-08.
+# The "talk to a professional" suggestion starts at 10, the published threshold for further
+# evaluation on both instruments (PHQ and GAD-7 instruction manual).
+version: "2026.10.0"
+review_status: needs_clinician_review
+disclaimer: >-
+  This questionnaire is a screening tool, not a diagnosis. Only a qualified professional can
+  say what these results mean for you.
+PHQ9:
+  minimal: "Your answers suggest few or no symptoms of depression over the last two weeks."
+  mild: >-
+    Your answers suggest mild symptoms of depression over the last two weeks. It can help to
+    keep an eye on how you feel and check in again in a couple of weeks.
+  moderate: >-
+    Your answers suggest moderate symptoms of depression over the last two weeks. It would be
+    a good idea to talk to a doctor or mental health professional about how you have been feeling.
+  moderately severe: >-
+    Your answers suggest moderately severe symptoms of depression over the last two weeks.
+    Please consider talking to a doctor or mental health professional soon.
+  severe: >-
+    Your answers suggest severe symptoms of depression over the last two weeks. Please talk to
+    a doctor or mental health professional as soon as you can.
+GAD7:
+  minimal: "Your answers suggest few or no symptoms of anxiety over the last two weeks."
+  mild: >-
+    Your answers suggest mild symptoms of anxiety over the last two weeks. It can help to keep
+    an eye on how you feel and check in again in a couple of weeks.
+  moderate: >-
+    Your answers suggest moderate symptoms of anxiety over the last two weeks. It would be a
+    good idea to talk to a doctor or mental health professional about how you have been feeling.
+  severe: >-
+    Your answers suggest severe symptoms of anxiety over the last two weeks. Please talk to a
+    doctor or mental health professional as soon as you can.
+# Fixed text for each step of the questionnaire (design §4). Clinician review pending: CR-08.
+steps:
+  offer_PHQ9: >-
+    It sounds like things have been hard for a while. Would you like to answer a short,
+    standard questionnaire about how you have been feeling over the last two weeks? It is
+    the PHQ-9: 9 questions, about two minutes. It is not a diagnosis, and you can pause or
+    stop at any time.
+  offer_GAD7: >-
+    It sounds like worry has been weighing on you. Would you like to answer a short, standard
+    questionnaire about anxiety over the last two weeks? It is the GAD-7: 7 questions, about
+    two minutes. It is not a diagnosis, and you can pause or stop at any time.
+  declined: "That's completely fine. We can just keep talking."
+  paused: >-
+    No problem, the questionnaire is paused. Press Resume whenever you are ready, or just keep
+    talking.
+  aborted: "Okay, I've stopped the questionnaire and discarded your answers. We can keep talking."
+  functional: "Last question, about how these problems have affected you."
