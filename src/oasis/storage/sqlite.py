@@ -18,7 +18,7 @@ from oasis.storage.repository import (
     StorageUnavailable,
     utc_now,
 )
-from oasis.types import Mode, Role, TurnRecord
+from oasis.types import AssessmentRecord, Mode, Role, TurnRecord
 
 T = TypeVar("T")
 
@@ -200,6 +200,63 @@ class SQLiteRepository:
                 (user_id,),
             ).fetchall()
             return [AuditRecord(*row) for row in rows]
+
+        return await self._run(op)
+
+    async def save_assessment(self, user_id: str, record: AssessmentRecord) -> None:
+        r = record
+        now = utc_now()
+
+        def op(conn: sqlite3.Connection) -> None:
+            conn.execute("BEGIN IMMEDIATE")
+            owner = conn.execute(
+                "SELECT user_id FROM assessments WHERE assessment_id = ?", (r.assessment_id,)
+            ).fetchone()
+            if owner is not None and owner[0] != user_id:
+                raise sqlite3.IntegrityError("assessment belongs to another user")
+            conn.execute(
+                "INSERT INTO assessments (assessment_id, user_id, instrument, status, offer_reason,"
+                " total, band, functional, created_at, completed_at)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                " ON CONFLICT (assessment_id) DO UPDATE SET status = excluded.status,"
+                " offer_reason = excluded.offer_reason, total = excluded.total,"
+                " band = excluded.band, functional = excluded.functional,"
+                " completed_at = excluded.completed_at",
+                (r.assessment_id, user_id, r.instrument, r.status, r.offer_reason, r.total,
+                 r.band, r.functional, r.created_at, r.completed_at),
+            )  # fmt: skip
+            conn.execute(
+                "DELETE FROM assessment_answers WHERE assessment_id = ?", (r.assessment_id,)
+            )
+            conn.executemany(
+                "INSERT INTO assessment_answers (assessment_id, user_id, item_index, value,"
+                " answered_at) VALUES (?, ?, ?, ?, ?)",
+                [(r.assessment_id, user_id, i, v, now) for i, v in enumerate(r.answers, start=1)],
+            )
+            conn.execute("COMMIT")
+
+        await self._run(op)
+
+    async def list_assessments(self, user_id: str) -> list[AssessmentRecord]:
+        def op(conn: sqlite3.Connection) -> list[AssessmentRecord]:
+            rows = conn.execute(
+                "SELECT assessment_id, instrument, status, offer_reason, created_at, functional,"
+                " total, band, completed_at FROM assessments WHERE user_id = ?"
+                " ORDER BY created_at, rowid",
+                (user_id,),
+            ).fetchall()
+            answers: dict[str, list[int]] = {}
+            for aid, value in conn.execute(
+                "SELECT assessment_id, value FROM assessment_answers WHERE user_id = ?"
+                " ORDER BY assessment_id, item_index",
+                (user_id,),
+            ):
+                answers.setdefault(aid, []).append(value)
+            return [
+                AssessmentRecord(aid, inst, status, reason, created, tuple(answers.get(aid, ())),
+                                 functional, total, band, completed)
+                for aid, inst, status, reason, created, functional, total, band, completed in rows
+            ]  # fmt: skip
 
         return await self._run(op)
 

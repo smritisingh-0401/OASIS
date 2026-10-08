@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Callable
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -148,9 +149,11 @@ async def test_unknown_audit_event_is_rejected(repo: Repository) -> None:
         await repo.append_audit(uid, "made_up_event", "{}")
 
 
-def _assessment(aid: str = "a1", **changes: object) -> AssessmentRecord:
-    rec = AssessmentRecord(aid, "PHQ9", "in_progress", '{"reason": "explicit_request"}', "2026-10-08T12:00:00.000Z")
-    return replace(rec, **changes)  # type: ignore[arg-type]
+def _assessment(aid: str = "a1", **changes: Any) -> AssessmentRecord:
+    rec = AssessmentRecord(
+        aid, "PHQ9", "in_progress", '{"reason": "explicit_request"}', "2026-10-08T12:00:00.000Z"
+    )
+    return replace(rec, **changes)
 
 
 @pytest.mark.anyio
@@ -158,8 +161,14 @@ async def test_assessment_round_trip_and_update(repo: Repository) -> None:
     uid = await repo.create_user_session("h")
     await repo.save_assessment(uid, _assessment(answers=(1, 2)))
     assert await repo.list_assessments(uid) == [_assessment(answers=(1, 2))]
-    done = _assessment(answers=(1, 2, 0, 0, 0, 0, 0, 0, 0), functional=1, status="scored",
-                       total=3, band="minimal", completed_at="2026-10-08T12:05:00.000Z")  # fmt: skip
+    done = _assessment(
+        answers=(1, 2, 0, 0, 0, 0, 0, 0, 0),
+        functional=1,
+        status="scored",
+        total=3,
+        band="minimal",
+        completed_at="2026-10-08T12:05:00.000Z",
+    )
     await repo.save_assessment(uid, done)
     assert await repo.list_assessments(uid) == [done]
 
@@ -202,7 +211,7 @@ async def test_assessments_come_back_oldest_first(repo: Repository) -> None:
         {"instrument": "GAD7", "status": "scored", "total": 22, "band": "severe"},
     ],
 )
-async def test_invalid_assessments_are_rejected(repo: Repository, bad: dict[str, object]) -> None:
+async def test_invalid_assessments_are_rejected(repo: Repository, bad: dict[str, Any]) -> None:
     uid = await repo.create_user_session("h")
     with pytest.raises((StorageError, ValueError)):
         await repo.save_assessment(uid, _assessment(**bad))

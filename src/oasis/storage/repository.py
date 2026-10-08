@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol
 
-from oasis.types import Mode, Role, TurnRecord
+from oasis.types import AssessmentRecord, Mode, Role, TurnRecord
 
 
 class StorageError(Exception):
@@ -68,6 +68,14 @@ class Repository(Protocol):
 
     async def list_audit(self, user_id: str) -> list[AuditRecord]:
         """Oldest first."""
+        ...
+
+    async def save_assessment(self, user_id: str, record: AssessmentRecord) -> None:
+        """Insert or replace one assessment and its answers (the answers are replaced too)."""
+        ...
+
+    async def list_assessments(self, user_id: str) -> list[AssessmentRecord]:
+        """This user's assessments, oldest first."""
         ...
 
     async def ping(self) -> bool: ...

@@ -11,7 +11,9 @@ from oasis.storage.repository import (
     StorageUnavailable,
     utc_now,
 )
-from oasis.types import Mode, Role, TurnRecord
+from oasis.types import AssessmentRecord, Mode, Role, TurnRecord
+
+_MAX_TOTAL = {"PHQ9": 27, "GAD7": 21}
 
 
 class MemoryRepository:
@@ -22,6 +24,7 @@ class MemoryRepository:
         self._turns: dict[str, list[TurnRecord]] = {}  # session_hash -> turns
         self._post_crisis: set[str] = set()  # session hashes
         self._audit: dict[str, list[AuditRecord]] = {}  # user_id -> records
+        self._assessments: dict[str, list[AssessmentRecord]] = {}  # user_id -> records
 
     async def create_user_session(self, session_hash: str) -> str:
         user_id = uuid.uuid4().hex
@@ -71,6 +74,26 @@ class MemoryRepository:
 
     async def list_audit(self, user_id: str) -> list[AuditRecord]:
         return list(self._audit.get(user_id, []))
+
+    async def save_assessment(self, user_id: str, record: AssessmentRecord) -> None:
+        # Mirrors the SQLite CHECK constraints so both backends reject the same records.
+        valid = (
+            user_id in self._sessions.values()
+            and len(record.answers) <= 9
+            and all(v in (0, 1, 2, 3) for v in record.answers)
+            and (record.status != "scored" or (record.total is not None and record.band))
+            and (record.total is None or 0 <= record.total <= _MAX_TOTAL[record.instrument])
+            and all(r.assessment_id != record.assessment_id
+                    for uid, rs in self._assessments.items() if uid != user_id for r in rs)
+        )  # fmt: skip
+        if not valid:
+            raise StorageUnavailable("invalid assessment")
+        records = self._assessments.setdefault(user_id, [])
+        records[:] = [r for r in records if r.assessment_id != record.assessment_id] + [record]
+        records.sort(key=lambda r: r.created_at)
+
+    async def list_assessments(self, user_id: str) -> list[AssessmentRecord]:
+        return list(self._assessments.get(user_id, []))
 
     async def ping(self) -> bool:
         return True
