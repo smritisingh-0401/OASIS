@@ -216,7 +216,7 @@ def test_paused_questionnaire_expires_after_24_hours() -> None:
     assert plan.assessment is not None
     assert (plan.assessment.status, plan.assessment.answers) == ("aborted", ())
     expired = plan_turn("Resume", _state(plan.assessment, now=later), _act("resume", rec=rec))
-    assert expired.text is not None
+    assert expired.template_id == "assessment_unavailable"
     assert expired.assessment is None
 
 
@@ -231,3 +231,29 @@ def test_post_crisis_mode_wins_over_an_open_assessment() -> None:
     rec = _accepted()
     state = replace(_state(rec), post_crisis=True)
     assert plan_turn("Several days", state, _act("answer", 1, rec, 1)).mode == "post_crisis"
+
+
+def test_stale_clicks_while_paused_or_offered_change_nothing() -> None:
+    rec, _ = _answer_all(_accepted(), [1])
+    paused = replace(rec, status="paused")
+    plan = plan_turn("Several days", _state(paused), _act("answer", 1, rec, 2))
+    assert plan.assessment is None
+    assert plan.card is not None
+    assert plan.card.step == "paused"
+
+    offered = _offer()
+    plan = plan_turn("Several days", _state(offered), _act("answer", 1, offered, 1))
+    assert plan.assessment is None
+    assert plan.card is not None
+    assert plan.card.step == "offer"
+
+
+def test_free_text_while_paused_is_a_normal_turn() -> None:
+    rec, _ = _answer_all(_accepted(), [1])
+    plan = plan_turn("just chatting", _state(replace(rec, status="paused")))
+    assert (plan.mode, plan.assessment, plan.card) == ("companion", None, None)
+
+
+def test_unknown_instrument_is_rejected() -> None:
+    with pytest.raises(ValueError, match="unknown instrument"):
+        instrument("BDI")
