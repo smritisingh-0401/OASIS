@@ -103,7 +103,8 @@ async function sendText(text) {
     const resp = await send(text);
     if (!resp.ok) throw new Error("status " + resp.status);
     const body = await resp.json();
-    const note = body.persisted ? "" : "This message may not have been saved.";
+    // A crisis turn is never stored by design, so the not-saved note would only alarm.
+    const note = body.persisted || body.mode === "crisis" ? "" : "This message may not have been saved.";
     addMessage("assistant", body.reply, note);
     status.textContent = "";
     if (body.mode === "crisis" || body.mode === "post_crisis") {
@@ -142,7 +143,8 @@ form.addEventListener("submit", async (event) => {
   if (!text) return;
   input.value = "";
   if (!(await sendText(text))) input.value = text;
-  input.focus();
+  // Leave focus on the help card when a crisis reply has just moved it there.
+  if (!help.contains(document.activeElement)) input.focus();
 });
 
 continueButton.addEventListener("click", () => sendText(CONTINUE_TEXT));
