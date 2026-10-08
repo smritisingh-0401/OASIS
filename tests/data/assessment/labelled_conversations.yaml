@@ -1,0 +1,223 @@
+# Labelled sample conversations for the screening-offer trigger (design §3.3).
+#
+# Written before the trigger lexicon exists, so the trigger is not fitted to them.
+# Each conversation lists the user's messages only. Labels:
+#   should_offer: whether offering PHQ-9 or GAD-7 at some point is appropriate
+#   earliest:     0-based index of the first user turn after which an offer is appropriate
+#   instrument:   the instrument that fits best (for should_offer: true)
+# Scoring (scripts/trigger_eval.py): an offer before `earliest`, or in a conversation with
+# should_offer: false, is a false positive; no offer in a should_offer conversation is a
+# false negative. Latency = turn of the first offer - earliest.
+version: "2026.10.0"
+conversations:
+  # --- sustained depressive symptoms ---------------------------------------------
+  - id: dep_low_mood_weeks
+    should_offer: true
+    earliest: 3
+    instrument: PHQ9
+    turns:
+      - "hi"
+      - "honestly I've been feeling really down lately"
+      - "it's been like this for a few weeks now, nothing really feels good anymore"
+      - "I don't enjoy anything I used to, even music"
+      - "and I can barely get out of bed in the mornings"
+      - "I just feel tired all the time"
+  - id: dep_sleep_energy
+    should_offer: true
+    earliest: 3
+    instrument: PHQ9
+    turns:
+      - "I can't sleep properly, I wake up at 4am every night"
+      - "then I'm exhausted all day and have no energy"
+      - "I feel kind of empty and hopeless about things"
+      - "I've stopped seeing my friends because I don't have the energy"
+      - "it's been going on for about a month"
+  - id: dep_worthless
+    should_offer: true
+    earliest: 2
+    instrument: PHQ9
+    turns:
+      - "I feel like such a failure"
+      - "I keep letting my family down and I hate myself for it"
+      - "I've been so low for weeks, I just feel worthless"
+      - "I can't concentrate on anything at work either"
+      - "nothing seems to matter"
+  - id: dep_appetite_interest
+    should_offer: true
+    earliest: 3
+    instrument: PHQ9
+    turns:
+      - "work has been ok I guess"
+      - "but I've lost interest in pretty much everything"
+      - "I'm not eating much, I don't really feel hungry"
+      - "most days I feel sad and I don't know why"
+      - "I used to love painting and now I can't be bothered"
+      - "I've felt like this since the summer"
+  - id: dep_student_flat
+    should_offer: true
+    earliest: 3
+    instrument: PHQ9
+    turns:
+      - "uni is a lot this term"
+      - "I feel numb most of the time, like nothing matters"
+      - "I sleep 12 hours and still feel drained"
+      - "I can't focus in lectures at all, I just stare at the slides"
+      - "I've been feeling hopeless about the future"
+  - id: dep_slow_restless
+    should_offer: true
+    earliest: 3
+    instrument: PHQ9
+    turns:
+      - "my partner says I've been really quiet and slow lately"
+      - "I do feel depressed, every single day"
+      - "I've got no motivation to do anything"
+      - "I feel bad about myself all the time"
+      - "it's been weeks"
+
+  # --- sustained anxiety symptoms ------------------------------------------------
+  - id: anx_worry_constant
+    should_offer: true
+    earliest: 3
+    instrument: GAD7
+    turns:
+      - "hey"
+      - "I've been so anxious lately"
+      - "I can't stop worrying about everything, my job, my health, my parents"
+      - "I'm on edge all the time and I can't relax"
+      - "my mind just races at night with worries"
+      - "it's been months like this"
+  - id: anx_restless_irritable
+    should_offer: true
+    earliest: 3
+    instrument: GAD7
+    turns:
+      - "I feel so nervous all the time"
+      - "I'm restless, I can't sit still at my desk"
+      - "I keep snapping at people, I'm really irritable"
+      - "I'm constantly scared something awful is going to happen"
+      - "I don't know how to switch it off"
+  - id: anx_cant_control
+    should_offer: true
+    earliest: 2
+    instrument: GAD7
+    turns:
+      - "I worry about everything and I can't control it"
+      - "even small things make me panic and feel tense"
+      - "I feel anxious every day, it's exhausting"
+      - "I can't relax even on weekends"
+  - id: anx_health_worry
+    should_offer: true
+    earliest: 3
+    instrument: GAD7
+    turns:
+      - "I had a check-up last week and everything was fine"
+      - "but I still keep worrying that something is wrong with me"
+      - "I feel on edge and jumpy all the time"
+      - "I keep thinking something terrible will happen"
+      - "it's been going on for weeks and I can't stop the worrying"
+  - id: anx_student_exams
+    should_offer: true
+    earliest: 3
+    instrument: GAD7
+    turns:
+      - "exams are in two weeks"
+      - "I feel anxious constantly, not just about exams"
+      - "I worry about everything, my friends, money, my family"
+      - "my chest feels tight and I can't relax"
+      - "I've been like this most days for a couple of months"
+
+  # --- explicit requests ---------------------------------------------------------
+  - id: ask_depression_test
+    should_offer: true
+    earliest: 1
+    instrument: PHQ9
+    turns:
+      - "hello"
+      - "can I take a depression test?"
+  - id: ask_anxiety_screen
+    should_offer: true
+    earliest: 0
+    instrument: GAD7
+    turns:
+      - "is there an anxiety questionnaire I could do?"
+      - "ok"
+  - id: ask_phq9
+    should_offer: true
+    earliest: 2
+    instrument: PHQ9
+    turns:
+      - "I read about something called the PHQ-9"
+      - "my doctor mentioned it once"
+      - "could we do the PHQ-9 together?"
+
+  # --- should not offer --------------------------------------------------------
+  - id: neg_one_bad_day
+    should_offer: false
+    turns:
+      - "today was rough, my boss yelled at me"
+      - "I felt really down this afternoon"
+      - "anyway I went for a walk and feel better now"
+      - "thanks for listening"
+  - id: neg_work_venting
+    should_offer: false
+    turns:
+      - "my coworker keeps taking credit for my work"
+      - "it's so annoying"
+      - "I'm going to talk to my manager about it tomorrow"
+      - "I think it'll be fine"
+      - "what's a good way to start that conversation?"
+  - id: neg_friend_depressed
+    should_offer: false
+    turns:
+      - "my friend has been really depressed lately"
+      - "she doesn't enjoy anything anymore and sleeps all day"
+      - "how can I support her?"
+      - "I worry about her a lot"
+  - id: neg_happy_chat
+    should_offer: false
+    turns:
+      - "I got the internship!!"
+      - "I'm so excited"
+      - "I start in June"
+      - "I'm a bit nervous but mostly happy"
+  - id: neg_gym_tired
+    should_offer: false
+    turns:
+      - "leg day destroyed me"
+      - "I'm so tired lol"
+      - "going to sleep early tonight"
+  - id: neg_noise_sleep
+    should_offer: false
+    turns:
+      - "my neighbours had a party so I couldn't sleep"
+      - "I'm a bit tired today"
+      - "hopefully tonight is quieter"
+      - "anyway, any tips for staying focused when tired?"
+  - id: neg_flu
+    should_offer: false
+    turns:
+      - "I've had the flu for a few days"
+      - "no appetite and no energy"
+      - "the doctor said it should pass in a week"
+      - "I'm watching films in bed"
+  - id: neg_hyperbole
+    should_offer: false
+    turns:
+      - "this weather is so depressing lol"
+      - "rain all week"
+      - "at least I have a good book"
+      - "have you read anything good?"
+  - id: neg_exam_nerves_once
+    should_offer: false
+    turns:
+      - "I'm nervous about my driving test tomorrow"
+      - "I've practised a lot though"
+      - "I think I'll be ok"
+  - id: neg_planning
+    should_offer: false
+    turns:
+      - "I want to be more organised this month"
+      - "I keep forgetting deadlines"
+      - "should I use a planner app or paper?"
+      - "ok I'll try paper first"
+      - "thanks"
