@@ -31,7 +31,7 @@ def security_middleware(
     async def middleware(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        # ponytail: trusts Content-Length; uvicorn's h11 limits cover chunked bodies, and
+        # Known limit: trusts Content-Length; uvicorn's h11 limits cover chunked bodies, and
         # the schema caps message length. Add a streaming byte counter if exposed publicly.
         length = request.headers.get("content-length")
         if length is not None and (not length.isdigit() or int(length) > max_body_bytes):

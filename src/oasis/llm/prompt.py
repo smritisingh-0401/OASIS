@@ -16,7 +16,7 @@ SYSTEM_TEMPLATE = (
     "- must: {constraints}"
 )
 
-# ponytail: characters approximate tokens (~3.5 chars/token for English). Switch to
+# Known limit: characters approximate tokens (~3.5 chars/token for English). Switch to
 # llama-server's /tokenize endpoint when the full token budget lands with real prompts.
 HISTORY_CHAR_BUDGET = 2100
 MESSAGE_CHAR_BUDGET = 1050

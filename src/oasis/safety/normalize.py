@@ -71,7 +71,7 @@ def tolerant(pattern: str) -> str:
             out.append(pattern[i : i + 2])
             i += 2
         elif c == "[":
-            # ponytail: assumes no "]" inside a class; the loader rejects such patterns.
+            # Known limit: assumes no "]" inside a class; the loader rejects such patterns.
             end = pattern.index("]", i + 1)
             out.append(pattern[i : end + 1])
             i = end + 1

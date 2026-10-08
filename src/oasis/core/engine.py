@@ -94,7 +94,7 @@ class ChatEngine:
         self.planner = planner
         self.guard = guard
         # Sessions in post-crisis mode, held in memory so the policy holds even when
-        # storage is down (design §2.4). ponytail: grows with crisis sessions only and is
+        # storage is down (design §2.4). Known limit: grows with crisis sessions only and is
         # lost on restart; the persisted flag covers restarts when storage works.
         self._post_crisis: set[str] = set()
 

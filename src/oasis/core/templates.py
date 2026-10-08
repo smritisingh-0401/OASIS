@@ -1,7 +1,7 @@
 """Vetted fixed replies for every path that does not use the LLM (design §15.3 tone rules).
 
-ponytail: Python constants for Phase 1; they move to content/templates YAML with the
-content-library loader in Phase 2. Listed in clinical_review.md (CR-18).
+Python constants until a template has a second user or a non-developer editor; then they
+move to content/templates YAML. Listed in clinical_review.md (CR-18).
 """
 
 from __future__ import annotations
