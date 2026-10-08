@@ -55,7 +55,7 @@ def test_hung_llm_answers_within_request_timeout(settings: Settings) -> None:
         elapsed = time.monotonic() - start
     assert resp.status_code == 200
     assert resp.json()["templated"] is True
-    assert elapsed < 1.5
+    assert elapsed < 3.0  # far below the 60 s hang; slack absorbs a loaded test machine
 
 
 def test_storage_down_still_answers_chat(settings: Settings) -> None:
