@@ -138,7 +138,7 @@ check_fail_closed(gate, text):
 - **No negation handling.** "not", "never", "wouldn't" are ignored by design.
 - **Allow-list:** each entry is an idiom regex plus the rule IDs it may suppress. It only removes a hit when the idiom span covers the hit span, so "I'm dying to see it, I want to kill myself" still triggers on the second clause.
 - **Classifier (rules S7):** none in v1. A future classifier may only add alerts.
-- **Latency:** target p99 under 10 ms per message, asserted in `tests/performance/test_gate_latency.py` and reported by `scripts/safety_eval.py`. Cost grows with patterns × variants × length (about 1 ms per pattern on 2 000 dense characters on battery); realistic messages measure p99 0.55 ms.
+- **Latency:** target p99 under 10 ms per message; `tests/performance/test_gate_latency.py` asserts each sample message stays under 10 ms (best of five runs) and the distribution is reported by `scripts/safety_eval.py`. Cost grows with patterns × variants × length (about 1 ms per pattern on 2 000 dense characters on battery); realistic messages measure p99 0.55 ms.
 
 ### 2.4 Crisis handoff and post-crisis state
 
