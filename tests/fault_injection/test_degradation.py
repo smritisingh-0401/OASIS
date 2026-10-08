@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from oasis.api.app import create_app
 from oasis.llm.fake import FakeLLM
+from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import StorageUnavailable
@@ -73,3 +74,21 @@ def test_storage_down_session_and_history_return_503(settings: Settings) -> None
         resp = c.get("/history", headers={HEADER: "t"})
     assert resp.status_code == 503
     assert resp.json()["error"]["code"] == "storage_unavailable"
+
+
+class UntouchableLLM(FakeLLM):
+    async def generate(self, *args: Any, **kwargs: Any) -> str:
+        raise AssertionError("a crisis turn must not reach the LLM")
+
+
+@pytest.mark.parametrize("token", ["unknown-session", ""])
+def test_crisis_handoff_survives_dead_storage_and_dead_llm(settings: Settings, token: str) -> None:
+    with TestClient(create_app(settings, llm=UntouchableLLM(), repo=DeadRepo())) as c:
+        resp = c.post(
+            "/chat",
+            json={"message": "I want to end my life", "client_ts": "2026-10-07T10:00:00Z"},
+            headers={HEADER: token} if token else {},
+        )
+    assert resp.status_code == 200
+    assert resp.json()["mode"] == "crisis"
+    assert resp.json()["reply"] == HANDOFF_REPLY

@@ -1,7 +1,8 @@
-"""HTTP contract for Phase 1 endpoints (design §12) and the security envelope (rules P3, P6, F1)."""
+"""HTTP contract for the endpoints (design §12) and the security envelope (rules P3, P6, F1)."""
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Iterator, Sequence
 from pathlib import Path
@@ -15,6 +16,7 @@ from oasis.api.app import create_app
 from oasis.llm.fake import FakeLLM
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
+from oasis.storage.memory import MemoryRepository
 from oasis.types import ChatMessage, SafetyVerdict
 
 HEADER = "X-OASIS-Session"
@@ -145,6 +147,15 @@ def test_chat_page_has_help_card_and_dev_banner(client: TestClient) -> None:
     assert "not a diagnosis" in html
 
 
+def test_help_card_lists_crisis_lines_without_external_loads(client: TestClient) -> None:
+    html = client.get("/").text
+    assert "<!-- CRISIS_RESOURCES -->" not in html
+    assert "Tele-MANAS" in html
+    assert 'href="tel:14416"' in html
+    # Crisis-line websites are user-initiated links; nothing is loaded from elsewhere.
+    assert not re.search(r"""\bsrc=["']?(https?:)?//""", html, re.I)
+
+
 def test_web_assets_make_no_external_requests() -> None:
     web = Path(oasis.__file__).parent / "web"
     files = [p for p in web.rglob("*") if p.is_file()]
@@ -165,8 +176,6 @@ def test_session_token_never_travels_in_urls() -> None:
 
 
 class AlwaysCrisis:
-    is_stub = False
-
     def check(self, text: str) -> SafetyVerdict:
         return SafetyVerdict(is_crisis=True, tiers=frozenset({"explicit"}))
 
@@ -212,3 +221,41 @@ def test_default_llm_backend_is_llama_server(settings: Settings) -> None:
         assert c.get("/health").json()["llm"] == "down"
         resp = _chat(c, _session(c))
     assert resp.json()["templated"] is True
+
+
+# --- crisis flow through the real gate (design §2.4) ------------------------------
+
+
+CRISIS = "I want to kill myself"
+
+
+def test_crisis_writes_audit_and_holds_post_crisis_mode(settings: Settings) -> None:
+    repo = MemoryRepository()
+    llm = FakeLLM(replies=["What's on your mind?"])
+    with TestClient(create_app(settings, llm=llm, repo=repo)) as c:
+        token = _session(c)
+        crisis = _chat(c, token, CRISIS).json()
+        held = _chat(c, token, "hello").json()
+        cleared = _chat(c, token, "I'd like to keep talking.").json()
+        turns = c.get("/history", headers={HEADER: token}).json()["turns"]
+
+    assert crisis["mode"] == "crisis"
+    assert crisis["reply"] == HANDOFF_REPLY
+    assert crisis["persisted"] is False
+    assert held["mode"] == "post_crisis"
+    assert cleared["mode"] == "companion"
+    assert llm.calls == 1  # only the turn after the user chose to continue
+
+    # The crisis message itself is never stored; a placeholder stands in for it.
+    assert CRISIS not in json.dumps(turns)
+    assert turns[0]["role"] == "placeholder"
+    assert turns[0]["mode"] == "crisis"
+
+    user_id = next(iter(repo._sessions.values()))
+    [audit] = repo._audit[user_id]
+    assert audit.event == "crisis_handoff"
+    detail = json.loads(audit.detail)
+    assert detail["tiers"] == ["explicit"]
+    assert detail["source"] == "text"
+    assert detail["pattern_ids"] == ["explicit.kill_self"]
+    assert CRISIS not in audit.detail

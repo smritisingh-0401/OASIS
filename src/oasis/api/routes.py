@@ -1,4 +1,4 @@
-"""Phase 1 endpoints: /health, /session, /chat, /history."""
+"""HTTP endpoints: /health, /session, /chat, /history."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import secrets
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Header, Query
+from fastapi import APIRouter, BackgroundTasks, Header, Query
 
 import oasis
 from oasis.api.schemas import (
@@ -69,10 +69,13 @@ def build_router(engine: ChatEngine) -> APIRouter:
         return SessionResponse(session_id=token)
 
     @router.post("/chat")
-    async def chat(body: ChatRequest, session: SessionHeader = None) -> ChatResponse:
+    async def chat(
+        body: ChatRequest, background: BackgroundTasks, session: SessionHeader = None
+    ) -> ChatResponse:
+        session_hash = hash_token(session)
         try:
             async with asyncio.timeout(engine.settings.request_timeout_s):
-                result = await engine.handle_turn(hash_token(session), body.message)
+                result = await engine.handle_turn(session_hash, body.message)
         except InvalidSession:
             raise INVALID_SESSION from None
         except Exception as exc:  # last line of defence: the user always gets a reply
@@ -86,6 +89,10 @@ def build_router(engine: ChatEngine) -> APIRouter:
                 persisted=False,
                 degraded=[reason],
             )
+        if result.mode == "crisis":
+            # Runs after the response is sent, so audit storage can never delay or block
+            # the handoff (rules S2).
+            background.add_task(engine.record_crisis, session_hash, result.verdict)
         return ChatResponse(
             turn_id=result.turn_id,
             reply=result.reply,
