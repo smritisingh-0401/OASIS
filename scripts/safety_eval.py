@@ -18,6 +18,7 @@ from typing import Any
 import yaml
 
 from oasis.safety.gate import RuleBasedSafetyGate
+from oasis.safety.rules import load_ruleset
 
 DATA = Path(__file__).resolve().parent.parent / "tests" / "data" / "safety"
 
@@ -58,14 +59,14 @@ def main() -> None:
     parser.add_argument("--json", type=Path, help="also write results as JSON")
     args = parser.parse_args()
 
-    gate = RuleBasedSafetyGate.load()
+    gate = RuleBasedSafetyGate(load_ruleset())
     heldout_doc = load("heldout_phrases.yaml")
     heldout = heldout_doc["phrases"]
     heldout_status = heldout_doc.get("status", "fresh")
     train = load("train_phrases.yaml")
     benign = load("benign.yaml")["phrases"]
 
-    results = {
+    results: dict[str, Any] = {
         "ruleset_version": gate.ruleset.version,
         "patterns": len(gate.ruleset.rules),
         "allowlist": len(gate.ruleset.allow),
@@ -104,8 +105,11 @@ def main() -> None:
     gaps = results["known_gaps"]["expected_misses"]
     print(f"\nKNOWN GAPS (documented, not asserted): {gaps['flagged']}/{gaps['n']} now caught")
     lat = results["latency"]
-    print(f"\nLATENCY over {lat['n']} checks: p50 {lat['p50_ms']:.3f} ms, p95 {lat['p95_ms']:.3f} ms,"
-          f" p99 {lat['p99_ms']:.3f} ms, max {lat['max_ms']:.3f} ms (target p99 < 10 ms)")  # fmt: skip
+    print(
+        f"\nLATENCY over {lat['n']} checks: p50 {lat['p50_ms']:.3f} ms, "
+        f"p95 {lat['p95_ms']:.3f} ms, p99 {lat['p99_ms']:.3f} ms, max {lat['max_ms']:.3f} ms "
+        "(target p99 < 10 ms)"
+    )
 
     if args.json:
         args.json.write_text(json.dumps(results, indent=2), encoding="utf-8")

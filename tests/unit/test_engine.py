@@ -14,6 +14,7 @@ from oasis.llm.client import LLMFailure
 from oasis.llm.fake import FakeLLM
 from oasis.safety.gate import RuleBasedSafetyGate
 from oasis.safety.handoff import HANDOFF_REPLY
+from oasis.safety.rules import load_ruleset
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import StorageBusy, StorageUnavailable
@@ -28,8 +29,6 @@ from oasis.types import (
 
 
 class RecordingGate:
-    is_stub = False
-
     def __init__(self, events: list[str], crisis: bool = False) -> None:
         self.events = events
         self.crisis = crisis
@@ -42,8 +41,6 @@ class RecordingGate:
 
 
 class ExplodingGate:
-    is_stub = False
-
     def check(self, text: str) -> SafetyVerdict:
         raise RuntimeError("boom")
 
@@ -95,7 +92,7 @@ class BrokenRepo(MemoryRepository):
         return await super().append_turn(*args, **kwargs)
 
 
-GATE = RuleBasedSafetyGate.load()
+GATE = RuleBasedSafetyGate(load_ruleset())
 
 
 def _engine(settings: Settings, **overrides: Any) -> ChatEngine:

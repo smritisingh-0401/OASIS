@@ -9,7 +9,6 @@ from pathlib import Path
 import pytest
 
 import oasis.storage
-
 from oasis.storage.repository import StorageBusy, StorageUnavailable
 from oasis.storage.sqlite import SQLiteRepository
 

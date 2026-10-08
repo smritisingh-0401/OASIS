@@ -14,7 +14,7 @@ from oasis.safety.rules import SafetyConfigError, load_ruleset
 from oasis.types import SafetyVerdict
 
 DATA = Path(__file__).resolve().parents[1] / "data" / "safety"
-GATE = RuleBasedSafetyGate.load()
+GATE = RuleBasedSafetyGate(load_ruleset())
 RULESET = GATE.ruleset
 
 
@@ -126,7 +126,7 @@ def test_gate_never_raises(text: str) -> None:
     assert isinstance(GATE.check(text), SafetyVerdict)
 
 
-# --- fail closed and add-only classifier (rules S5, S7) ---------------------------
+# --- fail closed (rules S5) -------------------------------------------------------
 
 
 def test_verdict_reports_tiers_and_version() -> None:
@@ -135,23 +135,12 @@ def test_verdict_reports_tiers_and_version() -> None:
     assert verdict.ruleset_version == RULESET.version
 
 
-def test_classifier_can_add_an_alert() -> None:
-    gate = RuleBasedSafetyGate(RULESET, classifier=lambda text: ["risk_model"])
-    verdict = gate.check("I had a nice day")
-    assert verdict.is_crisis
-    assert "classifier.risk_model" in verdict.pattern_ids
+def test_gate_error_fails_closed() -> None:
+    class Broken:
+        def check(self, text: str) -> SafetyVerdict:
+            raise RuntimeError("rules unavailable")
 
-
-def test_classifier_cannot_remove_a_rule_hit() -> None:
-    gate = RuleBasedSafetyGate(RULESET, classifier=lambda text: [])
-    assert gate.check("I want to kill myself").is_crisis
-
-
-def test_classifier_error_fails_closed() -> None:
-    def broken(text: str) -> list[str]:
-        raise RuntimeError("model file missing")
-
-    verdict = check_fail_closed(RuleBasedSafetyGate(RULESET, classifier=broken), "hello")
+    verdict = check_fail_closed(Broken(), "hello")
     assert verdict.is_crisis
     assert "internal_error" in verdict.tiers
 

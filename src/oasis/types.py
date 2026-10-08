@@ -31,7 +31,7 @@ class SafetyVerdict:
     is_crisis: bool
     tiers: frozenset[str] = frozenset()
     pattern_ids: tuple[str, ...] = ()
-    ruleset_version: str = "stub"
+    ruleset_version: str = ""
 
 
 @dataclass(frozen=True)

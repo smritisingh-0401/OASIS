@@ -86,7 +86,7 @@ def test_minimal_file_loads() -> None:
         GOOD.replace('source: "https://s.org"', 'source: "somewhere"'),
         GOOD.replace("emergency_verified_on: 2026-01-01", "emergency_verified_on: 2999-01-01"),
         GOOD.replace('phones: ["116 123"]', "phones: []"),
-        GOOD.replace("emergency: [{service: All emergencies, numbers: [\"999\"]}]", "emergency: []"),
+        GOOD.replace('emergency: [{service: All emergencies, numbers: ["999"]}]', "emergency: []"),
         "countries: [",
     ],
 )

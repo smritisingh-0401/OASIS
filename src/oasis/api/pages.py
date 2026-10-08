@@ -55,7 +55,7 @@ def render_help(resources: Resources) -> str:
     return (
         '<p class="help-pick">Choose your region and country for crisis lines:</p>'
         + "".join(regions)
-        + "<p class=\"help-fallback\">If your country isn't listed, call your local emergency "
+        + '<p class="help-fallback">If your country isn\'t listed, call your local emergency '
         "number.</p>"
     )
 

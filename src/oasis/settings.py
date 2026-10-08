@@ -36,5 +36,4 @@ class Settings(BaseSettings):
     request_timeout_s: float = Field(30.0, gt=0)
     guard_retry_min_budget_s: float = Field(8.0, ge=0)
     history_turns: int = Field(6, ge=0)
-    max_message_chars: int = Field(2000, ge=1)
     max_body_bytes: int = Field(16 * 1024, ge=1024)

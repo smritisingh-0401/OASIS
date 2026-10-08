@@ -16,8 +16,6 @@ import yaml
 from oasis.safety.normalize import normalise, tolerant
 
 TIERS = ("explicit", "passive", "plan_method", "burden", "self_harm")
-_TIER_PREFIX = {"explicit": "explicit", "passive": "passive", "plan_method": "plan",
-                "burden": "burden", "self_harm": "self_harm"}  # fmt: skip
 # Unbounded quantifier applied to a group that itself ends in a quantifier: (a+)+, (\w+ )*.
 _NESTED = re.compile(r"[+*][^()]*\)[+*]|[+*][^()]*\)\{\d+,\}")
 # Named groups and inline flags would be mangled by the tolerant rewrite.
@@ -101,8 +99,9 @@ def _rules(doc: dict[str, Any]) -> tuple[Rule, ...]:
         where = f"patterns.yaml {rid or '?'}"
         if tier not in TIERS:
             raise SafetyConfigError(f"{where}: unknown tier {tier!r}")
-        if not rid.startswith(_TIER_PREFIX[tier] + "."):
-            raise SafetyConfigError(f"{where}: id must use the prefix {_TIER_PREFIX[tier]}.")
+        prefix = {"plan_method": "plan"}.get(tier, tier)
+        if not rid.startswith(prefix + "."):
+            raise SafetyConfigError(f"{where}: id must use the prefix {prefix}.")
         if rid in seen:
             raise SafetyConfigError(f"{where}: duplicate id")
         seen.add(rid)
@@ -136,7 +135,9 @@ def _self_check(ruleset: RuleSet) -> None:
     for rule in ruleset.rules:
         for example in rule.examples:
             if rule.id not in ruleset.hits(example):
-                raise SafetyConfigError(f"patterns.yaml {rule.id}: example not matched: {example!r}")
+                raise SafetyConfigError(
+                    f"patterns.yaml {rule.id}: example not matched: {example!r}"
+                )
     for entry in ruleset.allow:
         where = f"allowlist.yaml {entry.id}"
         raw = bare.hits(entry.positive_example)

@@ -21,6 +21,7 @@ from oasis.llm.fake import FakeLLM
 from oasis.llm.llama_server import LlamaServerClient
 from oasis.safety.gate import RuleBasedSafetyGate, SafetyGate
 from oasis.safety.resources import Resources, load_resources
+from oasis.safety.rules import load_ruleset
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import Repository
@@ -62,7 +63,7 @@ def create_app(
     settings = settings or Settings()
     # Safety content is loaded and validated before anything else; invalid patterns or
     # resources stop the app here (rules S5).
-    safety = safety or RuleBasedSafetyGate.load()
+    safety = safety or RuleBasedSafetyGate(load_ruleset())
     index_html = render_index(
         (WEB_DIR / "index.html").read_text(encoding="utf-8"),
         crisis_resources or load_resources(),

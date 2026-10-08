@@ -49,12 +49,3 @@ class HealthResponse(BaseModel):
     llm: str
     storage: str
     version: str
-
-
-class ErrorDetail(BaseModel):
-    code: str
-    message: str
-
-
-class ErrorBody(BaseModel):
-    error: ErrorDetail

@@ -6,15 +6,10 @@ and an AST test). Fails closed: any internal error is a crisis verdict (rules S5
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
 from typing import Protocol
 
-from oasis.safety.rules import RuleSet, load_ruleset
+from oasis.safety.rules import RuleSet
 from oasis.types import SafetyVerdict
-
-# Optional extra detector. It may only ADD alerts (rules S7): it receives the raw text and
-# returns alert names; an empty result never clears a rule-based match.
-Classifier = Callable[[str], Sequence[str]]
 
 
 class SafetyGate(Protocol):
@@ -22,19 +17,11 @@ class SafetyGate(Protocol):
 
 
 class RuleBasedSafetyGate:
-    def __init__(self, ruleset: RuleSet, classifier: Classifier | None = None) -> None:
+    def __init__(self, ruleset: RuleSet) -> None:
         self.ruleset = ruleset
-        self._classifier = classifier
-
-    @classmethod
-    def load(cls) -> RuleBasedSafetyGate:
-        return cls(load_ruleset())
 
     def check(self, text: str) -> SafetyVerdict:
         hits = self.ruleset.hits(text)
-        if self._classifier is not None:
-            for alert in self._classifier(text):
-                hits[f"classifier.{alert}"] = "classifier"
         return SafetyVerdict(
             is_crisis=bool(hits),
             tiers=frozenset(hits.values()),

@@ -60,8 +60,8 @@ def tolerant(pattern: str) -> str:
     """Rewrite a regex so each literal letter also matches repeats of itself.
 
     "kill" -> "k+i+l+" matches kil, kill, kiill; an optional letter "s?" becomes "s*".
-    A letter with any other explicit quantifier keeps it, so "of{2}" stays strictly double. Escapes and character
-    classes are copied unchanged.
+    A letter with any other explicit quantifier keeps it, so "of{2}" stays strictly double.
+    Escapes and character classes are copied unchanged.
     """
     out: list[str] = []
     i, n = 0, len(pattern)

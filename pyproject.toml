@@ -46,6 +46,9 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "ASYNC", "PT", "C4",
 # assert is the pytest idiom; tests use fixed fake tokens.
 "tests/**" = ["S101", "S105", "S106"]
 "scripts/**" = ["S603", "S607"]
+# Look-alike letters and apostrophes are the data these files exist to handle.
+"src/oasis/safety/normalize.py" = ["RUF001"]
+"tests/unit/test_safety_normalize.py" = ["RUF001"]
 
 [tool.mypy]
 python_version = "3.12"

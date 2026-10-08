@@ -53,6 +53,9 @@ class InvalidSession(Exception):
     pass
 
 
+_CLEAR = SafetyVerdict(is_crisis=False)
+
+
 @dataclass(frozen=True)
 class TurnResult:
     turn_id: str
@@ -62,7 +65,7 @@ class TurnResult:
     persisted: bool
     degraded: frozenset[str]
     fallback_reason: str | None = None
-    verdict: SafetyVerdict = SafetyVerdict(is_crisis=False)
+    verdict: SafetyVerdict = _CLEAR
 
 
 @dataclass

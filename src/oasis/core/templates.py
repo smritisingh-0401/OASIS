@@ -17,8 +17,8 @@ TEMPLATES: dict[str, str] = {
     "post_crisis": (
         "I'm still here with you. If you are in danger or thinking about acting on these "
         "thoughts, please contact a crisis line or your local emergency number now; you can "
-        "find them under \"Need help now?\". Whenever you feel ready to keep talking, just "
-        "say so or press \"Continue talking\"."
+        'find them under "Need help now?". Whenever you feel ready to keep talking, just '
+        'say so or press "Continue talking".'
     ),
     "guard_fallback": (
         "That sounds really hard to sit with. If a close friend told you they felt this way "

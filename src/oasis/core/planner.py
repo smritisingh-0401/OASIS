@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 
+from oasis.safety.normalize import base_form
 from oasis.types import ConversationState, Plan
 
 # Explicit wish to keep talking after a crisis handoff; the UI's "Continue talking" button
@@ -22,7 +23,7 @@ _CONTINUE = re.compile(
 
 
 def wants_to_continue(message: str) -> bool:
-    return bool(_CONTINUE.search(message.casefold().replace("'", "").replace("’", "")))
+    return bool(_CONTINUE.search(base_form(message)))
 
 
 def plan_turn(message: str, state: ConversationState) -> Plan:

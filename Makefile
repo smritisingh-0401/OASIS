@@ -10,7 +10,7 @@ test:
 	$(UV) run pytest -q
 
 run-dev:
-	OASIS_DEV_MODE=1 OASIS_LLM_BACKEND=fake $(UV) run uvicorn oasis.api.app:create_app --factory --host 127.0.0.1 --port 8000
+	OASIS_LLM_BACKEND=fake $(UV) run uvicorn oasis.api.app:create_app --factory --host 127.0.0.1 --port 8000
 
 bench:
 	$(UV) run python scripts/db_benchmark.py
