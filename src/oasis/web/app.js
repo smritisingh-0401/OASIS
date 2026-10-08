@@ -55,7 +55,7 @@ async function api(path, options = {}) {
 
 function addMessage(role, text, note) {
   const item = document.createElement("li");
-  item.className = "msg " + (role === "user" ? "user" : "bot");
+  item.className = "msg " + ({ user: "user", placeholder: "system" }[role] || "bot");
   const body = document.createElement("p");
   body.textContent = text;
   item.appendChild(body);
@@ -86,6 +86,9 @@ async function loadHistory() {
     if (!resp.ok) return;
     const body = await resp.json();
     for (const turn of body.turns) addMessage(turn.role, turn.content);
+    // Post-crisis mode outlives a reload, so the way out must too.
+    const last = body.turns[body.turns.length - 1];
+    if (last && (last.mode === "crisis" || last.mode === "post_crisis")) continueButton.hidden = false;
   } catch {
     // History is a convenience; the chat still works without it.
   }

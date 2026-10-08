@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from oasis.core.engine import ChatEngine, InvalidSession
+from oasis.core.engine import CRISIS_PLACEHOLDER, ChatEngine, InvalidSession
 from oasis.core.templates import TEMPLATES
 from oasis.llm.client import LLMFailure
 from oasis.llm.fake import FakeLLM
@@ -416,7 +416,7 @@ async def test_record_crisis_writes_audit_flag_and_placeholder_without_text(
     assert "explicit.kill_self" in audits[0].detail
     assert "MARKER-551" not in audits[0].detail
     turns = await engine.repo.recent_turns(uid, "h", limit=10)
-    assert [(t.role, t.content) for t in turns] == [("placeholder", "Crisis support was shown.")]
+    assert [(t.role, t.content) for t in turns] == [("placeholder", CRISIS_PLACEHOLDER)]
 
 
 @pytest.mark.anyio

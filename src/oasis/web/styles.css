@@ -114,6 +114,7 @@ body {
 .msg .note { margin-top: 6px; font-size: 14px; color: var(--muted); }
 .msg.bot { background: var(--warm); }
 .msg.user { background: var(--surface); margin-left: auto; }
+.msg.system { margin: 8px auto; padding: 4px 16px; font-size: 14px; color: var(--muted); text-align: center; }
 
 .continue {
   align-self: flex-start;

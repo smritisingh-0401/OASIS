@@ -35,7 +35,7 @@ from oasis.types import (
 )
 
 # Shown in history instead of the crisis message, whose text is never stored (design §2.4).
-CRISIS_PLACEHOLDER = "Crisis support was shown."
+CRISIS_PLACEHOLDER = "A message here was answered with crisis support. Its text was not saved."
 
 turn_log = logging.getLogger("oasis.turn")
 log = logging.getLogger("oasis.engine")

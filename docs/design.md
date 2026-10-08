@@ -152,7 +152,7 @@ check_fail_closed(gate, text):
 - **Ordering:** a crisis verdict returns the handoff immediately: no storage read, planning, LLM call or guard. The session is added to the engine's in-memory post-crisis set at once.
 - **After the response is sent,** `/chat` runs `ChatEngine.record_crisis` as a background task (saved mode only). It persists the `post_crisis` flag, appends an audit entry and appends a history placeholder. Any storage error is logged by exception type only; it cannot affect the reply.
 - **Audit entry** (`audit_log`, event `crisis_handoff`): `{tiers, pattern_ids, ruleset_version, source: "text"}`. The message text is **not** stored.
-- **History:** the crisis message is never written; a `placeholder` turn reads "Crisis support was shown."
+- **History:** the crisis message is never written; a `placeholder` turn reads "A message here was answered with crisis support. Its text was not saved." and the UI shows it as a muted note, not a bot message
 - **Post-crisis mode (provisional, CR-05):** every message still goes through safety first. If clear, the planner emits `Plan(mode="post_crisis", templated=True, template_id="post_crisis")`: a short supportive template that points to the help card and explains how to continue. The flag clears only on an explicit wish to continue ("I'd like to keep talking", "can we keep talking", "I'm ready to continue talking", or the UI's "Continue talking" button, which sends "I'd like to keep talking."), matched on `base_form()` text.
 - **If storage fails,** the in-memory set is authoritative. If the app restarts while storage is down, the session behaves as normal (documented limitation, CR-05).
 
