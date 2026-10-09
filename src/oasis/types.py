@@ -79,7 +79,6 @@ class AssessmentCard:
     name: str
     item: int | None = None
     item_count: int | None = None
-    stem: str | None = None
     options: tuple[str, ...] = ()
     total: int | None = None
     band: str | None = None
@@ -96,6 +95,8 @@ class Plan:
     reason_codes: tuple[str, ...] = ()
     # Fixed reply text built by the decision plane (assessment steps); wins over template_id.
     text: str | None = None
+    # Fixed message sent as its own bubble before the reply (e.g. a questionnaire's instruction).
+    preface: str | None = None
     # Assessment state to persist before replying, and the card to show with the reply.
     assessment: AssessmentRecord | None = None
     card: AssessmentCard | None = None

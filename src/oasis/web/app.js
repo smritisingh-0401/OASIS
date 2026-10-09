@@ -88,6 +88,8 @@ async function loadHistory() {
     if (!resp.ok) return;
     const body = await resp.json();
     for (const turn of body.turns) addMessage(turn.role, turn.content);
+    // An open questionnaire picks up where it was: its buttons come back with the history.
+    if (body.assessment) renderCard(body.assessment);
     // Post-crisis mode outlives a reload, so the way out must too.
     const last = body.turns[body.turns.length - 1];
     if (last && (last.mode === "crisis" || last.mode === "post_crisis")) continueButton.hidden = false;
@@ -149,7 +151,6 @@ function renderCard(step) {
       ? step.name + " · Question " + step.item + " of " + step.item_count
       : step.name + " · Last question";
     card.append(line("p", title, "card-title"));
-    if (step.stem) card.append(line("p", step.stem, "card-stem"));
     step.options.forEach((label, value) => {
       const answer = { type: "assessment_answer", value, instrument: step.instrument, item: step.item };
       options.append(button(label, act(label, answer)));
@@ -174,6 +175,7 @@ async function sendText(text, action) {
     const body = await resp.json();
     // A crisis turn is never stored by design, so the not-saved note would only alarm.
     const note = body.persisted || body.mode === "crisis" ? "" : "This message may not have been saved.";
+    if (body.preface) addMessage("assistant", body.preface);
     addMessage("assistant", body.reply, note);
     status.textContent = "";
     renderCard(body.assessment);

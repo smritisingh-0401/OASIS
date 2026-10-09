@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import hashlib
 import logging
 import secrets
@@ -25,6 +26,7 @@ from oasis.api.schemas import (
     SessionResponse,
     StepAction,
 )
+from oasis.assessment import flow
 from oasis.core.engine import ChatEngine, InvalidSession
 from oasis.core.templates import TEMPLATES
 from oasis.storage.repository import StorageError
@@ -115,6 +117,7 @@ def build_router(engine: ChatEngine) -> APIRouter:
             )
         return ChatResponse(
             turn_id=result.turn_id,
+            preface=result.preface,
             reply=result.reply,
             mode=result.mode,
             templated=result.templated,
@@ -133,9 +136,13 @@ def build_router(engine: ChatEngine) -> APIRouter:
             if info is None:
                 raise INVALID_SESSION
             turns = await repo.recent_turns(info.user_id, session_hash, limit)
+            records = await repo.list_assessments(info.user_id)
         except StorageError:
             raise STORAGE_DOWN from None
+        open_rec, _ = flow.active(records, datetime.datetime.now(datetime.UTC))
+        card = flow.card_for(open_rec) if open_rec else None
         return HistoryResponse(
+            assessment=AssessmentCardOut(**asdict(card)) if card else None,
             turns=[
                 HistoryTurn(
                     turn_id=t.turn_id,
@@ -145,7 +152,7 @@ def build_router(engine: ChatEngine) -> APIRouter:
                     created_at=t.created_at,
                 )
                 for t in turns
-            ]
+            ],
         )
 
     return router

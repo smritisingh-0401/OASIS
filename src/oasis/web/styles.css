@@ -1,43 +1,88 @@
-/* Calm, text-only design (design §15.2). System fonts only: no external requests. */
+/* Glassmorphism in soft blue, light only (design §15.2). Self-hosted font only: no external requests. */
 
-:root {
-  --bg: #f7f6f2;
-  --surface: #ffffff;
-  --text: #1f2328;
-  --muted: #5b616b;
-  --accent: #2f6fd1;
-  --warm: #fdece6;
-  --focus: #1a56c4;
-  --banner-bg: #fff4d6;
-  --banner-text: #5c4100;
-  --radius: 12px;
-  color-scheme: light dark;
+/* Nunito (SIL OFL, see fonts/OFL.txt), variable 400-800, Latin subset; other glyphs fall back. */
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("fonts/nunito-latin.woff2") format("woff2");
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1b1c1e;
-    --surface: #25272a;
-    --text: #e8e6e1;
-    --muted: #a6abb3;
-    --accent: #7ea8ec;
-    --warm: #3a2a24;
-    --focus: #9cc0ff;
-    --banner-bg: #3d3216;
-    --banner-text: #ffe7a8;
-  }
+:root {
+  --bg-a: #c4d9ff;
+  --bg-b: #a9c5f8;
+  --bg-c: #d2e2ff;
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-strong: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-shadow: 0 12px 32px rgba(40, 80, 170, 0.14);
+  --blur: blur(18px) saturate(150%);
+  --text: #1c2a3d;
+  --muted: #36435a;
+  --accent: #2a5cc0;
+  --cta: linear-gradient(145deg, #3a6fd8, #2a55c4);
+  --focus: #1a56c4;
+  --radius: 16px;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: linear-gradient(140deg, var(--bg-a), var(--bg-b) 50%, var(--bg-c)) fixed;
   color: var(--text);
-  font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 17px/1.55 "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* Background scene: glossy orbs and dot patches. Kept light so any text over them stays AA. */
+.orbs { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.orbs i { position: absolute; border-radius: 50%; }
+
+.orbs i:not(.dots) {
+  background: radial-gradient(circle at 32% 28%, #fff 0%, #e2ecff 14%, #b0caf9 40%, #86a9ef 74%, #7399ea 100%);
+  box-shadow:
+    inset -18px -24px 48px rgba(46, 86, 180, 0.2),
+    inset 10px 12px 30px rgba(255, 255, 255, 0.55),
+    0 30px 60px rgba(60, 100, 200, 0.22);
+}
+/* Sharp specular glint on top of the soft highlight. */
+.orbs i:not(.dots)::after {
+  content: "";
+  position: absolute;
+  top: 13%; left: 19%;
+  width: 20%; height: 11%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  transform: rotate(-35deg);
+  filter: blur(1px);
+}
+.orbs i:nth-of-type(1) { width: 340px; height: 340px; top: -140px; left: 40%; filter: blur(2px); }
+.orbs i:nth-of-type(2) { width: 220px; height: 220px; top: 45%; left: -90px; }
+.orbs i:nth-of-type(3) { width: 260px; height: 260px; bottom: -70px; right: -80px; }
+
+.orbs .dots {
+  width: 126px; height: 84px;
+  border-radius: 0;
+  background: radial-gradient(rgba(255, 255, 255, 0.85) 1.5px, transparent 2px) 0 0 / 14px 14px;
+}
+.orbs .dots:nth-of-type(4) { top: 22%; right: 7%; }
+.orbs .dots:nth-of-type(5) { bottom: 14%; left: 6%; width: 98px; }
+
+/* One frosted surface, shared by every glass panel. */
+.help summary,
+.help-card,
+.chat,
+.msg.bot,
+.composer,
+.continue {
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
 }
 
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
@@ -47,35 +92,39 @@ body {
   clip: rect(0 0 0 0); white-space: nowrap;
 }
 
-.dev-banner {
-  background: var(--banner-bg);
-  color: var(--banner-text);
-  padding: 8px 16px;
-  text-align: center;
-  font-size: 15px;
-}
-
 .top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 20px 16px 16px;
   max-width: 760px;
   width: 100%;
   margin: 0 auto;
 }
 
-.brand { font-size: 22px; margin: 4px 0; letter-spacing: 0.04em; }
+/* Wordmark: gradient navy-to-blue lettering.
+   Large bold text: both gradient ends stay above 3:1 even over an orb. */
+.brand {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  background: linear-gradient(120deg, #1c2a3d, #1e3f8f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
 .help { position: relative; }
 .help summary {
   cursor: pointer;
   list-style: none;
-  border: 2px solid var(--accent);
+  background: var(--glass);
+  box-shadow: var(--glass-shadow);
   color: var(--accent);
-  border-radius: var(--radius);
-  padding: 6px 14px;
+  border-radius: 999px;
+  padding: 8px 18px;
   font-weight: 600;
 }
 .help summary::-webkit-details-marker { display: none; }
@@ -84,27 +133,54 @@ body {
   right: 0;
   z-index: 2;
   width: min(360px, calc(100vw - 32px));
-  margin-top: 8px;
-  padding: 16px;
-  background: var(--surface);
-  border: 2px solid var(--accent);
-  border-radius: var(--radius);
+  max-height: 70vh;
+  overflow-y: auto;
+  margin-top: 10px;
+  padding: 18px;
+  /* Same glass as the chat panel, a little denser: crisis text must stay readable. */
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.5));
+  box-shadow: 0 20px 50px rgba(40, 80, 170, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-radius: 28px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 85, 196, 0.35) transparent;
 }
 .help-card h2 { font-size: 18px; margin: 0 0 8px; }
+.help-card details { margin: 6px 0; }
+.help-card details details { margin-left: 12px; }
+/* Regions are blue tiles like incoming messages; countries are white tiles like outgoing ones. */
+.help-card summary {
+  background: rgba(157, 189, 245, 0.55);
+  color: var(--text);
+  box-shadow: none;
+  border-radius: var(--radius);
+  padding: 10px 16px;
+}
+.help-card .country > summary { background: rgba(255, 255, 255, 0.7); font-weight: 500; }
+.help-card ul { margin: 6px 0 10px; padding-left: 20px; }
+.help-card li { margin: 4px 0; }
+.help-card .hours { color: var(--muted); font-size: 15px; }
+/* Darker than --accent: stays AA on the translucent card even over an orb. */
+.help-card a { color: #1e4aa8; font-weight: 600; }
+.help-fallback { font-weight: 600; }
 
+/* The main glass "device" panel, lighter at the top like the reference. */
 .chat {
   flex: 1;
   display: flex;
   flex-direction: column;
   max-width: 760px;
-  width: 100%;
+  width: calc(100% - 32px);
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 12px 18px 0;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.3));
+  box-shadow: 0 20px 50px rgba(40, 80, 170, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-radius: 28px;
 }
 
 .messages { list-style: none; margin: 0; padding: 0; flex: 1; }
 
 .msg {
+  width: fit-content;
   max-width: 65ch;
   margin: 12px 0;
   padding: 12px 16px;
@@ -112,41 +188,45 @@ body {
 }
 .msg p { margin: 0; white-space: pre-wrap; }
 .msg .note { margin-top: 6px; font-size: 14px; color: var(--muted); }
-.msg.bot { background: var(--warm); }
-.msg.user { background: var(--surface); margin-left: auto; }
+/* Bot: translucent blue tile. User: the solid white "active" tile. */
+.msg.bot { background: rgba(157, 189, 245, 0.55); }
+.msg.user { background: var(--glass-strong); box-shadow: var(--glass-shadow); margin-left: auto; }
 .msg.system { margin: 8px auto; padding: 4px 16px; font-size: 14px; color: var(--muted); text-align: center; }
 
 .continue {
   align-self: flex-start;
   font: inherit;
-  border: 2px solid var(--accent);
+  font-weight: 600;
   color: var(--accent);
-  background: transparent;
-  border-radius: var(--radius);
-  padding: 6px 14px;
-  margin-bottom: 8px;
+  background: var(--glass-strong);
+  border-radius: 999px;
+  padding: 8px 18px;
+  margin-bottom: 10px;
   cursor: pointer;
 }
 
 .card {
-  border: 1px solid var(--muted);
-  border-radius: var(--radius);
-  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 14px 16px;
   margin-bottom: 12px;
 }
-.card-title { margin: 0 0 4px; font-weight: 600; }
-.card-stem { margin: 0 0 10px; color: var(--muted); font-size: 15px; }
-.card-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.card-title { margin: 0 0 10px; font-weight: 600; }
+.card-options { display: flex; flex-wrap: wrap; gap: 10px; }
 .card-options button {
   font: inherit;
+  font-weight: 500;
   flex: 1 1 10em;
-  min-height: 44px;
-  border: 2px solid var(--accent);
+  min-height: 48px;
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius);
-  background: transparent;
+  background: var(--glass);
+  box-shadow: 0 4px 14px rgba(40, 80, 170, 0.1);
   color: inherit;
   cursor: pointer;
 }
+.card-options button:hover { background: #fff; }
 .card-controls { display: flex; gap: 16px; margin-top: 10px; }
 .card .link {
   font: inherit;
@@ -160,44 +240,46 @@ body {
 }
 .card button:disabled { opacity: 0.6; cursor: wait; }
 
-.help-card { max-height: 70vh; overflow-y: auto; }
-.help-card details { margin: 4px 0; }
-.help-card details details { margin-left: 12px; }
-.help-card summary { cursor: pointer; }
-.help-card ul { margin: 6px 0 10px; padding-left: 20px; }
-.help-card li { margin: 4px 0; }
-.help-card .hours { color: var(--muted); font-size: 15px; }
-.help-card a { color: var(--accent); }
-.help-fallback { font-weight: 600; }
-
 .status { min-height: 1.6em; color: var(--muted); font-size: 15px; margin: 8px 0; }
 
-.composer { display: flex; gap: 8px; padding-bottom: 16px; }
+/* Glass bottom bar with one raised, glowing action, as in the reference. */
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  margin-bottom: 18px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 24px;
+}
 .composer textarea {
   flex: 1;
   font: inherit;
   color: inherit;
-  background: var(--surface);
-  border: 1px solid var(--muted);
+  background: transparent;
+  border: 0;
   border-radius: var(--radius);
-  padding: 10px 12px;
+  padding: 8px 12px;
   resize: vertical;
 }
+.composer textarea::placeholder { color: var(--muted); }
 .composer button {
   font: inherit;
   font-weight: 600;
   border: 0;
-  border-radius: var(--radius);
-  padding: 0 20px;
-  background: var(--accent);
-  color: var(--surface);
+  border-radius: 999px;
+  min-height: 52px;
+  padding: 0 24px;
+  background: var(--cta);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.7), 0 10px 24px rgba(42, 85, 196, 0.45);
   cursor: pointer;
 }
 .composer button:disabled { opacity: 0.6; cursor: wait; }
 
 .footer {
   text-align: center;
-  color: var(--muted);
+  color: var(--text);
   font-size: 14px;
   padding: 12px 16px 20px;
 }

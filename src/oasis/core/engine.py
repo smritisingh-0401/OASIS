@@ -86,6 +86,7 @@ class TurnResult:
     card: AssessmentCard | None = None
     # Assessment escalated by a PHQ-9 item-9 answer, saved after the handoff is sent.
     escalated: AssessmentRecord | None = None
+    preface: str | None = None  # shown as its own message before `reply`
 
 
 @dataclass
@@ -198,6 +199,16 @@ class ChatEngine:
                     mode=None,
                     trace_json=None,
                 )
+                if plan.preface is not None:
+                    await self.repo.append_turn(
+                        user_id,
+                        session_hash,
+                        turn_id=uuid.uuid4().hex,
+                        role="assistant",
+                        content=plan.preface,
+                        mode=plan.mode,
+                        trace_json=None,
+                    )
                 await self.repo.append_turn(
                     user_id,
                     session_hash,
@@ -222,6 +233,7 @@ class ChatEngine:
             degraded=frozenset(degraded),
             fallback_reason=draft.fallback_reason,
             card=plan.card,
+            preface=plan.preface,
         )
 
     def _crisis(

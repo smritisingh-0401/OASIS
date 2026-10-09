@@ -22,7 +22,7 @@ These rules apply to every phase of the build. They are binding: a change that b
 | S10 | **Post-crisis policy (provisional).** Every later message still passes the gate first; the bot stays in minimal supportive mode until the user explicitly says they want to continue. |
 | S11 | **Item-9 escalation.** Any PHQ-9 item-9 answer ≥ 1 triggers the crisis protocol regardless of total. |
 | S12 | **Static help always works.** The "Need help now?" button shows resources from content inlined in the page; it makes no network request. |
-| S13 | **Tripwire.** Until Phase 2 is approved, the app refuses to start with the safety stub unless `OASIS_DEV_MODE=1`, and the UI shows a development banner. (Retired in Phase 2 with the stub; the prototype banner stays until Phase 10.) |
+| S13 | **Tripwire.** Until Phase 2 is approved, the app refuses to start with the safety stub unless `OASIS_DEV_MODE=1`, and the UI shows a development banner. (Retired in Phase 2 with the stub; the prototype banner was removed from the UI at the owner's request on 2026-10-09.) |
 | S14 | **Resources verified.** Crisis numbers are verified against the official source at build time; the verification date and source URL are stored next to each entry. |
 
 ## 2. Clinical rules
@@ -84,7 +84,7 @@ These rules apply to every phase of the build. They are binding: a change that b
 
 | ID | Rule |
 |---|---|
-| F1 | No external requests: no CDNs, web fonts, analytics or third-party scripts. CSP enforces it. |
+| F1 | No external requests: no CDNs, externally hosted web fonts, analytics or third-party scripts. Fonts may only be self-hosted from the app's own origin (`font-src 'self'`). CSP enforces it. |
 | F2 | The static "Need help now?" button works with the backend down (content inlined in HTML). |
 | F3 | Accessible: full keyboard operation, visible focus, WCAG 2.2 AA contrast, ARIA labels, `aria-live="polite"` for new messages, respects `prefers-reduced-motion`. |
 | F4 | No `innerHTML` with any server or user text — `textContent` only (prevents XSS). |
