@@ -106,9 +106,14 @@ def test_completed_instrument_is_not_repeated_within_14_days() -> None:
     assert decide((), REQUEST, (old,), NOW) is not None
 
 
-def test_recent_crisis_in_the_conversation_blocks_offers() -> None:
-    history = (TurnRecord("p", 1, "placeholder", "x", "crisis", ""),)
-    assert decide(history, REQUEST, (), NOW) is None
+def test_recent_crisis_blocks_unprompted_offers_but_not_a_request() -> None:
+    # OASIS never raises screening itself after a crisis, but a user who asks is not refused
+    # (decided 2026-10-09). Item 9 still escalates to crisis during the questionnaire.
+    crisis = (TurnRecord("p", 99, "placeholder", "x", "crisis", ""),)
+    assert decide(_history(*LOW_MOOD[:-1]) + crisis, LOW_MOOD[-1], (), NOW) is None
+    offer = decide(crisis, REQUEST, (), NOW)
+    assert offer is not None
+    assert json.loads(offer.reason)["reason"] == "explicit_request"
 
 
 # --- labelled conversations (reported in full by scripts/trigger_eval.py) -------------
