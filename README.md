@@ -50,7 +50,7 @@ A fresh-machine install guide is verified in Phase 14.
 | Step A — project documents | Approved |
 | 1 — Core chat loop | Approved |
 | 2 — Safety layer | Approved |
-| 3 — Assessment (PHQ-9 / GAD-7) | In review |
+| 3 — Assessment (PHQ-9 / GAD-7) | Approved |
 | 4–14 | Not started |
 
 See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).

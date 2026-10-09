@@ -10,11 +10,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 3 — assessment (PHQ-9 / GAD-7)** (complete, awaiting review) |
-| Done | Step A, Phase 1 and Phase 2 (merged to local `main` 2026-10-08, not pushed). Phase 3 on branch `phase-03-assessment`: verified PHQ-9/GAD-7 content, scoring, questionnaire state machine, screening-offer trigger, storage, API action and assessment card; `scripts/verify.py` all green; report in `docs/reports/phase-03.md` |
-| In progress | Review of Phase 3 by Smriti |
-| Next | Merge Phase 3 to `main` after approval → Phase 4 (therapy router, signals, guard hook) on `phase-04-router` |
-| Blocked on | Phase 3 approval; push of `main` (not yet requested); open items 8-11 |
+| Current phase | **Phase 4 — therapy router** (not started) |
+| Done | Step A and Phases 1-3. Phase 2 merged and pushed 2026-10-08; Phase 3 (verified PHQ-9/GAD-7 content, scoring, questionnaire state machine, screening-offer trigger, storage, API action, assessment card) merged to `main` 2026-10-09, not yet pushed; reports in `docs/reports/` |
+| In progress | — |
+| Next | Phase 4 (therapy router, signals, guard hook) on `phase-04-router` |
+| Blocked on | Nothing; open items 8-11 need Smriti but do not block Phase 4 |
 
 ### Environment notes (development machine, 2026-10-07)
 - Windows 11. Python 3.12.15 managed by uv (system Python 3.11.9 is not used); uv 0.12.23 installed with `python -m pip install --user uv` and invoked as `python -m uv`.
@@ -92,7 +92,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 8. **Browser check of crisis lines** that could not be fetched here, to promote them to Tier 1: Philippines NCMH 1553, Chile *4141, Colombia 192 option 4, Pakistan Umang, and Sweden's Mind line hours.
 9. **Confirm the `self_harm` tier** (CR-01).
 10. **A fresh external held-out phrase set**: the Phase 2 held-out set was used for tuning and is now consumed.
-11. **Push `main`**: Phases 2 and 3 are merged locally only.
+11. **Push `main`**: Phase 3 is merged locally only (Phase 2 pushed 2026-10-08).
 2. **Python 3.12 and uv** need installing on the development machine.
 3. **Repository licence** (e.g. MIT, Apache-2.0).
 4. **Clinician reviewer** for `clinical_review.md`.
