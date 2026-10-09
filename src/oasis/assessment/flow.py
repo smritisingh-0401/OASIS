@@ -32,6 +32,7 @@ class Step:
     text: str | None  # fixed reply; None means "answer the message normally"
     card: AssessmentCard | None = None
     escalate: bool = False
+    preface: str | None = None  # a separate message shown before `text`
 
 
 def offer(inst_id: InstrumentId, reason: str, now: datetime.datetime) -> Step:
@@ -53,11 +54,23 @@ def active(
     return rec, None
 
 
+def card_for(rec: AssessmentRecord) -> AssessmentCard | None:
+    """The card an open assessment shows right now, so a reloaded page can show it again."""
+    inst = instrument(rec.instrument)
+    if rec.status == "offered":
+        return AssessmentCard("offer", inst.id, inst.name)
+    if rec.status == "paused":
+        return _paused_card(rec, inst)
+    if rec.status == "in_progress":
+        return _show(rec, inst, changed=False).card
+    return None
+
+
 def on_action(rec: AssessmentRecord, action: AssessmentAction, now: datetime.datetime) -> Step:
     inst = instrument(rec.instrument)
     kind, status = action.kind, rec.status
     if status == "offered" and kind == "accept":
-        return _show(replace(rec, status="in_progress"), inst, changed=True)
+        return _show(replace(rec, status="in_progress"), inst, changed=True, intro=True)
     if status == "offered" and kind in ("decline", "abort"):
         return Step(_declined(rec, "button", now), _step_text("declined"))
     if status == "in_progress" and kind == "answer":
@@ -65,7 +78,7 @@ def on_action(rec: AssessmentRecord, action: AssessmentAction, now: datetime.dat
     if status == "in_progress" and kind == "pause":
         return Step(replace(rec, status="paused"), _step_text("paused"), _paused_card(rec, inst))
     if status == "paused" and kind == "resume":
-        return _show(replace(rec, status="in_progress"), inst, changed=True)
+        return _show(replace(rec, status="in_progress"), inst, changed=True, intro=True)
     if status in ("in_progress", "paused") and kind == "abort":
         return Step(_aborted(rec, now), _step_text("aborted"))
     # A stale or repeated click: show the current step again and change nothing.
@@ -112,17 +125,17 @@ def _next_item(rec: AssessmentRecord, inst: Instrument) -> int | None:
     return len(rec.answers) + 1 if len(rec.answers) < len(inst.items) else None
 
 
-def _show(rec: AssessmentRecord, inst: Instrument, *, changed: bool) -> Step:
+def _show(rec: AssessmentRecord, inst: Instrument, *, changed: bool, intro: bool = False) -> Step:
+    """`intro`: on starting or resuming, the instrument's instruction comes first in the chat."""
     item = _next_item(rec, inst)
     n = len(inst.items)
     if item is None:
-        card = AssessmentCard("functional", inst.id, inst.name, None, n, None,
-                              inst.functional_options)  # fmt: skip
-        text = f"{_step_text('functional')} {inst.functional_question}"
-    else:
-        card = AssessmentCard("item", inst.id, inst.name, item, n, inst.stem, inst.options)
-        text = f"Question {item} of {n}: {inst.items[item - 1]}"
-    return Step(rec if changed else None, text, card)
+        card = AssessmentCard("functional", inst.id, inst.name, None, n, inst.functional_options)
+        return Step(rec if changed else None,
+                    f"{_step_text('functional')} {inst.functional_question}", card)  # fmt: skip
+    card = AssessmentCard("item", inst.id, inst.name, item, n, inst.options)
+    text = f"Question {item} of {n}: {inst.items[item - 1]}"
+    return Step(rec if changed else None, text, card, preface=inst.stem if intro else None)
 
 
 def _result(rec: AssessmentRecord, inst: Instrument) -> Step:

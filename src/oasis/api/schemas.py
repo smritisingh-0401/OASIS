@@ -54,7 +54,6 @@ class AssessmentCardOut(BaseModel):
     name: str
     item: int | None
     item_count: int | None
-    stem: str | None
     options: list[str]
     total: int | None
     band: str | None
@@ -62,6 +61,7 @@ class AssessmentCardOut(BaseModel):
 
 class ChatResponse(BaseModel):
     turn_id: str
+    preface: str | None = None  # a fixed message shown as its own bubble before `reply`
     reply: str
     mode: Mode
     templated: bool
@@ -84,6 +84,7 @@ class HistoryTurn(BaseModel):
 
 class HistoryResponse(BaseModel):
     turns: list[HistoryTurn]
+    assessment: AssessmentCardOut | None = None  # card of the open questionnaire, if any
 
 
 class HealthResponse(BaseModel):

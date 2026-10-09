@@ -85,10 +85,14 @@ def test_accept_shows_the_first_item_verbatim() -> None:
     assert plan.assessment.status == "in_progress"
     assert plan.card is not None
     assert (plan.card.step, plan.card.item, plan.card.item_count) == ("item", 1, 9)
-    assert plan.card.stem == PHQ9.stem
     assert plan.card.options == PHQ9.options
     assert plan.text is not None
+    # The instruction comes once, as its own message before the first question; not on the card.
+    assert plan.preface == PHQ9.stem
+    assert plan.text.startswith("Question 1 of 9: ")
     assert PHQ9.items[0] in plan.text
+    assert plan.assessment is not None
+    assert _answer(plan.assessment, 0).preface is None
 
 
 def test_decline_is_stored_with_reason_and_starts_a_cooldown() -> None:
@@ -191,6 +195,7 @@ def test_pause_and_resume_keep_answers() -> None:
     assert resumed.assessment.answers == (2, 2, 2)
     assert resumed.card is not None
     assert resumed.card.item == 4
+    assert resumed.preface == PHQ9.stem  # re-oriented after a break
 
 
 def test_free_text_mid_questionnaire_pauses_and_is_answered_normally() -> None:

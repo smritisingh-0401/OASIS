@@ -140,10 +140,9 @@ def test_security_headers_on_every_response(client: TestClient, path: str) -> No
     assert "camera=()" in headers["permissions-policy"]
 
 
-def test_chat_page_has_help_card_and_dev_banner(client: TestClient) -> None:
+def test_chat_page_has_help_card_and_disclaimer(client: TestClient) -> None:
     html = client.get("/").text
     assert "Need help now?" in html
-    assert "Prototype" in html
     assert "not a diagnosis" in html
 
 
@@ -158,7 +157,8 @@ def test_help_card_lists_crisis_lines_without_external_loads(client: TestClient)
 
 def test_web_assets_make_no_external_requests() -> None:
     web = Path(oasis.__file__).parent / "web"
-    files = [p for p in web.rglob("*") if p.is_file()]
+    # What the browser parses; the font is binary and its licence text is never loaded.
+    files = [p for p in web.rglob("*") if p.suffix in {".html", ".css", ".js"}]
     assert files
     for path in files:
         text = path.read_text(encoding="utf-8")
@@ -277,6 +277,43 @@ def _start_phq9(client: TestClient, token: str) -> None:
     assert offer["assessment"]["step"] == "offer"
     first = _act(client, token, "Yes", {"type": "assessment_consent", "accept": True})
     assert (first["assessment"]["step"], first["assessment"]["item"]) == ("item", 1)
+
+
+def test_instruction_is_its_own_message_before_the_first_question(settings: Settings) -> None:
+    with TestClient(create_app(settings, repo=MemoryRepository())) as c:
+        token = _session(c)
+        _chat(c, token, "can I take a depression test?")
+        first = _act(c, token, "Yes", {"type": "assessment_consent", "accept": True})
+        turns = c.get("/history", headers={HEADER: token}).json()["turns"]
+    stem = (
+        "Over the last 2 weeks, how often have you been bothered by any of the following problems?"
+    )
+    assert first["preface"] == stem
+    assert first["reply"].startswith("Question 1 of 9: ")
+    # Stored as two assistant turns, so a reload shows two bubbles in the same order.
+    assert [t["content"] for t in turns[-2:]] == [stem, first["reply"]]
+    assert {t["role"] for t in turns[-2:]} == {"assistant"}
+
+
+def test_history_restores_the_open_assessment_card(settings: Settings) -> None:
+    def card(c: TestClient, token: str) -> Any:
+        return c.get("/history", headers={HEADER: token}).json()["assessment"]
+
+    with TestClient(create_app(settings, repo=MemoryRepository())) as c:
+        token = _session(c)
+        assert card(c, token) is None
+        _chat(c, token, "can I take a depression test?")
+        assert card(c, token)["step"] == "offer"
+        _act(c, token, "Yes", {"type": "assessment_consent", "accept": True})
+        answer = {"type": "assessment_answer", "value": 0, "instrument": "PHQ9", "item": 1}
+        _act(c, token, "Not at all", answer)
+        restored = card(c, token)
+        assert (restored["step"], restored["item"], restored["item_count"]) == ("item", 2, 9)
+        assert restored["options"][0] == "Not at all"
+        _act(c, token, "Pause", {"type": "assessment_pause"})
+        assert (card(c, token)["step"], card(c, token)["item"]) == ("paused", 2)
+        _act(c, token, "Stop", {"type": "assessment_abort"})
+        assert card(c, token) is None
 
 
 def test_full_phq9_over_http(settings: Settings) -> None:

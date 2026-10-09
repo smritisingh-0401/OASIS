@@ -189,7 +189,7 @@ The stored offer reason is a reason code plus the numeric score, e.g. `{"reason"
 - The valence term `w_v · max(0, −valence_t)` waits for the Phase 4 signals object (no valence detector yet), so it contributes 0.
 - A message counts only if it is not about someone else: one with a third-person subject ("my friend", "she") and no first-person word contributes nothing.
 - Naming an instrument is not a request ("I read about the PHQ-9"); an explicit request needs a verb such as take, do or try, or a phrase such as "depression test".
-- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, the same instrument completed in the last 14 days, or a crisis placeholder among the loaded turns. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. All guards apply to explicit requests except the decline cooldown: it stops OASIS from asking again, but a user who asks is never refused (decided 2026-10-08).
+- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, the same instrument completed in the last 14 days, or a crisis placeholder among the loaded turns. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. All guards apply to explicit requests except the decline cooldown and the crisis placeholder: they stop OASIS from raising screening itself, but a user who asks is never refused (decided 2026-10-08 for declines, 2026-10-09 for a crisis earlier in the conversation; the post-crisis hold must still be cleared first, and a positive PHQ-9 item 9 still escalates to crisis).
 - Readiness uses the design formula with the full-window denominator, so the earliest sustained offer is the fifth symptomatic turn (W = 6, k = 3, θ = 0.45). The engine loads up to 20 turns for the trigger.
 
 ### 3.3 Evaluation
@@ -234,7 +234,7 @@ stateDiagram-v2
 - **Result text:** fixed plain-language text per band (`result_text.yaml`, clinician review), always with the non-diagnostic statement and a suggestion to talk to a professional where the band text says so.
 
 ### 4.3 As built (Phase 3)
-- **Content:** `content/assessment/phq9.yaml` and `gad7.yaml` hold the stem, the four options, the items and the bands verbatim from the official phqscreeners.com forms (verified 2026-10-08); bands match the official instruction manual. The published **GAD-7 form has no functional-difficulty question**, so only PHQ-9 asks one (rules CL1 over this section's state diagram).
+- **Content:** `content/assessment/phq9.yaml` and `gad7.yaml` hold the stem, the four options, the items and the bands verbatim from the official phqscreeners.com forms (verified 2026-10-08); bands match the official instruction manual. The published **GAD-7 form has no functional-difficulty question**, so only PHQ-9 asks one (rules CL1 over this section's state diagram). The stem is shown once, as its own chat message (API `preface`, stored as a separate assistant turn) just before the first question, and again on resume; not on the card.
 - **Code:** `assessment/instruments.py` (load, validate, score), `assessment/flow.py` (state machine, pure functions), `assessment/trigger.py` (offer rule). The planner composes them; the engine persists each step before replying.
 - **Actions:** the card sends the pressed button's label as `message` plus a structured `action` (`assessment_consent`, `assessment_answer` with `instrument` and `item`, `assessment_pause`, `assessment_resume`, `assessment_abort`). The label keeps history readable and still passes the safety gate. A click for an item other than the current one changes nothing and shows the current step again.
 - **Item 9:** the engine checks `instrument = PHQ9, item = 9, value ≥ 1` on the action **before any storage access**, so a dead database cannot block the handoff. The questionnaire is marked `escalated` and the audit entry gets `source: "item9"` after the response, in the same background task as other crisis audits.
@@ -577,7 +577,7 @@ All endpoints: JSON; `X-OASIS-Session: <token>` header (except `POST /session` a
 | `POST /session` | `{"ephemeral": bool}` | `201 {"session_id": "<256-bit token>", "ephemeral": bool, "consent_required": bool}` | 422 |
 | `POST /consent` | `{"disclosure_version": "1"}` | `204` | 401, 422 |
 | `POST /chat` | `{"message": str (1–2000 chars) \| null, "client_ts": ISO-8601, "action": Action \| null}` | `200 ChatResponse` | 401 `invalid_session`, 403 `consent_required` (non-crisis only, §3.3 of architecture), 422 `invalid_turn` |
-| `GET /history?limit=50&before=<turn_id>` | — | `200 {"turns": [{"turn_id","role","content","mode","created_at"}], "next": str\|null}` | 401 |
+| `GET /history?limit=50&before=<turn_id>` | — | `200 {"turns": [{"turn_id","role","content","mode","created_at"}], "next": str\|null, "assessment": card\|null}`; `assessment` is the open questionnaire's current card, so a reload restores its buttons | 401 |
 | `GET /explanations/{explanation_id}` | — | `200 Explanation (§10.2)` | 401, 404 |
 | `GET /trends` | — | `200 {"label": "language-based mood trend, not a clinical measure", "sessions": [...], "ewma": [...], "change_flags": [...]}` | 401 |
 | `GET /settings` / `PUT /settings` | `{"directness","formality"}` | `200 Settings` | 401, 422 |
@@ -696,7 +696,7 @@ All files are validated against Pydantic schemas at startup; invalid content ref
 
 ### 15.1 Screens
 1. **Onboarding** — what OASIS is and is not (subclinical, not diagnostic, not for emergencies); data-use disclosure; choice of saved vs ephemeral; consent button. "Need help now?" visible here too.
-2. **Chat** — message list, input, send; persistent footer "Support tool, not a diagnosis or emergency service"; "Need help now?" button top-right; development banner while applicable.
+2. **Chat** — message list, input, send; persistent footer "Support tool, not a diagnosis or emergency service"; "Need help now?" button top-right.
 3. **Assessment card** — inline card: instrument name, "Question 3 of 9", item text, four large 0–3 buttons with labels, Pause and Stop links.
 4. **Score explanation** — total, band in words, plain-language meaning, non-diagnostic statement, "talk to a professional" text when the band text says so.
 5. **"Why this reply" panel** — expandable under each bot message; plain-language bullets; scope note (§10.2); "See details" for the debug view.
@@ -706,17 +706,20 @@ All files are validated against Pydantic schemas at startup; invalid content ref
 9. **Debug view** — trace, plan, scores, contributions (own data only).
 
 ### 15.2 Visual style
-| Token | Light | Dark |
-|---|---|---|
-| `--bg` | `#F7F6F2` | `#1B1C1E` |
-| `--surface` | `#FFFFFF` | `#25272A` |
-| `--text` | `#1F2328` | `#E8E6E1` |
-| `--muted` | `#5B616B` | `#A6ABB3` |
-| `--accent` (safety/info) | `#2F6FD1` | `#7EA8EC` |
-| `--warm` (bot bubble) | `#FDECE6` | `#3A2A24` |
-| `--focus` | `#1A56C4` outline 3 px | `#9CC0FF` |
+Glassmorphism in soft blue, light theme only (dark theme deferred). A blue gradient with three glossy CSS orbs (specular glint, inner shading, the top one softly blurred for depth) and dot patches sits behind one frosted "device" panel (white 40%→30%, 28 px radius, `backdrop-filter: blur(18px)`, 1 px white border, soft blue shadow). Bot messages are translucent blue tiles (`rgba(157,189,245,0.55)`), user messages solid white tiles; the composer is a clear glass bar (white 30%). The crisis help card uses the same glass (white 60%→50%), blue region tiles, white country tiles and darker `#1E4AA8` links with one raised, glowing Send button. Wordmark: "OASIS" in 800 weight, wide tracking, navy `#1C2A3D` → `#1E3F8F` gradient text. Pure CSS, no images. Orbs stay light (darkest `#7399EA`) so any text over them keeps AA.
 
-- Typography: system font stack (`system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`), 17 px base, line-height 1.55, max line length ~65 ch.
+| Token | Value |
+|---|---|
+| background | gradient `#C4D9FF` → `#A9C5F8` → `#D2E2FF` |
+| `--glass` (help button) | `rgba(255,255,255,0.55)` |
+| `--glass-strong` (user bubble) | `rgba(255,255,255,0.9)` |
+| `--text` | `#1C2A3D` |
+| `--muted` | `#36435A` |
+| `--accent` (safety/info) | `#2A5CC0` |
+| `--cta` (Send) | gradient `#3A6FD8` → `#2A55C4`, white text |
+| `--focus` | `#1A56C4` outline 3 px |
+
+- Typography: Nunito (rounded, SIL OFL), self-hosted at `web/fonts/nunito-latin.woff2` (variable 400–800, Latin subset) with the system stack as fallback; 17 px base, line-height 1.55, max line length ~65 ch.
 - Spacing scale: 4, 8, 12, 16, 24, 32 px. Rounded 12 px corners. No animation beyond 150 ms fades; none when `prefers-reduced-motion`.
 - All text/background pairs meet WCAG 2.2 AA (checked by a script in Phase 13).
 

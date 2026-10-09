@@ -11,7 +11,7 @@ SECURITY_HEADERS = {
     "Cache-Control": "no-store",
     "Content-Security-Policy": (
         "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; "
-        "connect-src 'self'; font-src 'none'; object-src 'none'; base-uri 'none'; "
+        "connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; "
         "form-action 'self'; frame-ancestors 'none'"
     ),
     "X-Content-Type-Options": "nosniff",

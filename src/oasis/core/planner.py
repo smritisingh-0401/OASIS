@@ -63,5 +63,5 @@ def _from_step(step: flow.Step, code: str) -> Plan:
                     reason_codes=("assessment.item9",))  # fmt: skip
     if step.text is None:
         return Plan(mode="companion", assessment=step.record, card=step.card, reason_codes=(code,))
-    return Plan(mode="assessment", templated=True, text=step.text, assessment=step.record,
-                card=step.card, reason_codes=(code,))  # fmt: skip
+    return Plan(mode="assessment", templated=True, text=step.text, preface=step.preface,
+                assessment=step.record, card=step.card, reason_codes=(code,))  # fmt: skip
