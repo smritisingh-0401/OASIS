@@ -10,10 +10,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 5 — psychoeducation** (in progress) |
+| Current phase | **Phase 6 — companion mode** (in progress) |
 | Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3) |
-| In progress | Phase 5 built and verified on `phase-05-psychoeducation`; awaiting Smriti's approval (report: `docs/reports/phase-05.md`) |
-| Next | Phase 6 (companion mode) after Phase 5 approval |
+| In progress | Phase 5 approved 2026-10-11, push and PR planned for 2026-10-12. Phase 6 built and verified on `phase-06-companion` (branched from `phase-05-psychoeducation`; rebase onto `main` after the Phase 5 merge); awaiting Smriti's approval and the real-model tone check (report: `docs/reports/phase-06.md`) |
+| Next | Phase 7 (hypercompliance guard) after Phase 6 approval |
 | Blocked on | Nothing; open items 8-10 need Smriti but do not block Phase 5 |
 
 ### Environment notes (development machine, 2026-10-07)
@@ -98,6 +98,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-11 | Each psychoeducation item is shown at most once per session; IDs kept in the router memory JSON | Venting "what's wrong with me" twice should not get the same explanation twice; no migration | Repeat every time; a new column |
 | 2026-10-11 | Eleven psychoeducation items from NHS and WHO pages, each page checked; first matching item in file order wins, general item last | Small, reviewable set; deterministic and explainable | Scored topic matching |
 | 2026-10-11 | No psychoeducation under acute overwhelm or mid-exercise | Grounding first; exercises are not interrupted | Explaining first |
+| 2026-10-11 | Companion checks (validate first, one question ending the reply, no praise, no advice) apply to companion replies only; dependency language is checked on every generated reply (Smriti) | Keeps the change to companion mode; CBT/DBT get their checks with the Phase 7 guard | Checking every mode that carries the rule |
+| 2026-10-11 | An explicit advice request lifts `no_advice` for that turn via an `asks_advice` cue (Smriti) | FR-CMP-2 forbids *unprompted* advice | Never giving advice |
+| 2026-10-11 | Checks live in `guard/checks.py` as the engine's default guard (pass-through `guard/hook.py` removed); reason codes are rule names; no `companion/plan.py`; one checks file | Design §8.2 puts the C-* checks in the guard; the companion plan is one dictionary entry | Separate companion package; two YAML files |
+| 2026-10-11 | Prompt "must" line and retry note use plain sentences per rule instead of rule names | A real model follows sentences, not snake_case | Rule names |
 | 2026-10-11 | Psychoeducation cue is a `psychoed` scorer in `cues.yaml` (no `psychoed/cues.py`); reading level is a stdlib Flesch-Kincaid check at startup (no `scripts/readability.py`) | Reuses the Phase 4 scorer; bad content fails at boot | Separate cue module; a printing script |
 | 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
 | 2026-10-07 | Git: commits authored as Smriti; no assistant attribution anywhere; assistant config files git-ignored; Conventional Commits; one branch per phase | Authorship and repository hygiene | — |
@@ -132,6 +136,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Router detector accuracy on natural messages | Not measured; scenario table and golden phrases only — needs a labelled set |
 | Psychoeducation cue recall on unseen phrasing | Not measured; trigger set written by the same author as the cues — needs a fresh labelled set |
 | Real-model phrasing of psychoeducation items | Not verified here (fake LLM returns the item verbatim) |
+| Real-model companion tone (first-draft pass rate, transcripts) | Not verified here — `scripts/tone_check.py` writes `docs/reports/phase-06-tone-check.md` for Smriti's review |
 | Real-model phrasing of exercise steps | Not verified here (fake LLM returns steps verbatim) |
 | Screening-offer trigger on unseen conversations | Precision 1.00 / recall 0.93 on the labelled set after tuning (0.80 / 0.31 before); needs a fresh labelled set |
 | Crisis resource numbers | Verified 2026-10-08 against official sources (Tier 1) and FCDO (Tier 2); re-verify before any participant use |
@@ -169,6 +174,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-11 | 5 | Psychoeducation cue | trigger set 23/23 fire with the expected item; false positives 0/22 near-miss ordinary messages, 0/104 Phase 3 conversation turns, 0/85 Phase 2 benign messages |
 | 2026-10-11 | 5 | Planner latency (dev machine) | p50 0.28 ms, p99 0.47 ms |
 | 2026-10-11 | 5 | Mutation spot-check | 10/10 caught after one new test (9/10 before) |
+| 2026-10-11 | 6 | Tests | 951 passed, 0 skipped |
+| 2026-10-11 | 6 | Coverage | 98.2% overall; `oasis.guard` 100% |
+| 2026-10-11 | 6 | Companion checks | 12/12 curated good replies pass; 21/21 curated bad replies fail with exactly the labelled rules; guard fallback and the fake model's replies pass |
+| 2026-10-11 | 6 | Mutation spot-check | 11/11 caught after one test rewrite (10/11 before) |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
 | 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |
