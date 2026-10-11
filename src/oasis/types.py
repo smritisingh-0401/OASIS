@@ -8,6 +8,7 @@ reaches the trace or logs may carry user text.
 from __future__ import annotations
 
 import datetime
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -23,6 +24,11 @@ Mode = Literal[
     "grounding",
     "fallback",
 ]
+
+# The modes the therapy router scores (design §7.1). Grounding is reached only through the
+# acute-overwhelm override, never by score.
+RouterMode = Literal["companion", "cbt", "dbt", "mindfulness"]
+ROUTER_MODES: tuple[RouterMode, ...] = ("companion", "cbt", "dbt", "mindfulness")
 
 Role = Literal["user", "assistant", "placeholder"]
 
@@ -85,6 +91,79 @@ class AssessmentCard:
 
 
 @dataclass(frozen=True)
+class Signals:
+    """One message's detector outputs (design §5). Scores in [0, 1]; valence in [-1, 1].
+
+    Holds numbers and category names only, never text, so it can go into the trace.
+    """
+
+    valence: float = 0.0
+    emotions: Mapping[str, float] = field(default_factory=dict)
+    dysregulation: float = 0.0
+    distortion: float = 0.0
+    distortion_types: frozenset[str] = frozenset()
+    overwhelm: float = 0.0
+    wants_to_talk: float = 0.0
+    opt_out: bool = False  # "stop the exercise"; read only while an exercise runs
+
+
+@dataclass(frozen=True)
+class RouterState:
+    """Per-session router memory (design §7.2), persisted as JSON with the session."""
+
+    current: Mode = "companion"
+    challenger: RouterMode | None = None
+    streak: int = 0  # consecutive turns the challenger has led by the margin
+    offered: RouterMode | None = None  # structured mode waiting for Yes / Not now
+    exercise: str | None = None  # technique in progress
+    step: int = 0  # index of the next step to show
+    consented: frozenset[RouterMode] = frozenset()
+
+
+@dataclass(frozen=True)
+class Contribution:
+    signal: str
+    value: float  # weight x feature value; exact, so bias + sum == score
+
+
+@dataclass(frozen=True)
+class ModeScore:
+    mode: RouterMode
+    score: float
+    bias: float
+    contributions: tuple[Contribution, ...]  # largest |value| first
+
+
+@dataclass(frozen=True)
+class RouteDecision:
+    """The router's answer for one turn: the mode, why, and every mode's full breakdown."""
+
+    mode: Mode
+    reason: str  # e.g. "switch", "hysteresis.2_of_3", "acute_override"
+    scores: tuple[ModeScore, ...]  # highest score first
+    state: RouterState  # router memory after this turn
+    offer: RouterMode | None = None  # structured mode to ask consent for
+
+
+@dataclass(frozen=True)
+class ExerciseAction:
+    """A button press on the exercise card."""
+
+    kind: Literal["accept", "decline", "stop"]
+
+
+@dataclass(frozen=True)
+class ExerciseCard:
+    """What the UI shows for a structured mode: a consent offer or the running exercise."""
+
+    step: Literal["offer", "active"]
+    mode: Mode
+    name: str
+    item: int | None = None  # the step just shown, 1-based
+    item_count: int | None = None
+
+
+@dataclass(frozen=True)
 class Plan:
     """What the reply must do. The LLM only phrases a plan; it never chooses one."""
 
@@ -100,6 +179,12 @@ class Plan:
     # Assessment state to persist before replying, and the card to show with the reply.
     assessment: AssessmentRecord | None = None
     card: AssessmentCard | None = None
+    # One vetted exercise step for the LLM to phrase; also the reply if the LLM fails.
+    snippet: str | None = None
+    exercise_card: ExerciseCard | None = None
+    # Router memory to persist (None: this turn did not route), and the full decision.
+    router_state: RouterState | None = None
+    route: RouteDecision | None = None
 
 
 @dataclass(frozen=True)
@@ -134,6 +219,7 @@ class ConversationState:
     post_crisis: bool = False
     assessments: tuple[AssessmentRecord, ...] = ()  # this user's, oldest first
     now: datetime.datetime | None = None
+    router: RouterState = RouterState()
 
 
 @dataclass(frozen=True)
@@ -155,3 +241,5 @@ class TurnTrace:
     guard_outcomes: tuple[str, ...]
     fallback_reason: str | None
     degraded: frozenset[str] = field(default_factory=frozenset)
+    reason_codes: tuple[str, ...] = ()
+    route: RouteDecision | None = None  # scores and contributions; signal names, never text

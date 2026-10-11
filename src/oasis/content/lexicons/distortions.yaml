@@ -1,0 +1,96 @@
+# Cognitive distortions, one scorer per Burns category (design §5). The `distortion` signal
+# is the clipped sum of the category scores (still linear before the clip), and
+# `distortion_types` lists the categories with any match. Reused by the guard in Phase 7.
+# Same scorer formula and normalised text as emotions.yaml. Engineering start values (CR-20).
+schema: oasis.content/v1
+kind: lexicon
+version: "2026.10.0"
+review_status: needs_clinician_review
+scorers:
+  all_or_nothing:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\b(?:complete|total|utter)(?:ly)? (?:failure|disaster|useless|worthless|mess)\b': 1.0
+      '\bif im not perfect\b': 1.0
+      '\b(?:all|perfect) or nothing\b': 1.0
+      '\balways (?:mess|screw|ruin|fail|get it wrong)\b': 1.0
+  overgeneralisation:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\balways\b': 0.6
+      '\bnever\b': 0.6
+      '\b(?:everyone|everybody)\b': 0.5
+      '\b(?:no ?one|nobody)\b': 0.5
+      '\bevery (?:single )?time\b': 0.8
+      '\bnothing ever\b': 1.0
+      '\beverything goes wrong\b': 1.0
+  mental_filter:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\ball i can (?:think about|see)\b': 1.2
+      '\bruined the whole (?:day|night|thing|week|evening)\b': 1.2
+      '\bthe only thing (?:i (?:can )?(?:remember|notice|see)|that matters)\b': 1.0
+  disqualifying_positive:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\b(?:doesnt|does not|didnt|did not) (?:really )?count\b': 1.5
+      '\banyone could (?:have )?(?:done|do) (?:it|that)\b': 1.2
+      '\bjust (?:luck|lucky|a fluke)\b': 1.2
+      '\b(?:they|she|he) (?:were|was) just being nice\b': 1.2
+  mind_reading:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\b(?:they|he|she|everyone|everybody|people) (?:all )?(?:must )?(?:think|thinks|thought) (?:that )?(?:im|i am)\b': 1.5
+      '\b(?:they|he|she|everyone) (?:all )?(?:hates?|dislikes?) me\b': 1.2
+      '\bjudging me\b': 1.0
+      '\bi know (?:they|he|she) (?:hates?|dislikes?|thinks?)\b': 1.2
+  fortune_telling:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\bgoing to (?:fail|go wrong|be a (?:total |complete )?disaster|end badly)\b': 1.5
+      '\bill (?:never|always) (?:be|get|find|fail)\b': 1.2
+      '\bnothing will (?:ever )?(?:change|get better|work)\b': 1.5
+      '\bit (?:will|wont) never (?:work|get better)\b': 1.2
+  magnification:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\bworst thing (?:that could|ever)\b': 1.5
+      '\bend of the world\b': 1.5
+      '\bruined my (?:whole )?life\b': 1.5
+      '\bcatastroph(?:e|ic)\b': 1.0
+      '\bunbearable\b': 1.0
+      '\b(?:cant|cannot) stand it\b': 0.8
+  emotional_reasoning:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\bfeel like (?:a|an) (?:failure|fraud|burden|idiot|loser)\b': 1.2
+      '\bso (?:i|it) must be\b': 1.5
+  should_statements:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\b(?:i|you|we) (?:should|must|have to|ought to) (?:be|have|always|never)\b': 1.0
+      '\bi should(?:nt)?\b': 0.8
+  labelling:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\bim (?:such )?(?:a|an) (?:complete |total |absolute )?(?:failure|loser|idiot|mess|disappointment|fraud|burden|joke)\b': 1.5
+      '\bim (?:so )?(?:stupid|worthless|useless|pathetic|hopeless|unlovable|broken)\b': 1.5
+      '\bi am (?:a )?(?:failure|loser|stupid|worthless|useless)\b': 1.5
+  personalisation:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\b(?:its|it is) (?:all )?my fault\b': 1.5
+      '\bbecause of me\b': 1.2
+      '\bi (?:ruin|ruined|spoil|spoiled) everything\b': 1.2
+      '\bmy fault\b': 0.8
