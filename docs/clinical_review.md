@@ -17,14 +17,16 @@ Reviewer: _not yet assigned (open item O3)._
 | CR-08 | Plain-language score explanations, the "see a professional" threshold (10, the published threshold for further evaluation), the offer and step wording | `content/assessment/result_text.yaml` | 3 | pending | |
 | CR-09 | Screening trigger: domain lexicons, weights (raised from 0.5 to 0.7 after the first measurement), window, threshold, consecutive-turn rule, third-person exclusion | `content/assessment/trigger.yaml` | 3 | pending | Precision/recall reported in `docs/reports/phase-03.md` |
 | CR-10 | Assessment cooldowns (14-day re-administration, 24-hour decline cooldown for unprompted offers only (an explicit request overrides it), 24-hour paused expiry, typing after an offer counts as "not now") | `content/assessment/trigger.yaml`, `assessment/flow.py` | 3 | pending | |
-| CR-11 | Router weights, margin, hysteresis N, acute-overwhelm threshold | `content/router/weights.yaml` | 4 | pending | |
-| CR-12 | Technique scripts (v1: low-risk skills only — no cold exposure, breath-holding or intense exercise) | `content/techniques/*.yaml` | 4 | pending | |
+| CR-11 | Router weights, margin, hysteresis N, acute-overwhelm threshold; consent policy (ask once per session before cbt/dbt/mindfulness; "Not now" or typing over the offer resets the lead, so it can be offered again after N more turns; grounding starts without asking) | `content/router/weights.yaml`, `router/router.py` | 4 | pending | Start values: margin 0.15, N = 3, acute 0.6; pinned by the scenario table in `tests/unit/test_router.py` |
+| CR-12 | Technique scripts (v1: low-risk skills only — no cold exposure, breath-holding or intense exercise): Thought check (CBT), STOP skill (DBT), Notice the breath (mindfulness), 5-4-3-2-1 senses (grounding); offer wording; the stop and decline replies | `content/techniques/*.yaml`, `core/templates.py` | 4 | pending | A test rejects breath-holding, cold, running and similar wording |
 | CR-13 | Psychoeducation text | `content/psychoed/items.yaml` | 5 | pending | Each item has source and reading level |
 | CR-14 | Companion constraints (praise, advice, dependency lists) | `content/companion/*.yaml` | 6 | pending | |
 | CR-15 | Socratic question bank | `content/guard/socratic_bank.yaml` | 7 | pending | |
 | CR-16 | Distortion categories and guard markers | `content/guard/*.yaml` | 7 | pending | Burns's categories |
 | CR-17 | Trend-change flag (baseline sessions K, z threshold) and feature selection | `content/tracking/config.yaml` | 8 | pending | Labelled non-clinical in UI |
 | CR-18 | Templated fallback replies | `core/templates.py` | 1+ | pending | |
+| CR-19 | An explicit request for PHQ-9/GAD-7 is allowed after a crisis earlier in the conversation (once post-crisis mode is cleared); OASIS still never offers one unprompted after a crisis | `assessment/trigger.py` | 3 | pending | Decided 2026-10-09; PHQ-9 item 9 still escalates (CR-07) |
+| CR-20 | Signal lexicons: emotions, dysregulation, overwhelm, wanting to talk, opt-out phrases, and the eleven Burns distortion categories | `content/lexicons/*.yaml` | 4 | pending | Engineering start values; golden examples in `tests/unit/test_signals.py` |
 
 ## Change log
 
@@ -33,3 +35,5 @@ Reviewer: _not yet assigned (open item O3)._
 | 2026-10-07 | Register created with seed items | Smriti |
 | 2026-10-08 | Phase 2: CR-01 adds the self-harm tier; CR-03..06 and CR-18 locations updated to the implementation | Smriti |
 | 2026-10-08 | Phase 3: CR-07..10 updated to the implementation | Smriti |
+| 2026-10-09 | CR-19 added: explicit screening requests allowed after a crisis | Smriti |
+| 2026-10-11 | Phase 4: CR-11 and CR-12 updated to the implementation; CR-20 added (signal lexicons) | Smriti |

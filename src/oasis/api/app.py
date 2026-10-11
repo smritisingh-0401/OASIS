@@ -17,9 +17,12 @@ from oasis.api.pages import render_index
 from oasis.api.routes import ApiError, build_router
 from oasis.assessment.instruments import load_all as load_assessment_content
 from oasis.core.engine import ChatEngine
+from oasis.core.signals import load_all as load_signal_content
 from oasis.llm.client import BoundedLLM, LLMClient
 from oasis.llm.fake import FakeLLM
 from oasis.llm.llama_server import LlamaServerClient
+from oasis.router.exercise import load_all as load_techniques
+from oasis.router.weights import config as router_config
 from oasis.safety.gate import RuleBasedSafetyGate, SafetyGate
 from oasis.safety.resources import Resources, load_resources
 from oasis.safety.rules import load_ruleset
@@ -66,6 +69,10 @@ def create_app(
     # resources stop the app here (rules S5).
     safety = safety or RuleBasedSafetyGate(load_ruleset())
     load_assessment_content()
+    # Signal lexicons, router weights and exercise scripts: a bad file stops startup here.
+    load_signal_content()
+    router_config()
+    load_techniques()
     index_html = render_index(
         (WEB_DIR / "index.html").read_text(encoding="utf-8"),
         crisis_resources or load_resources(),

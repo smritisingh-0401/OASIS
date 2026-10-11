@@ -267,6 +267,14 @@ score(x) = clip( b + Σ_i w_i · count_i(x) / max(1, n_tokens(x)) · scale , 0, 
 
 Features are term-count rates, so the pre-clip value is a linear model — SHAP values for it are exact (§10). Weights live in YAML with `version` and `review_status`.
 
+### 5a. As built (Phase 4)
+- `core/signals.py` (`extract`) runs every lexicon over the safety normaliser's base form (lowercase, apostrophes removed, stretched letters collapsed) and VADER over the raw text. `core/detectors/lexicon.py` is the scorer above; `core/detectors/valence.py` wraps VADER.
+- Lexicons: `content/lexicons/emotions.yaml` (sadness, anxiety, anger, shame, loneliness), `cues.yaml` (dysregulation, overwhelm, wants_to_talk, opt_out) and `distortions.yaml` (one scorer per Burns category). All `needs_clinician_review` (CR-20); invalid files stop startup.
+- `distortion` is the **clipped sum** of the eleven category scores, not the maximum: several distortions in one message add up, and the sum is still linear before the clip. `distortion_types` lists the categories with any match.
+- `opt_out` is true when any opt-out phrase matches ("can we stop", "I don't want to do this"); it is read only while an exercise runs.
+- `acute_overwhelm` is not a separate signal: the router compares `overwhelm` with `acute_overwhelm_threshold` in its weights file (CR-11).
+- `Signals` holds only the fields used so far; `psychoed_cue`, `screening_cues`, `continue_request` and `behaviour` arrive with Phases 5, 3 (kept in the trigger) and 8.
+
 ---
 
 ## 6. Planner precedence
@@ -330,6 +338,16 @@ function route(x, rs: RouterState) -> RouteDecision:
 
 - Every `RouteDecision` contains all mode scores and the ranked contributions for every mode.
 - Router state (`current`, `challenger`, `streak`, `in_exercise`, consents) persists per session.
+
+### 7.3 As built (Phase 4)
+- **Files:** `router/weights.py` (config, feature vector, `score_modes`), `router/router.py` (`route`, `accept`, `decline`, `stop`, state JSON), `router/exercise.py` (scripts, one step per turn), `content/router/weights.yaml`, `content/techniques/*.yaml`. Hysteresis is one rule inside `route`, so it has no module of its own.
+- **Features:** `valence_neg = max(0, -valence)`, the five emotions, `dysregulation`, `distortion`, `overwhelm`, `wants_to_talk`, plus `phq_moderate_plus` / `gad_moderate_plus` (1.0 when a moderate-or-worse result was scored inside the 14-day re-administration window).
+- **Start values:** margin 0.15, N = 3, acute threshold 0.6; companion bias 0.35 (others 0); dominant weights distortion → cbt 0.9, dysregulation → dbt 0.9, overwhelm → mindfulness 1.2, wants_to_talk → companion 0.8 (CR-11). Ties go to companion.
+- **Order inside `route`:** a running exercise holds unless the user opts out (grounding also holds under fresh overwhelm instead of restarting) → acute override (keeps consents, drops any offer) → opt-out clears the exercise → grounding ends with its script (back to companion) → typing over an open offer counts as "not now" and resets the streak → incumbent / margin / hysteresis / consent offer / switch.
+- **State:** `RouterState(current, challenger, streak, offered, exercise, step, consented)` stored as JSON in `sessions.router_state`. Malformed JSON or values load as a fresh state (companion), never an error. Saving is best effort: a failure is logged as `storage.down` and the turn still replies.
+- **Consent:** entering cbt, dbt or mindfulness asks first ("Would you like to try …?", Yes / Not now). Yes switches, records the consent for the session and starts that mode's exercise; later switches to a consented mode do not ask again and do not restart the exercise. Not now, or typing instead, clears the offer and the streak. Grounding never asks.
+- **Exercises:** one script per mode — Thought check (cbt), STOP skill (dbt), Notice the breath (mindfulness), 5-4-3-2-1 senses (grounding) — shown one step per user message (CR-12). The LLM phrases each step (`- script:` line, constraints `follow_script`, `one_step`); if the LLM fails or the guard rejects twice, the step's own text is the reply. A "Stop exercise" button or a typed opt-out ends it; no screening offer is made mid-exercise.
+- **Planner:** post-crisis → open questionnaire → questionnaire offer (skipped mid-exercise) → router. Constraints per mode follow §13.2; every routed plan carries the full `RouteDecision`, which the trace stores (signal names and numbers only).
 
 ---
 

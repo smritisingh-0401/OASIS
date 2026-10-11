@@ -40,3 +40,21 @@ def test_history_char_budget_drops_oldest_first() -> None:
 def test_retry_constraints_are_added_to_system_prompt() -> None:
     msgs = build_messages(PLAN, [], "hi", history_turns=6, retry_reasons=("G-AGREE",))
     assert "G-AGREE" in msgs[0].content
+
+
+def test_each_mode_gets_its_goal_from_the_prompt_table() -> None:
+    for mode, phrase in [("companion", "Reflect the feeling"), ("cbt", "Socratic question"),
+                         ("dbt", "named skill"), ("mindfulness", "grounding step")]:  # fmt: skip
+        msgs = build_messages(Plan(mode=mode), [], "hi", history_turns=6)  # type: ignore[arg-type]
+        assert phrase in msgs[0].content
+
+
+def test_an_exercise_step_goes_in_as_the_script() -> None:
+    plan = Plan(mode="grounding", constraints=("follow_script",), snippet="Name five things.")
+    system = build_messages(plan, [], "ok", history_turns=6)[0].content
+    assert "- script: Name five things." in system
+    assert "in your own words" in system
+
+
+def test_no_script_line_without_a_step() -> None:
+    assert "- script:" not in build_messages(PLAN, [], "hi", history_turns=6)[0].content

@@ -123,6 +123,29 @@ async def test_post_crisis_flag_round_trip(repo: Repository) -> None:
 
 
 @pytest.mark.anyio
+async def test_router_state_round_trip(repo: Repository) -> None:
+    uid = await repo.create_user_session("h")
+    info = await repo.get_session("h")
+    assert info is not None
+    assert info.router_state == "{}"
+    await repo.set_router_state(uid, "h", '{"current": "cbt"}')
+    info = await repo.get_session("h")
+    assert info is not None
+    assert info.router_state == '{"current": "cbt"}'
+
+
+@pytest.mark.anyio
+async def test_router_state_is_scoped_to_the_user(repo: Repository) -> None:
+    await repo.create_user_session("h1")
+    other = await repo.create_user_session("h2")
+    with pytest.raises(StorageError):
+        await repo.set_router_state(other, "h1", '{"current": "cbt"}')
+    info = await repo.get_session("h1")
+    assert info is not None
+    assert info.router_state == "{}"
+
+
+@pytest.mark.anyio
 async def test_post_crisis_flag_is_scoped_to_the_user(repo: Repository) -> None:
     await repo.create_user_session("ha")
     bob = await repo.create_user_session("hb")

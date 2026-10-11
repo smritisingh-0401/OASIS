@@ -34,7 +34,23 @@ class StepAction(BaseModel):
     type: Literal["assessment_pause", "assessment_resume", "assessment_abort"]
 
 
-Action = Annotated[ConsentAction | AnswerAction | StepAction, Field(discriminator="type")]
+class ExerciseConsentAction(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["exercise_consent"]
+    accept: bool
+
+
+class ExerciseStopAction(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["exercise_stop"]
+
+
+Action = Annotated[
+    ConsentAction | AnswerAction | StepAction | ExerciseConsentAction | ExerciseStopAction,
+    Field(discriminator="type"),
+]
 
 
 class ChatRequest(BaseModel):
@@ -59,6 +75,14 @@ class AssessmentCardOut(BaseModel):
     band: str | None
 
 
+class ExerciseCardOut(BaseModel):
+    step: Literal["offer", "active"]
+    mode: Mode
+    name: str
+    item: int | None
+    item_count: int | None
+
+
 class ChatResponse(BaseModel):
     turn_id: str
     preface: str | None = None  # a fixed message shown as its own bubble before `reply`
@@ -68,6 +92,7 @@ class ChatResponse(BaseModel):
     persisted: bool
     degraded: list[str]
     assessment: AssessmentCardOut | None = None
+    exercise: ExerciseCardOut | None = None
 
 
 class SessionResponse(BaseModel):
@@ -85,6 +110,7 @@ class HistoryTurn(BaseModel):
 class HistoryResponse(BaseModel):
     turns: list[HistoryTurn]
     assessment: AssessmentCardOut | None = None  # card of the open questionnaire, if any
+    exercise: ExerciseCardOut | None = None  # open exercise offer or running exercise, if any
 
 
 class HealthResponse(BaseModel):

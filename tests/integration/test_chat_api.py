@@ -375,3 +375,66 @@ def test_invalid_actions_get_typed_422(client: TestClient, action: dict[str, Any
     )
     assert resp.status_code == 422
     assert resp.json()["error"]["code"] == "invalid_turn"
+
+
+# --- therapy router over HTTP (Phase 4) ----------------------------------------------
+
+DISTORTED = "I'm such a failure, I always mess everything up"
+
+
+def test_structured_mode_offer_consent_steps_and_stop_over_http(settings: Settings) -> None:
+    with TestClient(create_app(settings, repo=MemoryRepository())) as c:
+        token = _session(c)
+        for _ in range(2):
+            assert _chat(c, token, DISTORTED).json()["exercise"] is None
+        offer = _chat(c, token, DISTORTED).json()
+        assert offer["exercise"]["step"] == "offer"
+        assert offer["exercise"]["mode"] == "cbt"
+        restored = c.get("/history", headers={HEADER: token}).json()["exercise"]
+        assert restored["step"] == "offer"
+
+        first = _act(c, token, "Yes, let's try", {"type": "exercise_consent", "accept": True})
+        assert first["mode"] == "cbt"
+        assert (first["exercise"]["step"], first["exercise"]["item"]) == ("active", 1)
+        second = _chat(c, token, "It's the thought that I always get things wrong").json()
+        assert second["exercise"]["item"] == 2
+        assert c.get("/history", headers={HEADER: token}).json()["exercise"]["item"] == 2
+
+        stopped = _act(c, token, "Stop", {"type": "exercise_stop"})
+        assert stopped["exercise"] is None
+        assert c.get("/history", headers={HEADER: token}).json()["exercise"] is None
+
+
+def test_acute_overwhelm_starts_grounding_over_http(settings: Settings) -> None:
+    with TestClient(create_app(settings, repo=MemoryRepository())) as c:
+        token = _session(c)
+        body = _chat(c, token, "I can't breathe, everything is too much, I'm falling apart").json()
+    assert body["mode"] == "grounding"
+    assert body["exercise"]["step"] == "active"
+    assert body["exercise"]["mode"] == "grounding"
+
+
+def test_declining_a_structured_mode_over_http(settings: Settings) -> None:
+    with TestClient(create_app(settings, repo=MemoryRepository())) as c:
+        token = _session(c)
+        for _ in range(3):
+            _chat(c, token, DISTORTED)
+        body = _act(c, token, "Not now", {"type": "exercise_consent", "accept": False})
+    assert body["exercise"] is None
+    assert body["mode"] == "companion"
+
+
+@pytest.mark.parametrize("action", [
+    {"type": "exercise_consent"},
+    {"type": "exercise_consent", "accept": True, "mode": "cbt"},
+    {"type": "exercise_stop", "extra": 1},
+    {"type": "exercise_jump"},
+])  # fmt: skip
+def test_malformed_exercise_actions_are_rejected(
+    settings: Settings, action: dict[str, Any]
+) -> None:
+    with TestClient(create_app(settings, repo=MemoryRepository())) as c:
+        token = _session(c)
+        resp = c.post("/chat", json={"message": "Yes", "client_ts": TS, "action": action},
+                      headers={HEADER: token})  # fmt: skip
+    assert resp.status_code == 422

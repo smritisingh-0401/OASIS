@@ -1,0 +1,15 @@
+# Mindfulness exercise (rules CL7: natural breathing only, never breath-holding). Shown one
+# step per turn; the LLM phrases each step and falls back to this exact text (CR-12).
+schema: oasis.content/v1
+kind: technique
+id: breath_awareness
+mode: mindfulness
+name: Notice the breath
+version: "2026.10.0"
+review_status: needs_clinician_review
+source: "Breath awareness practice, as taught in mindfulness-based stress reduction (J. Kabat-Zinn, Full Catastrophe Living)"
+offer: "It sounds like a lot is going on. Would you like to try a short mindfulness exercise called Notice the breath? It takes a couple of minutes, and you can stop at any time."
+steps:
+  - "Find a position that feels comfortable, and let your eyes rest on one spot, or close them if that feels okay. Tell me when you are settled."
+  - "Now just notice your breathing as it is. There is no need to change it. Where do you feel it most, in your nose, your chest or your belly?"
+  - "Your mind will wander, and that is completely normal. When it does, gently bring your attention back to the breath. How did that feel?"

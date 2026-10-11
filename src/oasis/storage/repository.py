@@ -30,6 +30,7 @@ AUDIT_EVENTS = frozenset(
 class SessionInfo:
     user_id: str
     post_crisis: bool = False
+    router_state: str = "{}"  # JSON owned by the router; storage never interprets it
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,8 @@ class Repository(Protocol):
         ...
 
     async def set_post_crisis(self, user_id: str, session_hash: str, value: bool) -> None: ...
+
+    async def set_router_state(self, user_id: str, session_hash: str, state_json: str) -> None: ...
 
     async def append_audit(self, user_id: str, event: str, detail_json: str) -> None: ...
 

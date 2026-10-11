@@ -1,0 +1,65 @@
+# Emotion lexicons (design §5). Linear scorers: score = clip(bias + scale * sum(weight *
+# matches) / tokens, 0, 1). Patterns match the safety normaliser's base form: lowercase,
+# apostrophes removed ("im", "cant"), stretched letters collapsed. Engineering start
+# values, not clinically validated (CR-20).
+schema: oasis.content/v1
+kind: lexicon
+version: "2026.10.0"
+review_status: needs_clinician_review
+scorers:
+  sadness:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\bsad(?:ness)?\b': 1.0
+      '\b(?:depressed|miserable|unhappy|heartbroken|gloomy)\b': 1.0
+      '\bhopeless\b': 1.0
+      '\bempty\b': 0.7
+      '\b(?:cry|crying|cried|tears)\b': 0.8
+      '\b(?:feel|feeling|so) (?:down|low)\b': 0.8
+      '\b(?:grief|grieving)\b': 1.0
+  anxiety:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\banxi(?:ous|ety)\b': 1.0
+      '\bworr(?:y|ied|ying|ies)\b': 1.0
+      '\bnervous\b': 1.0
+      '\b(?:scared|afraid|frightened|terrified)\b': 1.0
+      '\bpanick?(?:ing|ed|y)?\b': 1.0
+      '\bon edge\b': 0.8
+      '\b(?:tense|uneasy|restless)\b': 0.7
+      '\bdread(?:ing)?\b': 1.0
+      '\bfreaking out\b': 1.0
+  anger:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\b(?:angry|anger)\b': 1.0
+      '\bfurious\b': 1.0
+      '\bmad (?:at|with)\b': 0.8
+      '\brage\b': 1.0
+      '\bpissed\b': 1.0
+      '\b(?:irritated|annoyed|frustrated)\b': 0.7
+      '\bhate\b': 0.6
+      '\bfed up\b': 0.6
+  shame:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\b(?:ashamed|shame|shameful)\b': 1.0
+      '\bembarrass(?:ed|ing)\b': 0.8
+      '\bhumiliat(?:ed|ing)\b': 1.0
+      '\bguilt(?:y)?\b': 0.8
+      '\bdisgusted with myself\b': 1.0
+  loneliness:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\blonel(?:y|iness)\b': 1.0
+      '\balone\b': 0.8
+      '\bisolated\b': 1.0
+      '\b(?:no ?one|nobody) (?:cares|understands|listens|likes me|to talk to)\b': 1.0
+      '\bleft out\b': 0.8
+      '\babandoned\b': 1.0
+      '\bno friends\b': 1.0

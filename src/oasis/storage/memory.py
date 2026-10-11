@@ -23,6 +23,7 @@ class MemoryRepository:
         self._sessions: dict[str, str] = {}  # session_hash -> user_id
         self._turns: dict[str, list[TurnRecord]] = {}  # session_hash -> turns
         self._post_crisis: set[str] = set()  # session hashes
+        self._router: dict[str, str] = {}  # session_hash -> router state JSON
         self._audit: dict[str, list[AuditRecord]] = {}  # user_id -> records
         self._assessments: dict[str, list[AssessmentRecord]] = {}  # user_id -> records
 
@@ -34,7 +35,11 @@ class MemoryRepository:
 
     async def get_session(self, session_hash: str) -> SessionInfo | None:
         user_id = self._sessions.get(session_hash)
-        return SessionInfo(user_id, session_hash in self._post_crisis) if user_id else None
+        if not user_id:
+            return None
+        return SessionInfo(
+            user_id, session_hash in self._post_crisis, self._router.get(session_hash, "{}")
+        )
 
     async def append_turn(
         self,
@@ -66,6 +71,11 @@ class MemoryRepository:
             self._post_crisis.add(session_hash)
         else:
             self._post_crisis.discard(session_hash)
+
+    async def set_router_state(self, user_id: str, session_hash: str, state_json: str) -> None:
+        if self._sessions.get(session_hash) != user_id:
+            raise StorageUnavailable("session not found for user")
+        self._router[session_hash] = state_json
 
     async def append_audit(self, user_id: str, event: str, detail_json: str) -> None:
         if event not in AUDIT_EVENTS or user_id not in self._sessions.values():

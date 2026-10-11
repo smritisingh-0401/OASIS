@@ -1,0 +1,56 @@
+# Router cues (design §5): dysregulation (DBT-leaning), overwhelm (mindfulness; acute when
+# the score reaches the router's acute_overwhelm_threshold), wanting to talk (companion),
+# and opting out of a running exercise (any match counts). Same scorer formula and
+# normalised text as emotions.yaml. Engineering start values (CR-20).
+schema: oasis.content/v1
+kind: lexicon
+version: "2026.10.0"
+review_status: needs_clinician_review
+scorers:
+  dysregulation:
+    bias: 0.0
+    scale: 3.5
+    terms:
+      '\b(?:cant|cannot|can not) control\b': 1.0
+      '\b(?:losing|lose|lost) control\b': 1.0
+      '\bout of control\b': 1.0
+      '\burges?\b': 0.8
+      '\bwant to (?:scream|smash|break|hit|punch|throw)\b': 1.0
+      '\b(?:explode|exploding|snap|snapping)\b': 0.7
+      '\bimpulsive(?:ly)?\b': 0.8
+      '\bcant stop (?:myself|shaking|crying)\b': 0.8
+  overwhelm:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\boverwhelm(?:ed|ing)?\b': 1.0
+      '\btoo much\b': 1.0
+      '\b(?:cant|cannot) (?:cope|handle (?:it|this|anything))\b': 1.0
+      '\bfalling apart\b': 1.0
+      '\b(?:cant|cannot) breathe\b': 1.2
+      '\bpanic attack\b': 1.2
+      '\bheart (?:is )?(?:racing|pounding)\b': 1.0
+      '\bspiral(?:l)?ing\b': 0.8
+      '\bshaking\b': 0.6
+      '\b(?:cant|cannot) think straight\b': 0.8
+      '\beverything at once\b': 0.8
+  wants_to_talk:
+    bias: 0.0
+    scale: 3.0
+    terms:
+      '\bjust (?:want|need|wanted) to (?:talk|vent|rant)\b': 1.5
+      '\bneed to vent\b': 1.5
+      '\bvent(?:ing)? about\b': 1.0
+      '\bget (?:this|it|something) off my chest\b': 1.5
+      '\b(?:need|want) someone to (?:listen|talk to)\b': 1.5
+      '\bcan i (?:just )?talk\b': 1.0
+      '\bjust listen\b': 1.0
+  opt_out:
+    bias: 0.0
+    scale: 1.0
+    terms:
+      '\bstop (?:the|this) (?:exercise|activity)\b': 1.0
+      '\b(?:can we|lets|let us|i want to|i wanna|please) stop\b': 1.0
+      '\b(?:dont|do not) want to (?:do|continue) (?:this|it|the exercise)\b': 1.0
+      '\bskip (?:this|it|the exercise)\b': 1.0
+      '\bno more (?:exercise|steps)\b': 1.0

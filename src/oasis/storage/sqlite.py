@@ -115,10 +115,10 @@ class SQLiteRepository:
     async def get_session(self, session_hash: str) -> SessionInfo | None:
         def op(conn: sqlite3.Connection) -> SessionInfo | None:
             row = conn.execute(
-                "SELECT user_id, post_crisis FROM sessions WHERE session_id_hash = ?",
+                "SELECT user_id, post_crisis, router_state FROM sessions WHERE session_id_hash = ?",
                 (session_hash,),
             ).fetchone()
-            return SessionInfo(row[0], bool(row[1])) if row else None
+            return SessionInfo(row[0], bool(row[1]), row[2]) if row else None
 
         return await self._run(op)
 
@@ -176,6 +176,17 @@ class SQLiteRepository:
             cur = conn.execute(
                 "UPDATE sessions SET post_crisis = ? WHERE session_id_hash = ? AND user_id = ?",
                 (int(value), session_hash, user_id),
+            )
+            if cur.rowcount != 1:
+                raise sqlite3.IntegrityError("session not found for user")
+
+        await self._run(op)
+
+    async def set_router_state(self, user_id: str, session_hash: str, state_json: str) -> None:
+        def op(conn: sqlite3.Connection) -> None:
+            cur = conn.execute(
+                "UPDATE sessions SET router_state = ? WHERE session_id_hash = ? AND user_id = ?",
+                (state_json, session_hash, user_id),
             )
             if cur.rowcount != 1:
                 raise sqlite3.IntegrityError("session not found for user")

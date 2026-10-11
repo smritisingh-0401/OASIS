@@ -1,0 +1,36 @@
+# Therapy router start weights (design §7). score_m = bias_m + sum_s weight_{m,s} * x_s, with
+# x_s in [0, 1]. Companion has the highest bias, so it is the default mode; each structured
+# mode is driven by its dominant cue. Any change must keep tests/unit/test_router.py's
+# scenario table passing or update it on purpose (CR-11).
+schema: oasis.content/v1
+kind: router_weights
+version: "2026.10.0"
+review_status: needs_clinician_review
+margin: 0.15                    # the leader must beat the runner-up by this much
+hysteresis_turns: 3             # ...for this many turns in a row before a switch or offer
+acute_overwhelm_threshold: 0.6  # overwhelm at or above this goes straight to grounding
+modes:
+  companion:
+    bias: 0.35
+    weights:
+      wants_to_talk: 0.8
+      loneliness: 0.3
+      sadness: 0.15
+      valence_neg: 0.1
+  cbt:
+    bias: 0.0
+    weights:
+      distortion: 0.9
+      shame: 0.25
+      phq_moderate_plus: 0.1
+  dbt:
+    bias: 0.0
+    weights:
+      dysregulation: 0.9
+      anger: 0.35
+  mindfulness:
+    bias: 0.0
+    weights:
+      overwhelm: 1.2
+      anxiety: 0.5
+      gad_moderate_plus: 0.1

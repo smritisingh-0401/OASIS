@@ -1,0 +1,17 @@
+# Grounding exercise for acute overwhelm: starts at once, without a consent offer (design
+# §7.2). Low-risk sensory steps only (rules CL7). Wording needs clinician review (CR-12).
+schema: oasis.content/v1
+kind: technique
+id: senses_54321
+mode: grounding
+name: 5-4-3-2-1 senses
+version: "2026.10.0"
+review_status: needs_clinician_review
+source: "5-4-3-2-1 sensory grounding technique, widely used in anxiety and trauma-informed care"
+offer: "Would you like to try a short grounding exercise using your senses? You can stop at any time."
+steps:
+  - "Let's slow things down together. Look around and name five things you can see."
+  - "Now notice four things you can touch or feel, like your feet on the floor or the chair under you."
+  - "Next, listen for three things you can hear, near or far."
+  - "Now notice two things you can smell. If nothing comes to mind, name two smells you like."
+  - "Last one: notice one thing you can taste, or take a sip of water if you have some nearby. How are you feeling now?"
