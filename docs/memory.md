@@ -103,6 +103,9 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-11 | Real model: `unsloth/Qwen3.5-4B-GGUF` Q4_K_M (Apache-2.0, 2.74 GB) on llama.cpp b11552 (winget `ggml.llamacpp`, Vulkan build), started with `llama-server -hf unsloth/Qwen3.5-4B-GGUF:Q4_K_M --no-mmproj --jinja -c 4096` | First real-model runs; official Qwen repo publishes no GGUF | Other quantisers |
 | 2026-10-11 | Checks live in `guard/checks.py` as the engine's default guard (pass-through `guard/hook.py` removed); reason codes are rule names; no `companion/plan.py`; one checks file | Design §8.2 puts the C-* checks in the guard; the companion plan is one dictionary entry | Separate companion package; two YAML files |
 | 2026-10-11 | Prompt "must" line and retry note use plain sentences per rule instead of rule names | A real model follows sentences, not snake_case | Rule names |
+| 2026-10-12 | Varied openers: the last 3 companion openers go into the plan, the prompt and a `fresh_opener` check | The 4B model opened most replies the same way; a concrete "do not begin with" works where "vary your wording" does not | Prompt instruction only; higher sampling temperature |
+| 2026-10-12 | `validate_first`, `one_question` and `fresh_opener` are soft rules: retried, then kept; praise, advice and dependency stay hard | A phrase list cannot know every way to validate; as a hard rule it sent 5/48 out-of-place fallbacks in the conversation tone check | Ever-longer phrase lists |
+| 2026-10-12 | Companion fallback "I hear you. What feels most important to talk about right now?"; the Socratic `guard_fallback` stays for other modes. Warmth about good news allowed (Smriti) | The Socratic question does not fit companion talk, especially good news | One fallback for every mode; blocking "glad to hear" |
 | 2026-10-11 | Psychoeducation cue is a `psychoed` scorer in `cues.yaml` (no `psychoed/cues.py`); reading level is a stdlib Flesch-Kincaid check at startup (no `scripts/readability.py`) | Reuses the Phase 4 scorer; bad content fails at boot | Separate cue module; a printing script |
 | 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
 | 2026-10-07 | Git: commits authored as Smriti; no assistant attribution anywhere; assistant config files git-ignored; Conventional Commits; one branch per phase | Authorship and repository hygiene | — |
@@ -175,11 +178,12 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-11 | 5 | Psychoeducation cue | trigger set 23/23 fire with the expected item; false positives 0/22 near-miss ordinary messages, 0/104 Phase 3 conversation turns, 0/85 Phase 2 benign messages |
 | 2026-10-11 | 5 | Planner latency (dev machine) | p50 0.28 ms, p99 0.47 ms |
 | 2026-10-11 | 5 | Mutation spot-check | 10/10 caught after one new test (9/10 before) |
-| 2026-10-11 | 6 | Tests | 956 passed, 0 skipped |
+| 2026-10-11 | 6 | Tests | 975 passed, 0 skipped |
 | 2026-10-11 | 6 | Real-model tone check (Qwen3.5-4B Q4_K_M, llama.cpp b11552, dev machine) | Final run 10/12 first drafts pass, both rejections genuine; 0 fallbacks in every run; 4.7–6 s per reply after a 15.7 s first reply |
 | 2026-10-11 | 6 | Coverage | 98.2% overall; `oasis.guard` 100% |
 | 2026-10-11 | 6 | Companion checks | 12/12 curated good replies pass; 21/21 curated bad replies fail with exactly the labelled rules; guard fallback and the fake model's replies pass |
-| 2026-10-11 | 6 | Mutation spot-check | 11/11 caught after one test rewrite (10/11 before) |
+| 2026-10-11 | 6 | Mutation spot-check | 11/11 caught after one test rewrite (10/11 before); opener and soft-rule round 9/9 after one test fix (8/9 before) |
+| 2026-10-12 | 6 | Conversation tone check (real model, 48 turns) | Fallbacks 5/48 -> 0/48; repeated openers in conversations 8/18 -> 4/18; first drafts passing 41/48 -> 38/48 |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
 | 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |

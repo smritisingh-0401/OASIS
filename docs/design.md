@@ -407,7 +407,8 @@ Exactly one retry; no other LLM calls. The same `guard.check` is used for therap
 - Phrase lists: `content/companion/checks.yaml` (CR-14), matched on the safety normaliser's base form; invalid files stop startup.
 - **Asked-for advice:** an `asks_advice` cue in `content/lexicons/cues.yaml` ("what should I do", "any tips", "how do I deal with") swaps `no_advice` for `offer_ideas` in that turn's companion plan (FR-CMP-2 "unprompted"); companion rule order is `validate_first, no_advice|offer_ideas, one_question, no_praise`, so suggestions come before the closing question.
 - Every LLM-phrased companion plan carries the rules: routed turns, the turn after a crisis is cleared, and typing during a questionnaire.
-- Rejected twice, or no time for a retry: the `guard_fallback` template, which passes the companion checks itself. Phase 7 replaces it with the Socratic bank.
+- **Varied openers:** the planner puts the first three words (normalised) of the last 3 companion replies into `Plan.avoid_openers`; the prompt says "do not begin with: ..." and `fresh_opener` fails a draft that still does.
+- **Soft and hard rules:** `validate_first`, `one_question` and `fresh_opener` are soft (`SOFT_RULES`): a draft failing only these is retried, then kept rather than replaced (also when there is no time to retry). `no_praise`, `no_advice` and `no_dependency` are hard: two failures give the fallback, `companion_fallback` ("I hear you. What feels most important to talk about right now?") in companion mode and `guard_fallback` elsewhere. Phase 7 replaces `guard_fallback` with the Socratic bank.
 
 ---
 

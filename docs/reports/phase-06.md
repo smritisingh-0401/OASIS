@@ -10,7 +10,8 @@
 | Advice cue | `content/lexicons/cues.yaml` (`asks_advice`), `core/signals.py` | "what should I do", "any tips", "how do I deal with", "should I…" swap `no_advice` for `offer_ideas` ("offer one or two gentle, practical suggestions") for that turn |
 | Companion plan | `core/planner.py` | Rules `validate_first, one_question, no_advice, no_praise` on every companion reply the LLM writes: routed turns, the first turn after a crisis is cleared, and typing during a questionnaire |
 | Prompt | `llm/prompt.py` | The "must" line and a retry's "broke these rules" note use plain sentences ("Ask exactly one gentle, open question, at the end."), not rule names. A system line forbids encouraging reliance on OASIS |
-| Tone check | `scripts/tone_check.py` | Sends 12 sample messages to the real model through the full engine and writes every draft, the rules it broke and the final reply to `docs/reports/phase-06-tone-check.md`. `--fake` checks the plumbing |
+| Tone check | `scripts/tone_check.py` | Sends 30 single messages (each in a fresh session) and three 6-turn conversations to the real model through the full engine. Writes every draft, the rules it broke and the final reply to `docs/reports/phase-06-tone-check.md`, and counts conversation replies that reuse an earlier opener. `--fake` checks the plumbing |
+| Varied openers | `core/planner.py`, `guard/checks.py` (`opener`, `fresh_opener`), `llm/prompt.py` | The first three words of the last 3 companion replies go into the plan; the prompt says "do not begin with: ..." and a draft that still does breaks `fresh_opener` |
 
 **The checks.** They are matched on the safety normaliser's form of the reply.
 
@@ -26,7 +27,8 @@ Smriti chose companion-only scope: CBT and DBT replies carry similar rules in th
 
 **On failure.** This uses the existing engine flow:
 1. One retry, naming the broken rules in plain words.
-2. Then the `guard_fallback` template, which passes the companion checks itself. Phase 7 replaces this fallback with the Socratic question bank.
+2. **Soft (form) rules** (`validate_first`, `one_question`, `fresh_opener`): a draft failing only these is kept if the retry does no better, or if there is no time to retry. The validating-phrase list cannot know every way to validate, and the conversation tone check showed that a hard rule here sent out-of-place fallbacks.
+3. **Hard (content) rules** (`no_praise`, `no_advice`, `no_dependency`): two failures give the companion fallback, a neutral "I hear you. What feels most important to talk about right now?". Other modes keep the `guard_fallback` template, which Phase 7 replaces with the Socratic question bank.
 
 **Tuned on the first real-model run** (2026-10-11):
 1. The first run gave 11/12 first-draft passes, but showed three problems. Each fix has a test:
@@ -36,6 +38,18 @@ Smriti chose companion-only scope: CBT and DBT replies carry similar rules in th
 2. Later runs found three more false rejections, each now a passing example in `good_replies.yaml`:
    - "it feels like…" and "it feels really disappointing…": validation phrasings missing from the list.
    - "what you have to do": not advice.
+
+**Tuned on the conversation tone check** (2026-10-11/12):
+1. **Baseline:** 30 single messages plus three 6-turn conversations. It found two problems:
+   - 8 of 18 conversation replies reused an earlier opener.
+   - 5 of 48 turns ended in the old Socratic fallback, all out of place. Asked about moving away for a course, it replied "If a close friend told you they felt this way about themselves...".
+   - In every one of those 5, the model had validated in words missing from the list ("It seems like...", "That silence can feel really heavy..."). Nothing harmful was rejected.
+2. **The fixes:**
+   - The varied-opener rule.
+   - Soft form rules.
+   - A neutral companion fallback.
+   - Phrases added: "it seems like", "can feel", "I hear you", "completely normal to feel", "that must have".
+   - Two advice phrases corrected: "do you feel like you need to..." is not advice; "have you **ever** tried..." is.
 
 **Departures from the phase plan's file list.**
 - No `companion/plan.py`: the companion plan is one dictionary entry in the planner.
@@ -49,14 +63,19 @@ Smriti chose companion-only scope: CBT and DBT replies carry similar rules in th
   - 12 good companion replies must pass.
   - 21 bad replies must fail with exactly the labelled rules: 4 validation, 3 question-count, 4 praise, 6 advice, 4 dependency. Some bad replies break two rules.
 - **Scope:** a reply that breaks every companion rule must pass in CBT, DBT, mindfulness, grounding and psychoeducation modes. Dependency language must fail in all six modes.
-- **Self-consistency:** the `guard_fallback` template and every canned fake-model reply must pass, so the fake-model demo never falls back.
+- **Self-consistency:** both fallback templates and every canned fake-model reply must pass, so the fake-model demo never falls back.
+- **Soft and hard rules:**
+  - A draft failing only form rules is kept after its retry, and also when there is no time to retry.
+  - A soft first draft beats a retry that breaks a hard rule.
+  - Other modes keep their own fallback.
+  - Recent openers reach the plan (companion replies only, last three), the prompt and the check.
 - **Advice cue:** 6 requests fire; 4 ordinary messages, including "my mum always tells me what I should do", don't.
 - **Planner:** the companion rules on routed, post-crisis and questionnaire free-text turns; `no_advice` dropped when advice is asked for.
 - **Engine:**
   - A flattering, dependency-laden first draft is retried, and the retry prompt names "Do not praise or flatter".
   - Two failing drafts end in the fallback.
 - **Content:** each kind of invalid checks file is rejected.
-- **Mutation spot-check:** 11 deliberate faults across checks, planner, signals, prompt, fake model and engine wiring.
+- **Mutation spot-check:** 11 deliberate faults across checks, planner, signals, prompt, fake model and engine wiring, then 9 more on the opener rule, soft rules and companion fallback.
 - **Script demo:** `scripts/tone_check.py --fake`.
 
 ## 3. Results
@@ -64,19 +83,23 @@ Smriti chose companion-only scope: CBT and DBT replies carry similar rules in th
 | Check | Result |
 |---|---|
 | `scripts/verify.py` | All 8 steps pass |
-| Tests | 956 passed, 0 skipped |
+| Tests | 975 passed, 0 skipped |
 | Coverage | 98.2% overall; `oasis.guard` 100%, `oasis.router` 100%, `oasis.assessment` 98.6%, `oasis.safety` 97.1% |
 | Curated replies | 12/12 good pass; 21/21 bad fail with exactly their labelled rules |
 | Advice cue | 6/6 requests fire; 0/4 ordinary messages |
-| Mutation spot-check | 10/11 caught at first. The miss was a non-validating canned fake reply, because the engine test's three messages never selected it; the test was replaced by a direct check of every canned reply. Now 11/11 |
+| Mutation spot-check | 10/11 caught at first. The miss was a non-validating canned fake reply, because the engine test's three messages never selected it; the test was replaced by a direct check of every canned reply. Now 11/11. Second round: 8/9 at first. The miss (ignoring the companion-mode filter on openers) was hidden by the test's history order. Now 9/9 |
 | Tone check, fake model | 12/12 first drafts pass; transcript format confirmed |
-| Tone check, real model (Qwen3.5-4B Q4_K_M, `unsloth/Qwen3.5-4B-GGUF`, llama.cpp b11552) | Final run: 10/12 first drafts pass, and both rejections are genuine (no question; two questions plus unrequested advice), fixed by the retry; 0/12 fallbacks. 0 fallbacks across all runs. Smoke test: thinking disabled, 4.7–6 s per reply after a 15.7 s first reply. Transcript: `phase-06-tone-check.md` |
+| Tone check, real model (Qwen3.5-4B Q4_K_M, `unsloth/Qwen3.5-4B-GGUF`, llama.cpp b11552), 12 single messages | Final run 10/12 first drafts pass, both rejections genuine; 0 fallbacks. Smoke test: thinking disabled, 4.7-6 s per reply after a 15.7 s first reply |
+| Tone check, real model, 30 singles + three 6-turn conversations (48 turns) | Fallbacks 5/48 -> **0/48**. Conversation replies reusing an opener 8/18 -> **4/18**. First drafts passing every check 41/48 -> 38/48 (a repeated opener now counts as a fault and triggers a retry). Transcript of the final run: `phase-06-tone-check.md`; the two later advice-phrase corrections came after it |
 
 ## 4. Known limits
 
-- **Same opener.** The 4B model opens almost every reply with "It sounds like" (it was "It makes sense…" before the rule wording stopped priming it). Within one conversation this will read as scripted; a multi-turn tone check is needed.
+- **Openers still repeat sometimes:** 4 of 18 conversation replies. When the retry also repeats, the draft is kept: it's a style fault, not a reason for the fallback. Across sessions the model still prefers "It sounds like" and "It feels like".
+- **Form rules are soft.** A reply without a listed validating phrase, or with two questions, can reach the user after its retry. Content rules (praise, advice, dependency) stay hard.
+- **Some replies run past three sentences,** mostly ones with advice. There's no length check until Phase 7 (G-LEN).
+- **Some "questions" are suggestions,** such as "Have you thought about asking her if everything is okay?". Only the listed advice phrasings are caught.
 - **Warmth on good news** ("I am really happy to hear that you accomplished…") passes; it is not flattery of the person, but it is close to the line (CR-14).
-- **Twelve samples, one model, single turns.** The pass rate is indicative only.
+- **48 turns, one model, one run per setting.** The figures are indicative only; the model's wording varies between runs.
 - **The phrase lists are hand-written,** and the same author wrote the curated sets. Expect misses:
   - Praise without the listed words ("what courage that took") gets through.
   - Validation in unlisted words ("ugh, that's rough") fails, costing a retry.
