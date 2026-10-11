@@ -19,7 +19,7 @@ Reviewer: _not yet assigned (open item O3)._
 | CR-10 | Assessment cooldowns (14-day re-administration, 24-hour decline cooldown for unprompted offers only (an explicit request overrides it), 24-hour paused expiry, typing after an offer counts as "not now") | `content/assessment/trigger.yaml`, `assessment/flow.py` | 3 | pending | |
 | CR-11 | Router weights, margin, hysteresis N, acute-overwhelm threshold; consent policy (ask once per session before cbt/dbt/mindfulness; "Not now" or typing over the offer resets the lead, so it can be offered again after N more turns; grounding starts without asking) | `content/router/weights.yaml`, `router/router.py` | 4 | pending | Start values: margin 0.15, N = 3, acute 0.6; pinned by the scenario table in `tests/unit/test_router.py` |
 | CR-12 | Technique scripts (v1: low-risk skills only — no cold exposure, breath-holding or intense exercise): Thought check (CBT), STOP skill (DBT), Notice the breath (mindfulness), 5-4-3-2-1 senses (grounding); offer wording; the stop and decline replies | `content/techniques/*.yaml`, `core/templates.py` | 4 | pending | A test rejects breath-holding, cold, running and similar wording |
-| CR-13 | Psychoeducation text | `content/psychoed/items.yaml` | 5 | pending | Each item has source and reading level |
+| CR-13 | Psychoeducation: the 11 item texts and their topic cues, the item order (specific topics before the general item), the `psychoed` cue phrases ("what's wrong with me", "is it normal", diagnosis questions, stigma statements), once-per-session rule, grade-8 reading ceiling | `content/psychoed/items.yaml`, `content/lexicons/cues.yaml` | 5 | pending | Every source page (NHS, WHO) checked 2026-10-11; Flesch-Kincaid grade 4.2-8.0, checked at startup |
 | CR-14 | Companion constraints (praise, advice, dependency lists) | `content/companion/*.yaml` | 6 | pending | |
 | CR-15 | Socratic question bank | `content/guard/socratic_bank.yaml` | 7 | pending | |
 | CR-16 | Distortion categories and guard markers | `content/guard/*.yaml` | 7 | pending | Burns's categories |
@@ -37,3 +37,4 @@ Reviewer: _not yet assigned (open item O3)._
 | 2026-10-08 | Phase 3: CR-07..10 updated to the implementation | Smriti |
 | 2026-10-09 | CR-19 added: explicit screening requests allowed after a crisis | Smriti |
 | 2026-10-11 | Phase 4: CR-11 and CR-12 updated to the implementation; CR-20 added (signal lexicons) | Smriti |
+| 2026-10-11 | Phase 5: CR-13 updated to the implementation | Smriti |
