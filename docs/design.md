@@ -405,7 +405,7 @@ Exactly one retry; no other LLM calls. The same `guard.check` is used for therap
 - **Companion replies only** (Smriti, 2026-10-11), and only for the rules the plan carries: `validate_first` (a validating phrase before the question), `one_question` (exactly one "?", ending the reply), `no_praise`, `no_advice`. CBT and DBT replies are not checked for these until Phase 7.
 - **Every generated reply:** `no_dependency`. The system prompt also tells the model never to encourage reliance on OASIS instead of other people.
 - Phrase lists: `content/companion/checks.yaml` (CR-14), matched on the safety normaliser's base form; invalid files stop startup.
-- **Asked-for advice:** an `asks_advice` cue in `content/lexicons/cues.yaml` ("what should I do", "any tips", "how do I deal with") drops `no_advice` from that turn's companion plan (FR-CMP-2 "unprompted").
+- **Asked-for advice:** an `asks_advice` cue in `content/lexicons/cues.yaml` ("what should I do", "any tips", "how do I deal with") swaps `no_advice` for `offer_ideas` in that turn's companion plan (FR-CMP-2 "unprompted"); companion rule order is `validate_first, no_advice|offer_ideas, one_question, no_praise`, so suggestions come before the closing question.
 - Every LLM-phrased companion plan carries the rules: routed turns, the turn after a crisis is cleared, and typing during a questionnaire.
 - Rejected twice, or no time for a retry: the `guard_fallback` template, which passes the companion checks itself. Phase 7 replaces it with the Socratic bank.
 

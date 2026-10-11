@@ -7,7 +7,7 @@
 | Component | File | Role |
 |---|---|---|
 | Reply checks | `guard/checks.py`, `content/companion/checks.yaml` | `check(draft, plan)` is the engine's default guard (it replaces the Phase 4 pass-through). Each failed check returns the name of the rule it broke |
-| Advice cue | `content/lexicons/cues.yaml` (`asks_advice`), `core/signals.py` | "what should I do", "any tips", "how do I deal with", "should I…" lift `no_advice` for that turn |
+| Advice cue | `content/lexicons/cues.yaml` (`asks_advice`), `core/signals.py` | "what should I do", "any tips", "how do I deal with", "should I…" swap `no_advice` for `offer_ideas` ("offer one or two gentle, practical suggestions") for that turn |
 | Companion plan | `core/planner.py` | Rules `validate_first, one_question, no_advice, no_praise` on every companion reply the LLM writes: routed turns, the first turn after a crisis is cleared, and typing during a questionnaire |
 | Prompt | `llm/prompt.py` | The "must" line and a retry's "broke these rules" note use plain sentences ("Ask exactly one gentle, open question, at the end."), not rule names. A system line forbids encouraging reliance on OASIS |
 | Tone check | `scripts/tone_check.py` | Sends 12 sample messages to the real model through the full engine and writes every draft, the rules it broke and the final reply to `docs/reports/phase-06-tone-check.md`. `--fake` checks the plumbing |
@@ -27,6 +27,15 @@ Smriti chose companion-only scope: CBT and DBT replies carry similar rules in th
 **On failure.** This uses the existing engine flow:
 1. One retry, naming the broken rules in plain words.
 2. Then the `guard_fallback` template, which passes the companion checks itself. Phase 7 replaces this fallback with the Socratic question bank.
+
+**Tuned on the first real-model run** (2026-10-11):
+1. The first run gave 11/12 first-draft passes, but showed three problems. Each fix has a test:
+   - **Every reply opened with "It makes sense…".** The `validate_first` rule text ("…showing it makes sense") was being copied. It now reads "reflecting their feeling back in your own words".
+   - **Advice requests got only a question.** The prompt never said suggestions were allowed. An advice request now carries `offer_ideas`, placed before `one_question` so suggestions come before the closing question.
+   - **One false rejection:** "try to" inside a question.
+2. Later runs found three more false rejections, each now a passing example in `good_replies.yaml`:
+   - "it feels like…" and "it feels really disappointing…": validation phrasings missing from the list.
+   - "what you have to do": not advice.
 
 **Departures from the phase plan's file list.**
 - No `companion/plan.py`: the companion plan is one dictionary entry in the planner.
@@ -55,22 +64,25 @@ Smriti chose companion-only scope: CBT and DBT replies carry similar rules in th
 | Check | Result |
 |---|---|
 | `scripts/verify.py` | All 8 steps pass |
-| Tests | 951 passed, 0 skipped |
+| Tests | 956 passed, 0 skipped |
 | Coverage | 98.2% overall; `oasis.guard` 100%, `oasis.router` 100%, `oasis.assessment` 98.6%, `oasis.safety` 97.1% |
 | Curated replies | 12/12 good pass; 21/21 bad fail with exactly their labelled rules |
 | Advice cue | 6/6 requests fire; 0/4 ordinary messages |
 | Mutation spot-check | 10/11 caught at first. The miss was a non-validating canned fake reply, because the engine test's three messages never selected it; the test was replaced by a direct check of every canned reply. Now 11/11 |
 | Tone check, fake model | 12/12 first drafts pass; transcript format confirmed |
-| Tone check, real model | **Not verified here.** llama-server is not running on this machine; Smriti runs `uv run python scripts/tone_check.py` and reviews the transcript |
+| Tone check, real model (Qwen3.5-4B Q4_K_M, `unsloth/Qwen3.5-4B-GGUF`, llama.cpp b11552) | Final run: 10/12 first drafts pass, and both rejections are genuine (no question; two questions plus unrequested advice), fixed by the retry; 0/12 fallbacks. 0 fallbacks across all runs. Smoke test: thinking disabled, 4.7–6 s per reply after a 15.7 s first reply. Transcript: `phase-06-tone-check.md` |
 
 ## 4. Known limits
 
-- **The real model's pass rate is unknown.** If first drafts often fail, users will see the fixed fallback reply too often. The tone check measures this; the phrase lists or prompt wording may need tuning after it.
+- **Same opener.** The 4B model opens almost every reply with "It sounds like" (it was "It makes sense…" before the rule wording stopped priming it). Within one conversation this will read as scripted; a multi-turn tone check is needed.
+- **Warmth on good news** ("I am really happy to hear that you accomplished…") passes; it is not flattery of the person, but it is close to the line (CR-14).
+- **Twelve samples, one model, single turns.** The pass rate is indicative only.
 - **The phrase lists are hand-written,** and the same author wrote the curated sets. Expect misses:
   - Praise without the listed words ("what courage that took") gets through.
   - Validation in unlisted words ("ugh, that's rough") fails, costing a retry.
   - Imperative advice outside the listed openers gets through.
 - **"Exactly one question" counts question marks.** A question phrased without "?" fails, and a rhetorical "?" counts.
+- **Advice suggestions are not checked** for safety beyond the dependency list until Phase 7 (diagnosis and medication checks).
 - **The advice cue is a phrase list:** "I don't know what to do" does not count as asking.
 - **CBT and DBT replies** are only checked for dependency language until Phase 7.
 - English only; all phrase lists await clinician review (CR-14).
