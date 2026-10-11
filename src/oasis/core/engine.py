@@ -20,7 +20,7 @@ from oasis.assessment.flow import ITEM9, active
 from oasis.core.planner import plan_turn
 from oasis.core.templates import TEMPLATES, fallback_template
 from oasis.core.trace import StageClock, trace_to_json
-from oasis.guard.hook import pass_guard
+from oasis.guard.checks import check as check_reply
 from oasis.llm.client import LLMClient, LLMFailure, clean_reply
 from oasis.llm.prompt import build_messages
 from oasis.router.router import dump_state, load_state
@@ -108,7 +108,7 @@ class ChatEngine:
         repo: Repository,
         settings: Settings,
         planner: Planner = plan_turn,
-        guard: Guard = pass_guard,
+        guard: Guard = check_reply,
     ) -> None:
         self.safety = safety
         self.llm = llm

@@ -106,6 +106,7 @@ class Signals:
     wants_to_talk: float = 0.0
     opt_out: bool = False  # "stop the exercise"; read only while an exercise runs
     psychoed_cue: bool = False  # stigma, "is it normal", "what's wrong with me" (Phase 5)
+    asks_advice: bool = False  # "what should I do?": lifts companion's no_advice (Phase 6)
 
 
 @dataclass(frozen=True)

@@ -33,4 +33,5 @@ def extract(message: str) -> Signals:
         wants_to_talk=cues["wants_to_talk"].score(norm, n),
         opt_out=cues["opt_out"].score(norm, n) > 0,
         psychoed_cue=cues["psychoed"].score(norm, n) > 0,
+        asks_advice=cues["asks_advice"].score(norm, n) > 0,
     )
