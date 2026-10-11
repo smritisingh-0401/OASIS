@@ -12,6 +12,8 @@ from oasis.core.engine import CRISIS_PLACEHOLDER, ChatEngine, InvalidSession
 from oasis.core.templates import TEMPLATES
 from oasis.llm.client import LLMFailure
 from oasis.llm.fake import FakeLLM
+from oasis.router.exercise import technique_for
+from oasis.router.router import load_state
 from oasis.safety.gate import RuleBasedSafetyGate
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.safety.rules import load_ruleset
@@ -21,6 +23,7 @@ from oasis.storage.repository import StorageBusy, StorageUnavailable
 from oasis.types import (
     ChatMessage,
     ConversationState,
+    ExerciseAction,
     GuardVerdict,
     Plan,
     SafetyVerdict,
@@ -430,3 +433,115 @@ async def test_record_crisis_swallows_storage_errors(settings: Settings) -> None
 async def test_record_crisis_ignores_unknown_sessions(settings: Settings) -> None:
     engine = _engine(settings)
     await engine.record_crisis("nobody", SafetyVerdict(is_crisis=True))
+
+
+# --- router (Phase 4) ----------------------------------------------------------------
+
+DISTORTED = "I'm such a failure, I always mess everything up"
+ACUTE = "I can't breathe, everything is too much, I'm falling apart"
+
+
+class RouterSaveFails(MemoryRepository):
+    async def set_router_state(self, *args: Any, **kwargs: Any) -> None:
+        raise StorageUnavailable()
+
+
+@pytest.mark.anyio
+async def test_router_memory_carries_across_turns(settings: Settings) -> None:
+    engine = _engine(settings)
+    await _session(engine)
+    for _ in range(2):
+        assert (await engine.handle_turn("h", DISTORTED)).exercise_card is None
+    third = await engine.handle_turn("h", DISTORTED)
+    assert third.exercise_card is not None
+    assert (third.exercise_card.step, third.exercise_card.mode) == ("offer", "cbt")
+    info = await engine.repo.get_session("h")
+    assert info is not None
+    assert load_state(info.router_state).offered == "cbt"
+
+
+@pytest.mark.anyio
+async def test_an_exercise_step_reaches_the_prompt_as_a_script(settings: Settings) -> None:
+    llm = FakeLLM(replies=["Let's try noticing five things around you."])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    result = await engine.handle_turn("h", ACUTE)
+    step = technique_for("grounding").steps[0]
+    assert result.mode == "grounding"
+    assert f"- script: {step}" in llm.last_messages[0].content
+    assert result.exercise_card is not None
+
+
+@pytest.mark.anyio
+async def test_the_fake_model_says_the_script_step_itself(settings: Settings) -> None:
+    engine = _engine(settings)
+    await _session(engine)
+    result = await engine.handle_turn("h", ACUTE)
+    assert result.reply == technique_for("grounding").steps[0]
+
+
+@pytest.mark.anyio
+async def test_a_failed_llm_falls_back_to_the_script_step(settings: Settings) -> None:
+    engine = _engine(settings, llm=FakeLLM(fail="down"))
+    await _session(engine)
+    result = await engine.handle_turn("h", ACUTE)
+    assert result.reply == technique_for("grounding").steps[0]
+    assert result.fallback_reason == "llm.down"
+    assert result.mode == "grounding"
+
+
+@pytest.mark.anyio
+async def test_routing_needs_no_llm(settings: Settings) -> None:
+    llm = FakeLLM(fail="down")
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    for _ in range(3):
+        result = await engine.handle_turn("h", DISTORTED)
+    assert result.exercise_card is not None  # the offer is templated: no LLM needed
+    assert llm.calls == 2
+
+
+@pytest.mark.anyio
+async def test_router_save_failure_still_replies(settings: Settings) -> None:
+    engine = _engine(settings, repo=RouterSaveFails())
+    await _session(engine)
+    result = await engine.handle_turn("h", ACUTE)
+    assert result.mode == "grounding"
+    assert "storage.down" in result.degraded
+
+
+@pytest.mark.anyio
+async def test_storage_down_routes_statelessly(settings: Settings) -> None:
+    engine = _engine(settings, repo=BrokenRepo("load"))
+    result = await engine.handle_turn("h", ACUTE)
+    assert result.mode == "grounding"
+    assert result.reply == technique_for("grounding").steps[0]
+
+
+@pytest.mark.anyio
+async def test_trace_holds_the_decision_but_no_text(
+    settings: Settings, caplog: pytest.LogCaptureFixture
+) -> None:
+    engine = _engine(settings)
+    await _session(engine)
+    with caplog.at_level("INFO", logger="oasis.turn"):
+        await engine.handle_turn("h", DISTORTED)
+    line = caplog.records[-1].getMessage()
+    for key in ('"route":', '"contributions":', '"reason_codes":'):
+        assert key in line
+    assert "failure" not in line
+    assert "mess everything" not in line
+
+
+@pytest.mark.anyio
+async def test_exercise_buttons_reach_the_planner(settings: Settings) -> None:
+    engine = _engine(settings)
+    await _session(engine)
+    for _ in range(3):
+        await engine.handle_turn("h", DISTORTED)
+    started = await engine.handle_turn("h", "Yes, let's try", ExerciseAction("accept"))
+    assert started.mode == "cbt"
+    assert started.reply == technique_for("cbt").steps[0]
+    stopped = await engine.handle_turn("h", "Stop", ExerciseAction("stop"))
+    assert stopped.reply == TEMPLATES["exercise_stopped"]
+    assert stopped.exercise_card is None
