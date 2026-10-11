@@ -89,7 +89,7 @@ async function loadHistory() {
     const body = await resp.json();
     for (const turn of body.turns) addMessage(turn.role, turn.content);
     // An open questionnaire picks up where it was: its buttons come back with the history.
-    if (body.assessment) renderCard(body.assessment);
+    showCard(body);
     // Post-crisis mode outlives a reload, so the way out must too.
     const last = body.turns[body.turns.length - 1];
     if (last && (last.mode === "crisis" || last.mode === "post_crisis")) continueButton.hidden = false;
@@ -120,8 +120,38 @@ function act(label, action) {
   return () => sendText(label, action);
 }
 
+// One card slot: a structured-mode offer or running exercise, else the questionnaire.
+function showCard(body) {
+  if (body.exercise) renderExercise(body.exercise);
+  else renderCard(body.assessment);
+}
+
+function renderExercise(ex) {
+  card.replaceChildren();
+  card.hidden = false;
+  card.setAttribute("aria-label", "Exercise");
+  if (ex.step === "offer") {
+    const options = document.createElement("div");
+    options.className = "card-options";
+    options.append(
+      button("Yes, let's try", act("Yes, let's try", { type: "exercise_consent", accept: true })),
+      button("Not now", act("Not now", { type: "exercise_consent", accept: false })),
+    );
+    card.append(line("p", "Try: " + ex.name, "card-title"), options);
+    card.querySelector("button").focus();
+    return;
+  }
+  // A running exercise is answered in words, so focus goes back to the message box.
+  const controls = document.createElement("div");
+  controls.className = "card-controls";
+  controls.append(button("Stop exercise", act("Stop", { type: "exercise_stop" }), "link"));
+  card.append(line("p", ex.name + " · Step " + ex.item + " of " + ex.item_count, "card-title"), controls);
+  if (!help.contains(document.activeElement)) input.focus();
+}
+
 function renderCard(step) {
   card.replaceChildren();
+  card.setAttribute("aria-label", "Questionnaire");
   card.hidden = !step || step.step === "result";
   if (card.hidden) {
     // The pressed button is gone; keep keyboard users in the conversation.
@@ -178,7 +208,7 @@ async function sendText(text, action) {
     if (body.preface) addMessage("assistant", body.preface);
     addMessage("assistant", body.reply, note);
     status.textContent = "";
-    renderCard(body.assessment);
+    showCard(body);
     if (body.mode === "crisis" || body.mode === "post_crisis") {
       showCrisisSupport();
     } else {

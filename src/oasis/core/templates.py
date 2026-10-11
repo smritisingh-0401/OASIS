@@ -27,6 +27,14 @@ TEMPLATES: dict[str, str] = {
         "I can't keep track of the questionnaire right now, so let's leave it for the moment. "
         "We can keep talking, and you can try it again later."
     ),
+    # Exercise consent and control (CR-18, CR-12).
+    "exercise_declined": "That's completely fine. We can just keep talking. What's on your mind?",
+    "exercise_stopped": (
+        "Okay, let's stop the exercise there. We can keep talking about whatever feels right."
+    ),
+    "exercise_unavailable": (
+        "That exercise isn't open any more, so let's leave it for now. We can keep talking."
+    ),
     "guard_fallback": (
         "That sounds really hard to sit with. If a close friend told you they felt this way "
         "about themselves, what would you want them to know?"

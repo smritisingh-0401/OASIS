@@ -13,7 +13,25 @@ SYSTEM_TEMPLATE = (
     "Follow the PLAN exactly. Do not change its approach.\n"
     "PLAN:\n"
     "- mode: {mode}\n"
+    "- goal: {goal}\n"
     "- must: {constraints}"
+)
+
+# Goal text per mode (design §13.2). The decision plane picks the mode; this only says how
+# that mode should sound.
+GOALS = {
+    "companion": "Reflect the feeling you notice, then ask one gentle open question.",
+    "cbt": "Acknowledge the feeling. Invite them to examine the thought with one Socratic "
+    "question.",
+    "dbt": "Acknowledge the intensity. Offer the named skill briefly and ask if they'd like "
+    "to try it.",
+    "mindfulness": "Guide one short, low-risk grounding step from the script.",
+    "grounding": "Guide one short, low-risk grounding step from the script.",
+}
+SCRIPT_MARK = "\n- script: "
+STEP_GOAL = (
+    "Guide them through the script step below, in your own words, keeping its meaning. "
+    "Do not add steps or advice."
 )
 
 # Known limit: characters approximate tokens (~3.5 chars/token for English). Switch to
@@ -30,9 +48,12 @@ def build_messages(
     history_turns: int,
     retry_reasons: Sequence[str] = (),
 ) -> list[ChatMessage]:
+    goal = STEP_GOAL if plan.snippet else GOALS.get(plan.mode, GOALS["companion"])
     system = SYSTEM_TEMPLATE.format(
-        mode=plan.mode, constraints=", ".join(plan.constraints) or "none"
+        mode=plan.mode, goal=goal, constraints=", ".join(plan.constraints) or "none"
     )
+    if plan.snippet:
+        system += f"{SCRIPT_MARK}{plan.snippet}"
     if retry_reasons:
         system += (
             "\nYour previous draft broke these rules: "

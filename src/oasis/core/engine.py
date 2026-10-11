@@ -20,8 +20,10 @@ from oasis.assessment.flow import ITEM9, active
 from oasis.core.planner import plan_turn
 from oasis.core.templates import TEMPLATES, fallback_template
 from oasis.core.trace import StageClock, trace_to_json
+from oasis.guard.hook import pass_guard
 from oasis.llm.client import LLMClient, LLMFailure, clean_reply
 from oasis.llm.prompt import build_messages
+from oasis.router.router import dump_state, load_state
 from oasis.safety.gate import SafetyGate, check_fail_closed
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
@@ -36,9 +38,12 @@ from oasis.types import (
     AssessmentCard,
     AssessmentRecord,
     ConversationState,
+    ExerciseAction,
+    ExerciseCard,
     GuardVerdict,
     Mode,
     Plan,
+    RouterState,
     SafetyVerdict,
     TurnRecord,
     TurnTrace,
@@ -57,13 +62,9 @@ ITEM9_VERDICT = SafetyVerdict(
     is_crisis=True, tiers=frozenset({"item9"}), pattern_ids=("assessment.phq9.item9",)
 )
 
-Planner = Callable[[str, ConversationState, AssessmentAction | None], Plan]
+Action = AssessmentAction | ExerciseAction
+Planner = Callable[[str, ConversationState, Action | None], Plan]
 Guard = Callable[[str, Plan], GuardVerdict]
-
-
-def pass_guard(draft: str, plan: Plan) -> GuardVerdict:
-    """Guard hook; the hypercompliance guard replaces it in Phase 7."""
-    return GuardVerdict(ok=True)
 
 
 class InvalidSession(Exception):
@@ -84,6 +85,7 @@ class TurnResult:
     fallback_reason: str | None = None
     verdict: SafetyVerdict = _CLEAR
     card: AssessmentCard | None = None
+    exercise_card: ExerciseCard | None = None
     # Assessment escalated by a PHQ-9 item-9 answer, saved after the handoff is sent.
     escalated: AssessmentRecord | None = None
     preface: str | None = None  # shown as its own message before `reply`
@@ -120,7 +122,7 @@ class ChatEngine:
         self._post_crisis: set[str] = set()
 
     async def handle_turn(
-        self, session_hash: str, message: str, action: AssessmentAction | None = None
+        self, session_hash: str, message: str, action: Action | None = None
     ) -> TurnResult:
         timeout = self.settings.request_timeout_s
         # Reserve a tenth of the budget for recording, so generation never eats it all.
@@ -144,6 +146,7 @@ class ChatEngine:
         user_id: str | None = None
         history: list[TurnRecord] = []
         assessments: list[AssessmentRecord] = []
+        router_state = RouterState()
         post_crisis = session_hash in self._post_crisis
         try:
             session = await self.repo.get_session(session_hash)
@@ -151,6 +154,7 @@ class ChatEngine:
                 raise InvalidSession
             user_id = session.user_id
             post_crisis = post_crisis or session.post_crisis
+            router_state = load_state(session.router_state)
             history = await self.repo.recent_turns(
                 user_id, session_hash, max(self.settings.history_turns, HISTORY_LOAD)
             )
@@ -161,7 +165,11 @@ class ChatEngine:
 
         # Stage 5 — plan.
         state = ConversationState(
-            tuple(history), post_crisis, tuple(assessments), datetime.datetime.now(datetime.UTC)
+            tuple(history),
+            post_crisis,
+            tuple(assessments),
+            datetime.datetime.now(datetime.UTC),
+            router_state,
         )
         try:
             plan = self.planner(message, state, action)
@@ -176,6 +184,8 @@ class ChatEngine:
             await self._clear_post_crisis(user_id, session_hash, degraded)
         if plan.assessment is not None:
             plan = await self._save_assessment(user_id, plan, degraded)
+        if plan.router_state is not None and plan.router_state != router_state:
+            await self._save_router_state(user_id, session_hash, plan.router_state, degraded)
 
         # Stages 6-7 — generate and guard, or use the fixed text the plan names.
         if plan.templated:
@@ -186,7 +196,7 @@ class ChatEngine:
         clock.mark("generate", draft.fallback_reason or "ok")
 
         # Stage 8 — record.
-        trace = _trace(turn_id, clock, verdict, plan.mode, draft, degraded)
+        trace = _trace(turn_id, clock, verdict, plan, draft, degraded)
         persisted = False
         if user_id is not None:
             try:
@@ -223,7 +233,7 @@ class ChatEngine:
                 degraded.add(_storage_code(exc))
         clock.mark("record", "ok" if persisted else "skipped")
 
-        turn_log.info(trace_to_json(_trace(turn_id, clock, verdict, plan.mode, draft, degraded)))
+        turn_log.info(trace_to_json(_trace(turn_id, clock, verdict, plan, draft, degraded)))
         return TurnResult(
             turn_id,
             draft.reply,
@@ -233,6 +243,7 @@ class ChatEngine:
             degraded=frozenset(degraded),
             fallback_reason=draft.fallback_reason,
             card=plan.card,
+            exercise_card=plan.exercise_card,
             preface=plan.preface,
         )
 
@@ -245,7 +256,8 @@ class ChatEngine:
         escalated: AssessmentRecord | None = None,
     ) -> TurnResult:
         self._post_crisis.add(session_hash)
-        turn_log.info(trace_to_json(_trace(turn_id, clock, verdict, "crisis", _NO_DRAFT, set())))
+        crisis_plan = Plan(mode="crisis", templated=True)
+        turn_log.info(trace_to_json(_trace(turn_id, clock, verdict, crisis_plan, _NO_DRAFT, set())))
         return TurnResult(turn_id, HANDOFF_REPLY, "crisis", templated=True, persisted=False,
                           degraded=frozenset(), verdict=verdict, escalated=escalated)  # fmt: skip
 
@@ -262,6 +274,18 @@ class ChatEngine:
             return Plan(mode="assessment", templated=True, template_id="assessment_unavailable",
                         reason_codes=(*plan.reason_codes, "assessment.not_saved"))  # fmt: skip
         return plan
+
+    async def _save_router_state(
+        self, user_id: str | None, session_hash: str, rs: RouterState, degraded: set[str]
+    ) -> None:
+        """Best effort: if it fails, this turn's reply is still right; the next turn starts
+        from the last saved router memory."""
+        if user_id is None:
+            return
+        try:
+            await self.repo.set_router_state(user_id, session_hash, dump_state(rs))
+        except StorageError as exc:
+            degraded.add(_storage_code(exc))
 
     async def record_crisis(
         self,
@@ -323,7 +347,7 @@ class ChatEngine:
         for attempt in (1, 2):
             remaining = deadline - time.monotonic()
             if attempt == 2 and remaining < self.settings.guard_retry_min_budget_s:
-                return self._fallback("guard.no_budget", attempt - 1, outcomes)
+                return self._fallback(plan, "guard.no_budget", attempt - 1, outcomes)
             messages = build_messages(
                 plan,
                 history,
@@ -339,20 +363,22 @@ class ChatEngine:
                     )
                 text = clean_reply(raw)
             except TimeoutError:
-                return self._fallback("llm.timeout", attempt, outcomes)
+                return self._fallback(plan, "llm.timeout", attempt, outcomes)
             except LLMFailure as failure:
-                return self._fallback(f"llm.{failure.reason}", attempt, outcomes)
+                return self._fallback(plan, f"llm.{failure.reason}", attempt, outcomes)
 
             verdict = self.guard(text, plan)
             outcomes.append("pass" if verdict.ok else "reject")
             if verdict.ok:
                 return _Draft(text, attempt, tuple(outcomes), None)
             retry_reasons = verdict.reasons
-        return self._fallback("guard.fallback", 2, outcomes)
+        return self._fallback(plan, "guard.fallback", 2, outcomes)
 
     @staticmethod
-    def _fallback(reason: str, attempts: int, outcomes: list[str]) -> _Draft:
-        return _Draft(TEMPLATES[fallback_template(reason)], attempts, tuple(outcomes), reason)
+    def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str]) -> _Draft:
+        # An exercise step falls back to its own vetted text, so the exercise carries on.
+        text = plan.snippet or TEMPLATES[fallback_template(reason)]
+        return _Draft(text, attempts, tuple(outcomes), reason)
 
 
 _NO_DRAFT = _Draft("", 0, (), None)
@@ -362,7 +388,7 @@ def _trace(
     turn_id: str,
     clock: StageClock,
     verdict: SafetyVerdict,
-    mode: Mode,
+    plan: Plan,
     draft: _Draft,
     degraded: set[str],
 ) -> TurnTrace:
@@ -370,17 +396,19 @@ def _trace(
         turn_id,
         tuple(clock.stages),
         verdict,
-        mode,
+        plan.mode,
         draft.attempts,
         draft.guard_outcomes,
         draft.fallback_reason,
         frozenset(degraded),
+        plan.reason_codes,
+        plan.route,
     )
 
 
-def _item9_positive(action: AssessmentAction | None) -> bool:
+def _item9_positive(action: Action | None) -> bool:
     return (
-        action is not None
+        isinstance(action, AssessmentAction)
         and action.kind == "answer"
         and (action.instrument, action.item) == ITEM9
         and (action.value or 0) >= 1

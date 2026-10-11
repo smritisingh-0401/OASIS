@@ -20,6 +20,9 @@ from oasis.api.schemas import (
     AssessmentCardOut,
     ChatRequest,
     ChatResponse,
+    ExerciseCardOut,
+    ExerciseConsentAction,
+    ExerciseStopAction,
     HealthResponse,
     HistoryResponse,
     HistoryTurn,
@@ -29,8 +32,10 @@ from oasis.api.schemas import (
 from oasis.assessment import flow
 from oasis.core.engine import ChatEngine, InvalidSession
 from oasis.core.templates import TEMPLATES
+from oasis.router.exercise import card_for
+from oasis.router.router import load_state
 from oasis.storage.repository import StorageError
-from oasis.types import AssessmentAction
+from oasis.types import AssessmentAction, ExerciseAction, ExerciseCard
 
 log = logging.getLogger("oasis.api")
 
@@ -53,9 +58,13 @@ def hash_token(token: str | None) -> str:
     return hashlib.sha256(token.encode()).hexdigest() if token else ""
 
 
-def _action(action: Action | None) -> AssessmentAction | None:
+def _action(action: Action | None) -> AssessmentAction | ExerciseAction | None:
     if action is None:
         return None
+    if isinstance(action, ExerciseConsentAction):
+        return ExerciseAction("accept" if action.accept else "decline")
+    if isinstance(action, ExerciseStopAction):
+        return ExerciseAction("stop")
     if isinstance(action, AnswerAction):
         return AssessmentAction("answer", action.value, action.instrument, action.item)
     if isinstance(action, StepAction):
@@ -63,6 +72,10 @@ def _action(action: Action | None) -> AssessmentAction | None:
                  "assessment_abort": "abort"}  # fmt: skip
         return AssessmentAction(kinds[action.type])  # type: ignore[arg-type]
     return AssessmentAction("accept" if action.accept else "decline")
+
+
+def _exercise_out(card: ExerciseCard | None) -> ExerciseCardOut | None:
+    return ExerciseCardOut(**asdict(card)) if card else None
 
 
 def build_router(engine: ChatEngine) -> APIRouter:
@@ -124,6 +137,7 @@ def build_router(engine: ChatEngine) -> APIRouter:
             persisted=result.persisted,
             degraded=sorted(result.degraded),
             assessment=AssessmentCardOut(**asdict(result.card)) if result.card else None,
+            exercise=_exercise_out(result.exercise_card),
         )
 
     @router.get("/history")
@@ -143,6 +157,7 @@ def build_router(engine: ChatEngine) -> APIRouter:
         card = flow.card_for(open_rec) if open_rec else None
         return HistoryResponse(
             assessment=AssessmentCardOut(**asdict(card)) if card else None,
+            exercise=_exercise_out(card_for(load_state(info.router_state))),
             turns=[
                 HistoryTurn(
                     turn_id=t.turn_id,
