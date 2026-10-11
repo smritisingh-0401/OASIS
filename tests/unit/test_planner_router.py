@@ -169,7 +169,12 @@ def test_every_routed_plan_carries_the_full_decision() -> None:
 
 def test_mode_constraints_follow_the_prompt_table() -> None:
     companion = plan_turn("I just want to vent about my day", state())
-    assert set(companion.constraints) == {"one_question", "no_advice", "no_praise"}
+    assert set(companion.constraints) == {
+        "validate_first",
+        "one_question",
+        "no_advice",
+        "no_praise",
+    }
     cbt = plan_turn(DISTORTED, state(RouterState(current="cbt", consented=frozenset({"cbt"}))))
     assert set(cbt.constraints) == {"validate_first", "one_question", "socratic"}
 

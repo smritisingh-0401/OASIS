@@ -1,0 +1,17 @@
+# Companion replies that must pass every companion check (FR-CMP-1): a validating phrase,
+# then exactly one gentle question; no praise, no unprompted advice, no dependency language.
+# Written before the check phrase lists.
+version: "2026.10.0"
+replies:
+  - "That sounds really exhausting. What has been weighing on you the most?"
+  - "It makes sense that you'd feel hurt after that. How are you feeling about it now?"
+  - "I'm sorry you're going through this. What's been the hardest part?"
+  - "No wonder you feel drained after a week like that. What would feel good to talk about first?"
+  - "That sounds lonely, especially at the weekend. What do your weekends usually look like?"
+  - "It sounds like you've been carrying a lot on your own. Would you like to tell me more about it?"
+  - "That must have been really frustrating. What happened next?"
+  - "It's understandable to feel nervous before something this big. What part worries you most?"
+  - "I can hear how tired you are. What has your sleep been like lately?"
+  - "That's a lot to deal with at once. Where would you like to start?"
+  - "It's okay to feel angry about that. What do you wish they had done instead?"
+  - "I can see why that stung. How did you respond in the moment?"

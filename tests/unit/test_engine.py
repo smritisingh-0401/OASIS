@@ -119,18 +119,18 @@ async def _session(engine: ChatEngine, session_hash: str = "h") -> str:
 
 @pytest.mark.anyio
 async def test_normal_turn_is_generated_and_recorded(settings: Settings) -> None:
-    llm = FakeLLM(replies=["How are you feeling about it?"])
+    llm = FakeLLM(replies=["That sounds long. How are you feeling about it?"])
     engine = _engine(settings, llm=llm)
     uid = await _session(engine)
 
     result = await engine.handle_turn("h", "I had a long day")
 
-    assert result.reply == "How are you feeling about it?"
+    assert result.reply == "That sounds long. How are you feeling about it?"
     assert (result.mode, result.templated, result.persisted) == ("companion", False, True)
     turns = await engine.repo.recent_turns(uid, "h", limit=10)
     assert [(t.role, t.content) for t in turns] == [
         ("user", "I had a long day"),
-        ("assistant", "How are you feeling about it?"),
+        ("assistant", "That sounds long. How are you feeling about it?"),
     ]
     assert turns[1].turn_id == result.turn_id
 
@@ -377,7 +377,7 @@ async def test_every_post_crisis_message_still_passes_the_safety_gate(settings: 
 
 @pytest.mark.anyio
 async def test_user_can_choose_to_continue_after_a_crisis(settings: Settings) -> None:
-    llm = FakeLLM(replies=["I'm glad you're still here. What's on your mind?"])
+    llm = FakeLLM(replies=["I'm sorry it has been so hard. What's on your mind?"])
     engine = _engine(settings, llm=llm)
     uid = await _session(engine)
     crisis = await engine.handle_turn("h", "I want to die")
@@ -568,3 +568,30 @@ async def test_a_psychoed_item_reaches_the_prompt_and_is_its_own_fallback(
     fallback = await down.handle_turn("h", "what's wrong with me?")
     assert fallback.reply == general.text
     assert fallback.fallback_reason == "llm.down"
+
+
+# --- companion checks through the default guard (Phase 6) ------------------------------------
+
+
+@pytest.mark.anyio
+async def test_the_default_guard_retries_a_sycophantic_companion_reply(settings: Settings) -> None:
+    good = "That sounds like a long day. What was the hardest part?"
+    llm = FakeLLM(replies=["You're so brave! I'm always here for you.", good])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    result = await engine.handle_turn("h", "I had a long day at work")
+    assert result.reply == good
+    assert llm.calls == 2
+    retry = llm.last_messages[0].content.split("previous draft", 1)[1]
+    assert "Do not praise or flatter" in retry
+
+
+@pytest.mark.anyio
+async def test_a_companion_reply_rejected_twice_ends_in_the_fallback(settings: Settings) -> None:
+    llm = FakeLLM(replies=["What happened? Why?"])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    result = await engine.handle_turn("h", "I had a long day at work")
+    assert result.reply == TEMPLATES["guard_fallback"]
+    assert result.fallback_reason == "guard.fallback"
+    assert llm.calls == 2

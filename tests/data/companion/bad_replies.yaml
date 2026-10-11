@@ -1,0 +1,31 @@
+# Companion replies that must be rejected, each with exactly the rules it breaks
+# (validate_first, one_question, no_praise, no_advice, no_dependency). Written before the
+# check phrase lists.
+version: "2026.10.0"
+replies:
+  # --- no validation before the question ------------------------------------------------
+  - {reply: "What happened next?", fails: [validate_first]}
+  - {reply: "How long has this been going on?", fails: [validate_first]}
+  - {reply: "Tell me more. What's on your mind today?", fails: [validate_first]}
+  - {reply: "What did you do then? That sounds hard.", fails: [validate_first, one_question]}
+  # --- not exactly one question ---------------------------------------------------------
+  - {reply: "That sounds hard. What happened? How did you feel?", fails: [one_question]}
+  - {reply: "That sounds really hard, and it makes sense you feel drained.", fails: [one_question]}
+  - {reply: "I'm sorry you're dealing with that. Is it work? Or home?", fails: [one_question]}
+  # --- over-praise ----------------------------------------------------------------------
+  - {reply: "That sounds hard, and you're so brave for sharing it. What made you reach out today?", fails: [no_praise]}
+  - {reply: "That sounds like a tough week, and I'm so proud of you. How are you feeling now?", fails: [no_praise]}
+  - {reply: "That sounds painful. You're amazing for handling it so well. What helped?", fails: [no_praise]}
+  - {reply: "That sounds hard. Well done for getting through it. What's next for you?", fails: [no_praise]}
+  # --- unprompted advice ----------------------------------------------------------------
+  - {reply: "That sounds stressful. You should try going for a walk. Would that help?", fails: [no_advice]}
+  - {reply: "I'm sorry it's been so hard. Have you tried talking to your manager?", fails: [no_advice]}
+  - {reply: "That sounds exhausting. I suggest making a to-do list. What do you think?", fails: [no_advice]}
+  - {reply: "It makes sense you're tired. Try to get some rest tonight. How does that sound?", fails: [no_advice]}
+  - {reply: "That sounds hard. It might help to write it down. What do you think?", fails: [no_advice]}
+  - {reply: "That sounds overwhelming. Why don't you take a break? What do you usually enjoy?", fails: [no_advice, one_question]}
+  # --- dependency language --------------------------------------------------------------
+  - {reply: "That sounds lonely. I'm always here for you. What's on your mind?", fails: [no_dependency]}
+  - {reply: "I'm sorry they let you down. You don't need anyone else when you have me. What happened?", fails: [no_dependency]}
+  - {reply: "That sounds hard. Only I really understand you. What would you like to talk about?", fails: [no_dependency]}
+  - {reply: "That sounds painful. You can talk to me instead of them. How are you feeling?", fails: [no_dependency]}

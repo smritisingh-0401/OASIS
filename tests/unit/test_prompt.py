@@ -14,7 +14,7 @@ def test_system_first_user_last_and_plan_in_system() -> None:
     msgs = build_messages(PLAN, [], "hi", history_turns=6)
     assert msgs[0].role == "system"
     assert "companion" in msgs[0].content
-    assert "one_question" in msgs[0].content
+    assert "Ask exactly one gentle, open question" in msgs[0].content
     assert msgs[-1].role == "user"
     assert msgs[-1].content == "hi"
 

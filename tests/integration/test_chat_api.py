@@ -26,7 +26,9 @@ TS = "2026-10-07T10:00:00+05:30"
 
 @pytest.fixture
 def client(settings: Settings) -> Iterator[TestClient]:
-    with TestClient(create_app(settings, llm=FakeLLM(replies=["What's on your mind?"]))) as c:
+    with TestClient(
+        create_app(settings, llm=FakeLLM(replies=["That sounds like a lot. What's on your mind?"]))
+    ) as c:
         yield c
 
 
@@ -57,16 +59,16 @@ def test_multi_turn_chat_and_history(client: TestClient) -> None:
         resp = _chat(client, token, text)
         assert resp.status_code == 200
         body = resp.json()
-        assert body["reply"] == "What's on your mind?"
+        assert body["reply"] == "That sounds like a lot. What's on your mind?"
         assert body["mode"] == "companion"
         assert body["persisted"] is True
 
     history = client.get("/history", headers={HEADER: token}).json()["turns"]
     assert [(t["role"], t["content"]) for t in history] == [
         ("user", "first"),
-        ("assistant", "What's on your mind?"),
+        ("assistant", "That sounds like a lot. What's on your mind?"),
         ("user", "second"),
-        ("assistant", "What's on your mind?"),
+        ("assistant", "That sounds like a lot. What's on your mind?"),
     ]
 
 
@@ -75,7 +77,7 @@ def test_history_limit(client: TestClient) -> None:
     _chat(client, token, "a")
     _chat(client, token, "b")
     turns = client.get("/history?limit=1", headers={HEADER: token}).json()["turns"]
-    assert [t["content"] for t in turns] == ["What's on your mind?"]
+    assert [t["content"] for t in turns] == ["That sounds like a lot. What's on your mind?"]
 
 
 @pytest.mark.parametrize("token", [None, "not-a-real-session"])
@@ -205,13 +207,15 @@ def test_unexpected_engine_error_returns_templated_reply(settings: Settings) -> 
 
 def test_history_survives_restart(settings: Settings) -> None:
     on_disk = settings.model_copy(update={"storage_backend": "sqlite"})
-    with TestClient(create_app(on_disk, llm=FakeLLM(replies=["ok"]))) as c:
+    with TestClient(
+        create_app(on_disk, llm=FakeLLM(replies=["That sounds nice. What else happened?"]))
+    ) as c:
         token = _session(c)
         _chat(c, token, "remember me")
 
     with TestClient(create_app(on_disk)) as c:
         turns = c.get("/history", headers={HEADER: token}).json()["turns"]
-    assert [t["content"] for t in turns] == ["remember me", "ok"]
+    assert [t["content"] for t in turns] == ["remember me", "That sounds nice. What else happened?"]
 
 
 def test_default_llm_backend_is_llama_server(settings: Settings) -> None:
@@ -232,7 +236,7 @@ CRISIS = "I want to kill myself"
 
 def test_crisis_writes_audit_and_holds_post_crisis_mode(settings: Settings) -> None:
     repo = MemoryRepository()
-    llm = FakeLLM(replies=["What's on your mind?"])
+    llm = FakeLLM(replies=["That sounds like a lot. What's on your mind?"])
     with TestClient(create_app(settings, llm=llm, repo=repo)) as c:
         token = _session(c)
         crisis = _chat(c, token, CRISIS).json()
