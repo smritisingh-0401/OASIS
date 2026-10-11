@@ -15,6 +15,7 @@ from dataclasses import replace
 from oasis.assessment import flow, trigger
 from oasis.core.signals import extract
 from oasis.core.templates import TEMPLATES
+from oasis.guard.checks import opener
 from oasis.psychoed import selector as psychoed
 from oasis.router import exercise, router
 from oasis.router.weights import config as router_config
@@ -50,6 +51,7 @@ CONSTRAINTS: dict[str, tuple[str, ...]] = {
     "psychoed": ("no_diagnosis", "use_snippet_only"),
 }
 STEP_CONSTRAINTS = ("follow_script", "one_step")
+RECENT_OPENERS = 3  # companion replies whose openers the next one must not reuse
 MODERATE_PLUS = frozenset({"moderate", "moderately severe", "severe"})
 
 Action = AssessmentAction | ExerciseAction
@@ -60,6 +62,16 @@ def wants_to_continue(message: str) -> bool:
 
 
 def plan_turn(message: str, state: ConversationState, action: Action | None = None) -> Plan:
+    plan = _plan(message, state, action)
+    if plan.mode != "companion" or plan.templated:
+        return plan
+    # So a conversation does not open every reply the same way (tone check, 2026-10-11).
+    said = [t.content for t in state.history if t.role == "assistant" and t.mode == "companion"]
+    recent = (o for o in map(opener, said[-RECENT_OPENERS:]) if len(o.split()) == 3)
+    return replace(plan, avoid_openers=tuple(dict.fromkeys(recent)))
+
+
+def _plan(message: str, state: ConversationState, action: Action | None) -> Plan:
     if state.post_crisis:
         if not wants_to_continue(message):
             return Plan(mode="post_crisis", templated=True, template_id="post_crisis",

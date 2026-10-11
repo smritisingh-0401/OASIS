@@ -20,6 +20,7 @@ from oasis.assessment.flow import ITEM9, active
 from oasis.core.planner import plan_turn
 from oasis.core.templates import TEMPLATES, fallback_template
 from oasis.core.trace import StageClock, trace_to_json
+from oasis.guard.checks import SOFT_RULES
 from oasis.guard.checks import check as check_reply
 from oasis.llm.client import LLMClient, LLMFailure, clean_reply
 from oasis.llm.prompt import build_messages
@@ -344,10 +345,13 @@ class ChatEngine:
         """One draft, one constrained retry on guard rejection, then the Socratic fallback."""
         outcomes: list[str] = []
         retry_reasons: tuple[str, ...] = ()
+        # A draft whose only faults are style rules (a repeated opener) is retried, but kept
+        # rather than replaced by the fixed fallback if the retry does no better.
+        soft: _Draft | None = None
         for attempt in (1, 2):
             remaining = deadline - time.monotonic()
             if attempt == 2 and remaining < self.settings.guard_retry_min_budget_s:
-                return self._fallback(plan, "guard.no_budget", attempt - 1, outcomes)
+                return soft or self._fallback(plan, "guard.no_budget", attempt - 1, outcomes)
             messages = build_messages(
                 plan,
                 history,
@@ -371,13 +375,15 @@ class ChatEngine:
             outcomes.append("pass" if verdict.ok else "reject")
             if verdict.ok:
                 return _Draft(text, attempt, tuple(outcomes), None)
+            if soft is None and set(verdict.reasons) <= SOFT_RULES:
+                soft = _Draft(text, attempt, tuple(outcomes), None)
             retry_reasons = verdict.reasons
-        return self._fallback(plan, "guard.fallback", 2, outcomes)
+        return soft or self._fallback(plan, "guard.fallback", 2, outcomes)
 
     @staticmethod
     def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str]) -> _Draft:
         # An exercise step falls back to its own vetted text, so the exercise carries on.
-        text = plan.snippet or TEMPLATES[fallback_template(reason)]
+        text = plan.snippet or TEMPLATES[fallback_template(reason, plan.mode)]
         return _Draft(text, attempts, tuple(outcomes), reason)
 
 

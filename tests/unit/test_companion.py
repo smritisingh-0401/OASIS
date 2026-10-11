@@ -16,10 +16,10 @@ import yaml
 from oasis.core.planner import CONSTRAINTS, plan_turn
 from oasis.core.signals import extract
 from oasis.core.templates import TEMPLATES
-from oasis.guard.checks import check, parse
+from oasis.guard.checks import SOFT_RULES, check, opener, parse
 from oasis.llm.fake import _DEFAULT_REPLIES
 from oasis.llm.prompt import build_messages
-from oasis.types import AssessmentRecord, ConversationState, Plan
+from oasis.types import AssessmentRecord, ConversationState, Plan, TurnRecord
 
 DATA = pathlib.Path(__file__).parents[1] / "data" / "companion"
 GOOD = yaml.safe_load((DATA / "good_replies.yaml").read_text(encoding="utf-8"))["replies"]
@@ -43,8 +43,13 @@ def test_bad_replies_fail_with_exactly_the_rules_they_break(case: dict[str, Any]
     assert sorted(verdict.reasons) == sorted(case["fails"])
 
 
-def test_the_guard_fallback_passes_its_own_checks() -> None:
+def test_the_fallbacks_pass_their_own_checks() -> None:
     assert check(TEMPLATES["guard_fallback"], COMPANION).ok
+    assert check(TEMPLATES["companion_fallback"], COMPANION).ok
+
+
+def test_only_style_rules_are_soft() -> None:
+    assert {"validate_first", "one_question", "fresh_opener"} == SOFT_RULES
 
 
 @pytest.mark.parametrize("reply", _DEFAULT_REPLIES)
@@ -183,3 +188,39 @@ def test_rules_reach_the_prompt_as_plain_sentences() -> None:
 def test_a_retry_names_the_broken_rules_in_plain_words() -> None:
     msgs = build_messages(COMPANION, [], "hi", history_turns=6, retry_reasons=("no_praise",))
     assert "Do not praise or flatter" in msgs[0].content.split("previous draft", 1)[1]
+
+
+# --- varied openers (a conversation should not start every reply the same way) -------------
+
+
+def _said(*replies: str, mode: str = "companion") -> tuple[TurnRecord, ...]:
+    return tuple(TurnRecord(f"t{i}", i, "assistant", r, mode, "") for i, r in enumerate(replies))  # type: ignore[arg-type]
+
+
+def test_recent_companion_openers_go_into_the_plan() -> None:
+    history = (*_said("It sounds like a long day. What happened?",
+                      "That must be tiring. What helped?",
+                      "It sounds like a lot. What next?"),
+               *_said("Welcome to step one.", mode="grounding"))  # fmt: skip
+    plan = plan_turn("work was busy again", state(history=history))
+    assert plan.mode == "companion"
+    assert plan.avoid_openers == ("it sounds like", "that must be")
+
+
+def test_only_the_last_three_companion_replies_count() -> None:
+    history = _said("No wonder you're tired. Why?", "A. B?", "C d e. F?", "G h i. J?")
+    assert "no wonder youre" not in plan_turn("hello", state(history=history)).avoid_openers
+
+
+def test_the_prompt_names_openers_to_avoid() -> None:
+    plan = Plan(mode="companion", avoid_openers=("it sounds like",))
+    system = build_messages(plan, [], "hi", history_turns=6)[0].content
+    assert 'do not begin with: "it sounds like"' in system
+
+
+def test_a_draft_repeating_a_recent_opener_breaks_fresh_opener() -> None:
+    plan = Plan(mode="companion", constraints=CONSTRAINTS["companion"],
+                avoid_openers=("it sounds like",))  # fmt: skip
+    assert check("It sounds like a lot. What happened?", plan).reasons == ("fresh_opener",)
+    assert check("That sounds like a lot. What happened?", plan).ok
+    assert opener("It's  okay, really.") == "its okay really"

@@ -40,6 +40,7 @@ RULES = {
     "offer_ideas": "They asked for ideas: offer one or two gentle, practical suggestions.",
     "no_praise": "Do not praise or flatter them.",
     "no_dependency": "Do not encourage them to rely on you instead of other people.",
+    "fresh_opener": "Begin differently from your recent replies.",
     "socratic": "Make the question one that helps them look at the thought.",
     "offer_not_instruct": "Offer the skill; do not instruct.",
     "follow_script": "Follow the script line.",
@@ -73,6 +74,8 @@ def build_messages(
     system = SYSTEM_TEMPLATE.format(
         mode=plan.mode, goal=goal, constraints=_rule_text(plan.constraints) or "none"
     )
+    if plan.avoid_openers:
+        system += "\n- do not begin with: " + ", ".join(f'"{o}"' for o in plan.avoid_openers)
     if plan.snippet:
         system += f"{SCRIPT_MARK}{plan.snippet}"
     if retry_reasons:

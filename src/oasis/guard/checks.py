@@ -22,6 +22,9 @@ from oasis.types import GuardVerdict, Plan
 
 LISTED = ("validate_first", "no_praise", "no_advice", "no_dependency")
 COMPANION_RULES = ("validate_first", "one_question", "no_praise", "no_advice")
+# Form, not content: a draft failing only these is retried, but kept rather than replaced
+# by the fixed fallback (the validating-phrase list cannot know every way to validate).
+SOFT_RULES = frozenset({"validate_first", "one_question", "fresh_opener"})
 REVIEW = "needs_clinician_review"
 
 Rules = Mapping[str, tuple[re.Pattern[str], ...]]
@@ -62,6 +65,8 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
         if "one_question" in active and (norm.count("?") != 1 or not norm.rstrip().endswith("?")):
             failed.append("one_question")
         failed += [r for r in ("no_praise", "no_advice") if r in active and _any(rules[r], norm)]
+        if opener(draft) in plan.avoid_openers:
+            failed.append("fresh_opener")
     if _any(rules["no_dependency"], norm):
         failed.append("no_dependency")
     return GuardVerdict(ok=not failed, reasons=tuple(failed))
@@ -69,3 +74,11 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
 
 def _any(patterns: tuple[re.Pattern[str], ...], text: str) -> bool:
     return any(p.search(text) for p in patterns)
+
+
+_WORD = re.compile(r"[a-z]+")
+
+
+def opener(text: str) -> str:
+    """How a reply begins (its first three words, normalised), for spotting repeats."""
+    return " ".join(_WORD.findall(base_form(text))[:3])

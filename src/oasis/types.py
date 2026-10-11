@@ -188,6 +188,8 @@ class Plan:
     # Router memory to persist (None: this turn did not route), and the full decision.
     router_state: RouterState | None = None
     route: RouteDecision | None = None
+    # How recent companion replies began (first three words, normalised): not to be reused.
+    avoid_openers: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

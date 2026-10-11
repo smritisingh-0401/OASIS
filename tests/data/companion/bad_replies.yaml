@@ -29,3 +29,5 @@ replies:
   - {reply: "I'm sorry they let you down. You don't need anyone else when you have me. What happened?", fails: [no_dependency]}
   - {reply: "That sounds hard. Only I really understand you. What would you like to talk about?", fails: [no_dependency]}
   - {reply: "That sounds painful. You can talk to me instead of them. How are you feeling?", fails: [no_dependency]}
+  # Found by the conversation tone check: "ever" slipped past the advice list.
+  - {reply: "That sounds lonely. Have you ever tried talking to her about it?", fails: [no_advice]}
