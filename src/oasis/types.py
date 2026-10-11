@@ -105,6 +105,7 @@ class Signals:
     overwhelm: float = 0.0
     wants_to_talk: float = 0.0
     opt_out: bool = False  # "stop the exercise"; read only while an exercise runs
+    psychoed_cue: bool = False  # stigma, "is it normal", "what's wrong with me" (Phase 5)
 
 
 @dataclass(frozen=True)
@@ -118,6 +119,7 @@ class RouterState:
     exercise: str | None = None  # technique in progress
     step: int = 0  # index of the next step to show
     consented: frozenset[RouterMode] = frozenset()
+    psychoed_shown: frozenset[str] = frozenset()  # psychoeducation items already given
 
 
 @dataclass(frozen=True)

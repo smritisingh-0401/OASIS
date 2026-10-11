@@ -1,7 +1,8 @@
-# Router cues (design §5): dysregulation (DBT-leaning), overwhelm (mindfulness; acute when
-# the score reaches the router's acute_overwhelm_threshold), wanting to talk (companion),
-# and opting out of a running exercise (any match counts). Same scorer formula and
-# normalised text as emotions.yaml. Engineering start values (CR-20).
+# Router and psychoeducation cues (design §5): dysregulation (DBT-leaning), overwhelm
+# (mindfulness; acute when the score reaches the router's acute_overwhelm_threshold), wanting
+# to talk (companion), opting out of a running exercise and psychoeducation cues (any match
+# counts for the last two). Same scorer formula and normalised text as emotions.yaml.
+# Engineering start values (CR-20; psychoed cues CR-13).
 schema: oasis.content/v1
 kind: lexicon
 version: "2026.10.0"
@@ -54,3 +55,34 @@ scorers:
       '\b(?:dont|do not) want to (?:do|continue) (?:this|it|the exercise)\b': 1.0
       '\bskip (?:this|it|the exercise)\b': 1.0
       '\bno more (?:exercise|steps)\b': 1.0
+  # "What's wrong with me" and "is it normal" questions, diagnosis questions, and stigma
+  # statements (FR-PSY-2). Which item answers them is chosen in content/psychoed/items.yaml.
+  psychoed:
+    bias: 0.0
+    scale: 1.0
+    terms:
+      '\bwhats (?:wrong|the matter) with me\b': 1.0
+      '\b(?:is )?(?:something|anything) wrong with me\b': 1.0
+      '\bwhy (?:am i|do i (?:always |keep )?feel) (?:like this|this way)\b': 1.0
+      '\bwhy does this (?:keep )?happen(?:ing)? to me\b': 1.0
+      '\bis (?:it|this|that) (?:normal|common) (?:to|for me to|that i|if i)\b': 1.0
+      '\bis (?:it|this|that) normal\W*$': 1.0
+      '\bam i (?:normal|weird|broken|weak)\W*$': 1.0
+      '\bam i (?:going )?(?:crazy|insane|mad)\b': 1.0
+      '\bam i losing my mind\b': 1.0
+      '\b(?:does|do) (?:anyone|anybody|other people) (?:else )?(?:feel|get|go through)\b': 1.0
+      '\bdo i have (?:depression|anxiety|adhd|ocd|ptsd|bipolar|an? (?:mental|anxiety|panic|eating))\b': 1.0
+      '\bam i depressed\b': 1.0
+      '\b(?:could|is) (?:it|this) (?:be )?(?:depression|anxiety|a panic attack|adhd|ocd)\b': 1.0
+      '\bwhat (?:is|are|causes) (?:a )?(?:panic attacks?|anxiety|depression)\W*$': 1.0
+      '\b(?:therapy|counsell?ing|therapists?) (?:is|are) (?:only |just )?for (?:the )?(?:weak|crazy|mad|broken)\b': 1.0
+      '\bonly (?:weak|crazy|mad) people\b': 1.0
+      '\b(?:asking for|getting|needing) help (?:is|means|makes) (?:you |me |im |i am )?(?:weak|a failure|pathetic)\b': 1.0
+      '\b(?:depression|anxiety|mental illness) (?:isnt|is not) (?:a )?real\b': 1.0
+      '\b(?:depression|anxiety|mental illness) is (?:just )?(?:weakness|made up|fake|an excuse|all in)\b': 1.0
+      '\bsnap out of it\b': 1.0
+      '\bpull (?:myself|yourself) together\b': 1.0
+      '\b(?:im|i am) (?:so |just )?(?:weak|pathetic) for (?:feeling|needing|being|crying)\b': 1.0
+      '\bshould be able to (?:handle|deal with|cope with|fix) (?:this|it|things) (?:by )?(?:myself|on my own|alone)\b': 1.0
+      '\b(?:real )?men dont (?:cry|need help|get depressed|talk about)\b': 1.0
+      '\bpeople will think (?:im|i am) (?:crazy|weak|mad)\b': 1.0

@@ -21,6 +21,7 @@ from oasis.core.signals import load_all as load_signal_content
 from oasis.llm.client import BoundedLLM, LLMClient
 from oasis.llm.fake import FakeLLM
 from oasis.llm.llama_server import LlamaServerClient
+from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.router.exercise import load_all as load_techniques
 from oasis.router.weights import config as router_config
 from oasis.safety.gate import RuleBasedSafetyGate, SafetyGate
@@ -69,10 +70,12 @@ def create_app(
     # resources stop the app here (rules S5).
     safety = safety or RuleBasedSafetyGate(load_ruleset())
     load_assessment_content()
-    # Signal lexicons, router weights and exercise scripts: a bad file stops startup here.
+    # Signal lexicons, router weights, exercise scripts and psychoeducation items: a bad file
+    # stops startup here.
     load_signal_content()
     router_config()
     load_techniques()
+    load_psychoed()
     index_html = render_index(
         (WEB_DIR / "index.html").read_text(encoding="utf-8"),
         crisis_resources or load_resources(),
