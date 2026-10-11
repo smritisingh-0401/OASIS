@@ -12,8 +12,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from oasis.core.detectors.lexicon import ContentError, load, parse
-from oasis.core.detectors.valence import valence
-from oasis.core.signals import EMOTIONS, extract
+from oasis.core.signals import EMOTIONS, extract, valence
 from oasis.router.weights import config
 
 BURNS = {

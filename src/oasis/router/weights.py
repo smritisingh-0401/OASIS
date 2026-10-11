@@ -5,11 +5,9 @@ from __future__ import annotations
 import functools
 from collections.abc import Mapping
 from dataclasses import dataclass
-from importlib import resources
 from typing import Any
 
-import yaml
-
+from oasis.content import load_yaml, require_review
 from oasis.types import ROUTER_MODES, Contribution, ModeScore, RouterMode, Signals
 
 
@@ -29,8 +27,7 @@ class RouterConfig:
 
 
 def parse(raw: Mapping[str, Any]) -> RouterConfig:
-    if not raw.get("version") or raw.get("review_status") != "needs_clinician_review":
-        raise ValueError("router weights need a version and review_status (rules CL6)")
+    require_review(raw, "router weights")
     modes = raw["modes"]
     if set(modes) != set(ROUTER_MODES):
         raise ValueError(f"router weights must cover exactly {ROUTER_MODES}")
@@ -52,10 +49,7 @@ def _mode(raw: Mapping[str, Any]) -> ModeWeights:
 
 @functools.cache
 def config() -> RouterConfig:
-    text = (resources.files("oasis.content") / "router" / "weights.yaml").read_text(
-        encoding="utf-8"
-    )
-    return parse(yaml.safe_load(text))
+    return parse(load_yaml("router", "weights.yaml"))
 
 
 def features(signals: Signals, extra: Mapping[str, float] | None = None) -> dict[str, float]:

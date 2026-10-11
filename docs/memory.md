@@ -18,7 +18,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 ### Environment notes (development machine, 2026-10-07)
 - Windows 11. Python 3.12.15 managed by uv (system Python 3.11.9 is not used); uv 0.12.23 installed with `python -m pip install --user uv` and invoked as `python -m uv`.
-- No `make` on Windows: `uv run python scripts/verify.py` is the verify command; the Makefile is a thin wrapper for CI/Linux/macOS.
+- Verify command on every platform (and in CI): `uv run python scripts/verify.py`. The Makefile wrapper was removed 2026-10-12.
 - Local dev server: copy `.env.example` to `.env`, then `uv run uvicorn oasis.api.app:create_app --factory`.
 - Git identity: the global config (`smritisingh-0401`) is used, as approved 2026-10-07.
 - Assistant config files are excluded through `.git/info/exclude` (local, uncommitted).
@@ -103,6 +103,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-11 | Real model: `unsloth/Qwen3.5-4B-GGUF` Q4_K_M (Apache-2.0, 2.74 GB) on llama.cpp b11552 (winget `ggml.llamacpp`, Vulkan build), started with `llama-server -hf unsloth/Qwen3.5-4B-GGUF:Q4_K_M --no-mmproj --jinja -c 4096` | First real-model runs; official Qwen repo publishes no GGUF | Other quantisers |
 | 2026-10-11 | Checks live in `guard/checks.py` as the engine's default guard (pass-through `guard/hook.py` removed); reason codes are rule names; no `companion/plan.py`; one checks file | Design §8.2 puts the C-* checks in the guard; the companion plan is one dictionary entry | Separate companion package; two YAML files |
 | 2026-10-11 | Prompt "must" line and retry note use plain sentences per rule instead of rule names | A real model follows sentences, not snake_case | Rule names |
+| 2026-10-12 | Simplification pass: one `load_yaml` / `require_review` in `oasis.content` for every non-safety content file; one best-effort storage-write helper in the engine; VADER `valence()` folded into `core/signals.py`; Makefile removed (`scripts/verify.py` is the only verify command) | Less repeated code; the safety loaders stay separate for isolation (rules S8) | Keeping the copies |
 | 2026-10-12 | Varied openers: the last 3 companion openers go into the plan, the prompt and a `fresh_opener` check | The 4B model opened most replies the same way; a concrete "do not begin with" works where "vary your wording" does not | Prompt instruction only; higher sampling temperature |
 | 2026-10-12 | `validate_first`, `one_question` and `fresh_opener` are soft rules: retried, then kept; praise, advice and dependency stay hard | A phrase list cannot know every way to validate; as a hard rule it sent 5/48 out-of-place fallbacks in the conversation tone check | Ever-longer phrase lists |
 | 2026-10-12 | Companion fallback "I hear you. What feels most important to talk about right now?"; the Socratic `guard_fallback` stays for other modes. Warmth about good news allowed (Smriti) | The Socratic question does not fit companion talk, especially good news | One fallback for every mode; blocking "glad to hear" |

@@ -12,11 +12,9 @@ from __future__ import annotations
 import functools
 import re
 from collections.abc import Mapping
-from importlib import resources
 from typing import Any
 
-import yaml
-
+from oasis.content import load_yaml, require_review
 from oasis.safety.normalize import base_form
 from oasis.types import GuardVerdict, Plan
 
@@ -25,14 +23,12 @@ COMPANION_RULES = ("validate_first", "one_question", "no_praise", "no_advice")
 # Form, not content: a draft failing only these is retried, but kept rather than replaced
 # by the fixed fallback (the validating-phrase list cannot know every way to validate).
 SOFT_RULES = frozenset({"validate_first", "one_question", "fresh_opener"})
-REVIEW = "needs_clinician_review"
 
 Rules = Mapping[str, tuple[re.Pattern[str], ...]]
 
 
 def parse(raw: Mapping[str, Any]) -> dict[str, tuple[re.Pattern[str], ...]]:
-    if not raw.get("version") or raw.get("review_status") != REVIEW:
-        raise ValueError(f"companion checks need version and review_status: {REVIEW}")
+    require_review(raw, "companion checks")
     patterns = raw.get("patterns") or {}
     out = {}
     for rule in LISTED:
@@ -48,8 +44,7 @@ def parse(raw: Mapping[str, Any]) -> dict[str, tuple[re.Pattern[str], ...]]:
 
 @functools.cache
 def load_rules() -> Rules:
-    path = resources.files("oasis.content") / "companion" / "checks.yaml"
-    return parse(yaml.safe_load(path.read_text(encoding="utf-8")))
+    return parse(load_yaml("companion", "checks.yaml"))
 
 
 def check(draft: str, plan: Plan) -> GuardVerdict:

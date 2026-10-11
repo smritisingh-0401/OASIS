@@ -13,7 +13,7 @@ import json
 import logging
 import time
 import uuid
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, replace
 
 from oasis.assessment.flow import ITEM9, active
@@ -32,7 +32,6 @@ from oasis.storage.repository import (
     Repository,
     StorageBusy,
     StorageError,
-    StorageUnavailable,
 )
 from oasis.types import (
     AssessmentAction,
@@ -182,11 +181,20 @@ class ChatEngine:
         if plan.mode == "crisis":  # PHQ-9 item 9 answered positively (rules S11)
             return self._crisis(session_hash, turn_id, clock, ITEM9_VERDICT, plan.assessment)
         if "post_crisis.cleared" in plan.reason_codes:
-            await self._clear_post_crisis(user_id, session_hash, degraded)
+            self._post_crisis.discard(session_hash)
+            await self._best_effort(
+                user_id, degraded, lambda uid: self.repo.set_post_crisis(uid, session_hash, False)
+            )
         if plan.assessment is not None:
             plan = await self._save_assessment(user_id, plan, degraded)
-        if plan.router_state is not None and plan.router_state != router_state:
-            await self._save_router_state(user_id, session_hash, plan.router_state, degraded)
+        rs = plan.router_state
+        if rs is not None and rs != router_state:
+            # If saving fails, this reply is still right; the next turn starts from the last
+            # saved router memory.
+            await self._best_effort(
+                user_id, degraded,
+                lambda uid: self.repo.set_router_state(uid, session_hash, dump_state(rs)),
+            )  # fmt: skip
 
         # Stages 6-7 — generate and guard, or use the fixed text the plan names.
         if plan.templated:
@@ -264,29 +272,30 @@ class ChatEngine:
 
     async def _save_assessment(self, user_id: str | None, plan: Plan, degraded: set[str]) -> Plan:
         """Persist the assessment step before replying; if that fails, say so and stop."""
-        try:
-            if user_id is None or plan.assessment is None:
-                raise StorageUnavailable
-            await self.repo.save_assessment(user_id, plan.assessment)
-        except StorageError as exc:
-            degraded.add(_storage_code(exc))
-            if plan.mode != "assessment":
-                return replace(plan, assessment=None, card=None)
-            return Plan(mode="assessment", templated=True, template_id="assessment_unavailable",
-                        reason_codes=(*plan.reason_codes, "assessment.not_saved"))  # fmt: skip
-        return plan
+        rec = plan.assessment
+        if rec is None or await self._best_effort(
+            user_id, degraded, lambda uid: self.repo.save_assessment(uid, rec)
+        ):
+            return plan
+        if plan.mode != "assessment":
+            return replace(plan, assessment=None, card=None)
+        return Plan(mode="assessment", templated=True, template_id="assessment_unavailable",
+                    reason_codes=(*plan.reason_codes, "assessment.not_saved"))  # fmt: skip
 
-    async def _save_router_state(
-        self, user_id: str | None, session_hash: str, rs: RouterState, degraded: set[str]
-    ) -> None:
-        """Best effort: if it fails, this turn's reply is still right; the next turn starts
-        from the last saved router memory."""
+    async def _best_effort(
+        self, user_id: str | None, degraded: set[str], write: Callable[[str], Awaitable[None]]
+    ) -> bool:
+        """One storage write; a failure (or no user, after a failed load) is recorded in
+        `degraded`, never raised. True if the write happened."""
         if user_id is None:
-            return
+            degraded.add("storage.down")
+            return False
         try:
-            await self.repo.set_router_state(user_id, session_hash, dump_state(rs))
+            await write(user_id)
         except StorageError as exc:
             degraded.add(_storage_code(exc))
+            return False
+        return True
 
     async def record_crisis(
         self,
@@ -327,17 +336,6 @@ class ChatEngine:
                     await self.repo.save_assessment(session.user_id, escalated)
         except StorageError as exc:
             log.error("crisis audit not written: %s", type(exc).__name__)
-
-    async def _clear_post_crisis(
-        self, user_id: str | None, session_hash: str, degraded: set[str]
-    ) -> None:
-        self._post_crisis.discard(session_hash)
-        if user_id is None:
-            return
-        try:
-            await self.repo.set_post_crisis(user_id, session_hash, False)
-        except StorageError as exc:
-            degraded.add(_storage_code(exc))
 
     async def _generate(
         self, plan: Plan, history: Sequence[TurnRecord], message: str, deadline: float

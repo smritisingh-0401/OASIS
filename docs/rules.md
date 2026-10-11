@@ -78,7 +78,7 @@ These rules apply to every phase of the build. They are binding: a change that b
 | T6 | **Never mark a phase done** with a failing, skipped or `xfail` test. Tests that need the real model live in `scripts/` and are labelled "not verified here", not skipped in the suite. |
 | T7 | Tests are deterministic: fixed seeds, `FakeLLM`, frozen clock where time matters. No network in the test suite. |
 | T8 | Every safety pattern and every allow-list idiom has at least one named test. Held-out recall phrases are never used to tune patterns. |
-| T9 | `make verify` runs: ruff, ruff format check, mypy, import-linter, bandit, pip-audit, pytest with coverage. Its real output is shown at the end of every phase. |
+| T9 | `scripts/verify.py` runs: ruff, ruff format check, mypy, import-linter, bandit, pip-audit, pytest with coverage. Its real output is shown at the end of every phase. |
 
 ## 6. Front-end rules
 
@@ -116,7 +116,7 @@ git grep -n -i -E "co-authored-by|generated with|claude|anthropic|chatgpt|copilo
 
 | ID | Rule |
 |---|---|
-| PR1 | Each phase follows the loop: goal + done-when → plan → tests first → implement → `make verify` with real output → code walkthrough → report write-up → update `memory.md` → commit. |
+| PR1 | Each phase follows the loop: goal + done-when → plan → tests first → implement → `scripts/verify.py` with real output → code walkthrough → report write-up → update `memory.md` → commit. |
 | PR2 | Never start the next phase until the current one is approved. |
 | PR3 | Decisions in this prompt are not re-opened. A real problem (bug, contradiction, security issue) is raised as a short note with evidence and waits for an answer. |
 | PR4 | Anything needing the real model or the reference laptop is a one-command script and stays "not verified here" until results are reported. |

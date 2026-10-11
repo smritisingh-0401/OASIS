@@ -15,11 +15,9 @@ import json
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from importlib import resources
 from typing import Any
 
-import yaml
-
+from oasis.content import load_yaml
 from oasis.safety.normalize import base_form
 from oasis.types import ACTIVE_STATUSES, AssessmentRecord, InstrumentId, TurnRecord
 
@@ -57,10 +55,7 @@ class Offer:
 
 @functools.cache
 def config() -> TriggerConfig:
-    text = (resources.files("oasis.content") / "assessment" / "trigger.yaml").read_text(
-        encoding="utf-8"
-    )
-    raw: dict[str, Any] = yaml.safe_load(text)
+    raw: dict[str, Any] = load_yaml("assessment", "trigger.yaml")
     return TriggerConfig(
         window=int(raw["window"]),
         threshold=float(raw["threshold"]),

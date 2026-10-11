@@ -266,7 +266,7 @@ The engine computes a **deadline** at request start and passes the remaining bud
 | Storage | SQLite (WAL) via stdlib `sqlite3` behind a repository interface; numbered SQL migrations; in-memory twin | No ORM weight; one file to export/delete |
 | Front end | Plain HTML, CSS, JS served by FastAPI + debug page | No build step, nothing extra to break |
 | Quality | pytest, Hypothesis, pytest-cov, ruff, mypy (strict), bandit, pip-audit, import-linter, pre-commit, GitHub Actions | Each catches a different bug class |
-| Packaging | uv with lockfile; one `make verify` command | Reproducible installs |
+| Packaging | uv with lockfile; one `scripts/verify.py` command | Reproducible installs |
 
 ### 5.1 Model gotchas built into the design
 - **Thinking mode.** Qwen3.5 thinks by default. The client disables thinking through the chat-template settings, strips any `<think>…</think>` (including an unterminated opening tag) from output, and a test asserts that no reasoning text can reach the user — including when the model emits *only* a think block (→ treated as empty → templated reply).
@@ -311,7 +311,7 @@ Only if: multiple app servers must write; staff need live multi-user access; an 
 ```
 OASIS-1/
 ├── README.md
-├── pyproject.toml  uv.lock  Makefile  .pre-commit-config.yaml  .importlinter
+├── pyproject.toml  uv.lock  .pre-commit-config.yaml  .importlinter
 ├── .github/workflows/ci.yml
 ├── docs/
 │   ├── PRD.md  architecture.md  rules.md  phases.md  design.md  memory.md
@@ -335,7 +335,7 @@ OASIS-1/
 
 ## 8. Module dependency rules (enforced by import-linter)
 
-`.importlinter` contracts. A broken contract fails `make verify` and CI.
+`.importlinter` contracts. A broken contract fails `scripts/verify.py` and CI.
 
 | # | Contract | Type | Rule |
 |---|---|---|---|

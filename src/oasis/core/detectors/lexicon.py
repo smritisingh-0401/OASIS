@@ -13,10 +13,9 @@ import functools
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from importlib import resources
 from typing import Any
 
-import yaml
+from oasis.content import load_yaml
 
 
 class ContentError(ValueError):
@@ -62,7 +61,4 @@ def parse(raw: Mapping[str, Any]) -> dict[str, Lexicon]:
 
 @functools.cache
 def load(name: str) -> dict[str, Lexicon]:
-    text = (resources.files("oasis.content") / "lexicons" / f"{name}.yaml").read_text(
-        encoding="utf-8"
-    )
-    return parse(yaml.safe_load(text))
+    return parse(load_yaml("lexicons", f"{name}.yaml"))

@@ -268,7 +268,7 @@ score(x) = clip( b + Σ_i w_i · count_i(x) / max(1, n_tokens(x)) · scale , 0, 
 Features are term-count rates, so the pre-clip value is a linear model — SHAP values for it are exact (§10). Weights live in YAML with `version` and `review_status`.
 
 ### 5a. As built (Phase 4)
-- `core/signals.py` (`extract`) runs every lexicon over the safety normaliser's base form (lowercase, apostrophes removed, stretched letters collapsed) and VADER over the raw text. `core/detectors/lexicon.py` is the scorer above; `core/detectors/valence.py` wraps VADER.
+- `core/signals.py` (`extract`) runs every lexicon over the safety normaliser's base form (lowercase, apostrophes removed, stretched letters collapsed) and VADER over the raw text. `core/detectors/lexicon.py` is the scorer above; `valence()` in `core/signals.py` wraps VADER.
 - Lexicons: `content/lexicons/emotions.yaml` (sadness, anxiety, anger, shame, loneliness), `cues.yaml` (dysregulation, overwhelm, wants_to_talk, opt_out) and `distortions.yaml` (one scorer per Burns category). All `needs_clinician_review` (CR-20); invalid files stop startup.
 - `distortion` is the **clipped sum** of the eleven category scores, not the maximum: several distortions in one message add up, and the sum is still linear before the clip. `distortion_types` lists the categories with any match.
 - `opt_out` is true when any opt-out phrase matches ("can we stop", "I don't want to do this"); it is read only while an exercise runs.

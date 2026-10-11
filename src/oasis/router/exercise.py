@@ -12,8 +12,7 @@ from dataclasses import dataclass, replace
 from importlib import resources
 from typing import Any
 
-import yaml
-
+from oasis.content import load_yaml, require_review
 from oasis.types import ExerciseCard, Mode, RouterState
 
 EXERCISE_MODES = frozenset({"cbt", "dbt", "mindfulness", "grounding"})
@@ -35,8 +34,7 @@ def parse(raw: Mapping[str, Any]) -> Technique:
     steps = raw.get("steps")
     if raw.get("mode") not in EXERCISE_MODES or not isinstance(steps, list) or not steps:
         raise ValueError(f"technique {raw.get('id')}: needs a structured mode and steps")
-    if raw.get("review_status") != "needs_clinician_review":
-        raise ValueError(f"technique {raw.get('id')}: must be flagged for review (rules CL6)")
+    require_review(raw, f"technique {raw.get('id')}")
     fields = ("id", "name", "offer", "source", "version")
     if not all(isinstance(raw.get(f), str) and raw[f] for f in fields):
         raise ValueError(f"technique {raw.get('id')}: missing {fields}")
@@ -49,9 +47,7 @@ def parse(raw: Mapping[str, Any]) -> Technique:
 def load_all() -> dict[str, Technique]:
     folder = resources.files("oasis.content") / "techniques"
     return index(
-        parse(yaml.safe_load(f.read_text(encoding="utf-8")))
-        for f in folder.iterdir()
-        if f.name.endswith(".yaml")
+        parse(load_yaml("techniques", f.name)) for f in folder.iterdir() if f.name.endswith(".yaml")
     )
 
 
