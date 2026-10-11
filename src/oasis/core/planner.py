@@ -1,8 +1,8 @@
 """Planner: picks exactly one mode per turn with fixed precedence (design §6).
 
-Rungs: post-crisis minimal supportive mode, then an open assessment, then an assessment
-offer, then the therapy router (companion, CBT, DBT, mindfulness, or grounding under acute
-overwhelm). Psychoeducation fills its rung in Phase 5.
+Rungs: post-crisis minimal supportive mode, then an open assessment, then an explicit
+questionnaire request, then psychoeducation, then an unprompted questionnaire offer, then the
+therapy router (companion, CBT, DBT, mindfulness, or grounding under acute overwhelm).
 """
 
 from __future__ import annotations
@@ -10,11 +10,14 @@ from __future__ import annotations
 import datetime
 import re
 from collections.abc import Sequence
+from dataclasses import replace
 
 from oasis.assessment import flow, trigger
 from oasis.core.signals import extract
 from oasis.core.templates import TEMPLATES
+from oasis.psychoed import selector as psychoed
 from oasis.router import exercise, router
+from oasis.router.weights import config as router_config
 from oasis.safety.normalize import base_form
 from oasis.types import (
     AssessmentAction,
@@ -25,6 +28,7 @@ from oasis.types import (
     Plan,
     RouteDecision,
     RouterState,
+    Signals,
 )
 
 # Explicit wish to keep talking after a crisis handoff; the UI's "Continue talking" button
@@ -42,6 +46,7 @@ CONSTRAINTS: dict[str, tuple[str, ...]] = {
     "cbt": ("validate_first", "one_question", "socratic"),
     "dbt": ("validate_first", "offer_not_instruct"),
     "mindfulness": ("follow_script", "one_step"),
+    "psychoed": ("no_diagnosis", "use_snippet_only"),
 }
 STEP_CONSTRAINTS = ("follow_script", "one_step")
 MODERATE_PLUS = frozenset({"moderate", "moderately severe", "severe"})
@@ -76,20 +81,48 @@ def plan_turn(message: str, state: ConversationState, action: Action | None = No
         return Plan(mode="companion", assessment=step.record, card=step.card,
                     reason_codes=("planner.passthrough", "assessment.free_text"))  # fmt: skip
 
-    if state.router.exercise is None:  # no screening offer mid-exercise (design §3.2)
-        offer = trigger.decide(state.history, message, state.assessments, now)
-        if offer is not None:
-            return _from_step(flow.offer(offer.instrument, offer.reason, now), "assessment.offer")
-    return _routed(message, state, now, expired)
+    signals = extract(message)
+    if state.router.exercise is not None:  # no offer or explanation mid-exercise (design §3.2)
+        return _routed(signals, state, now, expired)
+    offer = trigger.decide(state.history, message, state.assessments, now)
+    item = _explanation(message, signals, state.router)
+    if offer is not None and (item is None or offer.explicit):
+        plan = _from_step(flow.offer(offer.instrument, offer.reason, now), "assessment.offer")
+        if item is None:
+            return plan
+        # Asked for a questionnaire and cued an explanation: the item comes first, as its own
+        # message, then the offer (Smriti, 2026-10-11).
+        rs, codes = _after_item(state.router, item)
+        return replace(plan, preface=item.text, router_state=rs,
+                       reason_codes=(*plan.reason_codes, *codes))  # fmt: skip
+    if item is not None:
+        rs, codes = _after_item(state.router, item)
+        return Plan(mode="psychoed", constraints=CONSTRAINTS["psychoed"], snippet=item.text,
+                    router_state=rs, assessment=expired, reason_codes=codes)  # fmt: skip
+    return _routed(signals, state, now, expired)
+
+
+def _explanation(message: str, signals: Signals, rs: RouterState) -> psychoed.Item | None:
+    """The vetted item for a psychoeducation cue; acute overwhelm needs grounding first."""
+    if not signals.psychoed_cue or signals.overwhelm >= router_config().acute_threshold:
+        return None
+    return psychoed.select(message, rs.psychoed_shown)
+
+
+def _after_item(rs: RouterState, item: psychoed.Item) -> tuple[RouterState, tuple[str, ...]]:
+    codes: tuple[str, ...] = (f"psychoed.{item.id}",)
+    if rs.offered is not None:  # typing over an exercise offer is "not now" (router rule)
+        rs = replace(rs, offered=None, challenger=None, streak=0)
+        codes = (*codes, "exercise.offer_lapsed")
+    return replace(rs, psychoed_shown=rs.psychoed_shown | {item.id}), codes
 
 
 def _routed(
-    message: str,
+    signals: Signals,
     state: ConversationState,
     now: datetime.datetime,
     expired: AssessmentRecord | None,
 ) -> Plan:
-    signals = extract(message)
     decision = router.route(signals, state.router, extra=_band_flags(state.assessments, now))
     rs = decision.state
     codes = [f"router.{decision.reason}"]
