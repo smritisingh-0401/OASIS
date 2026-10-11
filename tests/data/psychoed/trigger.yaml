@@ -1,0 +1,32 @@
+# Psychoeducation trigger set (design §5, FR-PSY-2).
+#
+# Written before the cue lexicon and item cues exist. Each message must raise the
+# psychoed cue and select the named item from content/psychoed/items.yaml.
+version: "2026.10.0"
+messages:
+  # --- "what's wrong with me" and "is it normal" ---------------------------------------
+  - {message: "what's wrong with me?", item: general}
+  - {message: "Am I going crazy?", item: general}
+  - {message: "does anyone else feel like this?", item: general}
+  - {message: "is something wrong with me", item: general}
+  - {message: "what's wrong with me, I feel sad and empty all the time", item: low_mood}
+  - {message: "Why do I feel like this? I've been so down for weeks", item: low_mood}
+  - {message: "is it normal to feel anxious all the time?", item: anxiety}
+  - {message: "is it normal to have panic attacks?", item: panic}
+  - {message: "I keep getting panic attacks out of nowhere, why does this keep happening to me", item: panic}
+  - {message: "why do I feel like this, work stress is getting to me", item: stress}
+  - {message: "why can't I sleep anymore, is something wrong with me?", item: sleep}
+  - {message: "my dad died last year and I still cry every day, is that normal?", item: grief}
+  - {message: "I feel lonely even around my friends, is that normal?", item: loneliness}
+  # --- diagnosis questions --------------------------------------------------------------
+  - {message: "Do I have depression?", item: diagnosis}
+  - {message: "am I depressed or just tired", item: diagnosis}
+  - {message: "could this be anxiety? I worry about everything", item: diagnosis}
+  # --- stigma -------------------------------------------------------------------------
+  - {message: "therapy is only for crazy people", item: help_seeking}
+  - {message: "asking for help means I'm weak", item: help_seeking}
+  - {message: "I should be able to handle this on my own, I don't need a therapist", item: help_seeking}
+  - {message: "depression isn't a real illness, I should just snap out of it", item: not_weakness}
+  - {message: "I'm weak for feeling like this", item: not_weakness}
+  - {message: "everyone tells me to pull myself together", item: not_weakness}
+  - {message: "real men don't get depressed", item: not_weakness}
