@@ -3,11 +3,13 @@
 Start the server first (see scripts/model_smoke_test.py), then:
     uv run python scripts/tone_check.py [--url http://127.0.0.1:8080] [--out FILE]
 
-Each sample message goes through the full engine (safety gate, planner, prompt, reply checks,
-one retry, fallback) in its own fresh session. The transcript lists every draft with the
-rules it broke, the final reply and whether it fell back, for review against FR-CMP
-("validate the feeling, then one gentle question"; no praise, unprompted advice or dependency
-language). `--fake` runs the same pipeline against the fake model to check the plumbing.
+Every message goes through the full engine (safety gate, planner, prompt, reply checks, one
+retry, fallback). Single messages each get a fresh session; the conversations run six turns
+in one session, so a reply opening the same way as an earlier one shows up as a repeat. The
+transcript lists every draft with the rules it broke, the final reply and whether it fell
+back, for review against FR-CMP ("validate the feeling, then one gentle question"; no
+praise, unprompted advice or dependency language). `--fake` runs the same pipeline against
+the fake model to check the plumbing.
 """
 
 from __future__ import annotations
@@ -18,7 +20,7 @@ import pathlib
 import sys
 
 from oasis.core.engine import ChatEngine
-from oasis.guard.checks import check
+from oasis.guard.checks import check, opener
 from oasis.llm.client import LLMClient
 from oasis.llm.fake import FakeLLM
 from oasis.llm.llama_server import LlamaServerClient
@@ -28,20 +30,70 @@ from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.types import GuardVerdict, Plan
 
-SAMPLES = [
+SINGLES = [
+    # everyday low moments
     "I've had a really long week and I feel worn out.",
     "My friend cancelled on me again and I'm kind of hurt.",
-    "I just want to talk for a bit.",
     "Work has been really stressful lately.",
     "I feel lonely at the weekends.",
-    "I got some good news today but I can't really enjoy it.",
     "My exams start next week and I'm nervous.",
     "I had an argument with my mum this morning.",
     "I don't really know how I feel today.",
+    "I've been feeling kind of flat all week.",
+    "My partner forgot my birthday.",
+    "I keep comparing myself to people online.",
+    "I'm dreading going back to work on Monday.",
+    "My sister and I haven't spoken in months.",
+    # venting
+    "I just want to talk for a bit.",
+    "I just need to vent about my commute.",
+    "Can I just get something off my chest?",
+    # good or mixed news
     "I finally finished a big project.",
+    "I got some good news today but I can't really enjoy it.",
+    "I passed my driving test today!",
+    "My best friend is getting married and I'm happy for her.",
+    "I got a promotion but I'm scared I won't be good at it.",
+    # asking for advice
     "What should I do about my flatmate never cleaning up?",
     "Any tips for switching off after work?",
+    "How do I deal with a friend who always cancels?",
+    "Should I tell my boss I'm struggling?",
+    "Do you have any advice for sleeping better before exams?",
+    # small talk
+    "Hi, how are you?",
+    "It's raining again here.",
+    "I watched a really sad film last night.",
+    "I cooked dinner for the first time in ages.",
+    "Not much to say today, just checking in.",
 ]
+
+CONVERSATIONS = {
+    "work": [
+        "Work has been rough this week.",
+        "My manager keeps adding tasks at the last minute.",
+        "I stayed late every night.",
+        "I feel like I can't say no.",
+        "I'm just so tired of it.",
+        "I don't know, it's just a lot.",
+    ],
+    "friendship": [
+        "My best friend has been distant lately.",
+        "She hasn't replied to my messages in days.",
+        "I saw she posted photos with other friends.",
+        "Maybe I did something to upset her.",
+        "It's making me sad.",
+        "I miss how things used to be.",
+    ],
+    "good news": [
+        "I got into the course I applied for!",
+        "I'm excited but also nervous.",
+        "It means moving to a new city.",
+        "I won't know anyone there.",
+        "My family is really proud though.",
+        "I guess I'm still processing it all.",
+    ],
+}
 
 
 async def run(url: str, fake: bool) -> list[str] | None:
@@ -77,24 +129,51 @@ async def run(url: str, fake: bool) -> list[str] | None:
     repo = MemoryRepository()
     engine = ChatEngine(safety=RuleBasedSafetyGate(load_ruleset()), llm=llm, repo=repo,
                         settings=s, guard=recording_check)  # fmt: skip
-    lines = ["# Companion tone check", "", f"Model: {'fake' if fake else s.llm_model}", ""]
-    first_pass = 0
-    for i, message in enumerate(SAMPLES):
+    body: list[str] = []
+    turns = first_pass = fallbacks = 0
+
+    async def turn(session: str, label: str, message: str) -> tuple[str, str]:
+        nonlocal turns, first_pass, fallbacks
         drafts.clear()
-        await repo.create_user_session(f"tone-{i}")
-        result = await engine.handle_turn(f"tone-{i}", message)
+        result = await engine.handle_turn(session, message)
+        turns += 1
         first_pass += bool(drafts) and drafts[0][1].ok
-        lines += [f"## {i + 1}. {message}", "", f"- mode: {result.mode}"]
+        fallbacks += result.fallback_reason is not None
+        body.extend([f"### {label}. {message}", "", f"- mode: {result.mode}"])
         for n, (draft, verdict) in enumerate(drafts, 1):
             status = "pass" if verdict.ok else "fail: " + ", ".join(verdict.reasons)
-            lines.append(f"- draft {n} ({status}): {draft}")
-        lines += [f"- final ({result.fallback_reason or 'generated'}): {result.reply}", ""]
-        print(f"{i + 1:2}. {result.fallback_reason or 'ok':15} {result.reply}")
+            body.append(f"- draft {n} ({status}): {draft}")
+        body.extend([f"- final ({result.fallback_reason or 'generated'}): {result.reply}", ""])
+        print(f"{label:>5} {result.fallback_reason or 'ok':15} {result.reply}")
+        return result.mode, result.reply
+
+    body.extend(["## Single messages", ""])
+    for i, message in enumerate(SINGLES, 1):
+        await repo.create_user_session(f"single-{i}")
+        await turn(f"single-{i}", str(i), message)
+
+    repeats: list[str] = []
+    for name, messages in CONVERSATIONS.items():
+        body.extend([f"## Conversation: {name}", ""])
+        await repo.create_user_session(name)
+        seen: list[str] = []
+        repeated = 0
+        for k, message in enumerate(messages, 1):
+            mode, reply = await turn(name, f"{name[0]}{k}", message)
+            if mode == "companion":
+                repeated += opener(reply) in seen
+                seen.append(opener(reply))
+        repeats.append(f"{name}: {repeated} of {len(seen)} companion replies repeat an opener")
     await llm.aclose()
 
-    lines.insert(4, f"First drafts passing every check: {first_pass}/{len(SAMPLES)}\n")
-    print(f"\nFirst drafts passing: {first_pass}/{len(SAMPLES)}")
-    return lines
+    summary = [
+        f"- First drafts passing every check: {first_pass}/{turns}",
+        f"- Fallback replies: {fallbacks}/{turns}",
+        *(f"- {r}" for r in repeats),
+    ]
+    print("\n" + "\n".join(summary))
+    model = "fake" if fake else s.llm_model
+    return ["# Companion tone check", "", f"Model: {model}", "", *summary, "", *body]
 
 
 if __name__ == "__main__":
@@ -110,5 +189,5 @@ if __name__ == "__main__":
     transcript = asyncio.run(run(args.url, args.fake))
     if transcript is None:
         sys.exit(1)
-    args.out.write_text("\n".join(transcript), encoding="utf-8")
+    args.out.write_text("\n".join(transcript) + "\n", encoding="utf-8", newline="\n")
     print(f"Transcript: {args.out}")
