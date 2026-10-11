@@ -42,7 +42,8 @@ _CONTINUE = re.compile(
 
 # Plan constraints per mode (design §13.2); the prompt builder turns them into rules.
 CONSTRAINTS: dict[str, tuple[str, ...]] = {
-    "companion": ("validate_first", "one_question", "no_advice", "no_praise"),
+    # Suggestions (when asked for) come before the closing question, so no_advice sits first.
+    "companion": ("validate_first", "no_advice", "one_question", "no_praise"),
     "cbt": ("validate_first", "one_question", "socratic"),
     "dbt": ("validate_first", "offer_not_instruct"),
     "mindfulness": ("follow_script", "one_step"),
@@ -182,7 +183,7 @@ def _exercise_button(action: ExerciseAction, rs: RouterState) -> Plan:
 def _rules(mode: str, signals: Signals) -> tuple[str, ...]:
     rules = CONSTRAINTS.get(mode, ())
     if mode == "companion" and signals.asks_advice:  # advice was asked for (FR-CMP-2)
-        rules = tuple(r for r in rules if r != "no_advice")
+        rules = tuple("offer_ideas" if r == "no_advice" else r for r in rules)
     return rules
 
 

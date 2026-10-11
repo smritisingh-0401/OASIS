@@ -15,6 +15,7 @@ patterns:
   validate_first:
     - '\b(?:that|it|this) sounds\b'
     - '\bsounds (?:like|really|so|very|incredibly)\b'
+    - '\b(?:it|that|this) (?:can |must |would )?feels? (?:like|really|so|very|deeply|hard|painful|disappointing|lonely|frustrating|heavy|overwhelming|upsetting|scary)\b'
     - '\bmakes (?:a lot of |complete |total )?sense\b'
     - '\b(?:im|i am) (?:so |really |very )?sorry\b'
     - '\bno wonder\b'
@@ -35,14 +36,13 @@ patterns:
     - '\bwhat an? (?:strong|brave|amazing|incredible|wonderful)\b'
     - '\b(?:thats|that is) (?:so )?(?:amazing|wonderful|fantastic|incredible|awesome|brilliant)\b'
   no_advice:
-    - '\byou (?:should|need to|must|ought to|have to)\b'
+    - '(?<!what )\byou (?:should|need to|must|ought to|have to)\b'
     - '\bhave you (?:tried|thought about|considered)\b'
     - '\bwhy (?:dont|not) you\b'
     - '\bi (?:would )?(?:suggest|recommend|advise)\b'
     - '\bmy advice\b'
     - '\bit (?:might|may|could|would|can) help to\b'
     - '\b(?:you could|you might|maybe) try\b'
-    - '\btry to\b'
     - '(?:^|[.!?]\s+)(?:try|consider|make sure|remember to|go for|reach out|talk to|take a)\b'
   no_dependency:
     - '\balways (?:be )?here for you\b'

@@ -15,3 +15,8 @@ replies:
   - "That's a lot to deal with at once. Where would you like to start?"
   - "It's okay to feel angry about that. What do you wish they had done instead?"
   - "I can see why that stung. How did you respond in the moment?"
+  # Found by the first real-model tone check: "try to" inside a question is not advice.
+  - "That sounds confusing. What comes up when you try to think about the good news?"
+  - "It feels like a deep disappointment when someone cancels on you. What happened this time?"
+  - "It sounds like the exams are weighing on you. How is your mind holding up when you think about what you have to do?"
+  - "It feels really disappointing when someone cancels on you again. What was the plan you'd made?"

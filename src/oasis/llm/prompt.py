@@ -34,9 +34,10 @@ GOALS = {
 # Plan rules in plain words, for the "must" line and for naming a broken rule on a retry.
 # A reason code without an entry (a future guard check) is passed through as it is.
 RULES = {
-    "validate_first": "Start by naming the feeling and showing it makes sense.",
+    "validate_first": "Start by reflecting their feeling back in your own words.",
     "one_question": "Ask exactly one gentle, open question, at the end.",
     "no_advice": "Do not give advice or tell them what to do.",
+    "offer_ideas": "They asked for ideas: offer one or two gentle, practical suggestions.",
     "no_praise": "Do not praise or flatter them.",
     "no_dependency": "Do not encourage them to rely on you instead of other people.",
     "socratic": "Make the question one that helps them look at the thought.",

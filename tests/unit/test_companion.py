@@ -147,13 +147,16 @@ def state(**kw: Any) -> ConversationState:
 def test_a_companion_turn_carries_the_companion_rules() -> None:
     plan = plan_turn("I had a long day at work", state())
     assert plan.mode == "companion"
-    assert plan.constraints == ("validate_first", "one_question", "no_advice", "no_praise")
+    assert plan.constraints == ("validate_first", "no_advice", "one_question", "no_praise")
 
 
-def test_asking_for_advice_lifts_no_advice_for_that_turn() -> None:
+def test_asking_for_advice_swaps_no_advice_for_offering_ideas() -> None:
     plan = plan_turn("what should I do?", state())
     assert plan.mode == "companion"
-    assert plan.constraints == ("validate_first", "one_question", "no_praise")
+    assert plan.constraints == ("validate_first", "offer_ideas", "one_question", "no_praise")
+    system = build_messages(plan, [], "what should I do?", history_turns=6)[0].content
+    assert "offer one or two gentle, practical suggestions" in system
+    assert check("That sounds hard. You could try a rota. Would that fit?", plan).ok
 
 
 def test_every_generated_companion_reply_carries_the_rules() -> None:
@@ -172,6 +175,7 @@ def test_rules_reach_the_prompt_as_plain_sentences() -> None:
     system = build_messages(COMPANION, [], "hi", history_turns=6)[0].content
     assert "one_question" not in system
     assert "Ask exactly one gentle, open question" in system
+    assert "makes sense" not in system  # no stock phrase for the model to copy
     assert "Do not give advice" in system
     assert "rely on you" in system  # the system text guards against dependency in every mode
 
