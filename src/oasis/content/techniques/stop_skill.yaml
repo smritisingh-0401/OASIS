@@ -1,0 +1,16 @@
+# DBT exercise (rules CL7: low-risk skills only). Shown one step per turn; the LLM phrases
+# each step and falls back to this exact text. Wording needs clinician review (CR-12).
+schema: oasis.content/v1
+kind: technique
+id: stop_skill
+mode: dbt
+name: STOP skill
+version: "2026.10.0"
+review_status: needs_clinician_review
+source: "STOP skill, DBT distress tolerance module (M. M. Linehan, DBT Skills Training Manual, 2nd ed.)"
+offer: "Things sound very intense right now. Would you like to try a short skill called STOP? It is four quick steps, and you can stop at any time."
+steps:
+  - "S is for Stop. Pause for a moment and don't act on the urge just yet. Can you stay still with me for a few seconds?"
+  - "T is for Take a step back. Give yourself a little space, even just one slow, comfortable breath or a step away from what is happening."
+  - "O is for Observe. Notice what is going on inside you and around you, without judging it. What do you notice?"
+  - "P is for Proceed mindfully. With a bit more space now, what is one small thing you could do that fits what matters to you?"

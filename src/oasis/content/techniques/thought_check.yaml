@@ -1,0 +1,15 @@
+# CBT exercise (rules CL7: low-risk skills only). Shown one step per turn; the LLM phrases
+# each step and falls back to this exact text. Wording needs clinician review (CR-12).
+schema: oasis.content/v1
+kind: technique
+id: thought_check
+mode: cbt
+name: Thought check
+version: "2026.10.0"
+review_status: needs_clinician_review
+source: "Cognitive restructuring (thought record), as described in J. S. Beck, Cognitive Behavior Therapy: Basics and Beyond"
+offer: "It sounds like a harsh thought keeps coming up. Would you like to try a short exercise called Thought check? It takes a few minutes, and you can stop at any time."
+steps:
+  - "Let's start by naming the thought. In a few words, what is the thought that keeps coming back?"
+  - "Now let's look at it from both sides. What makes the thought feel true, and what doesn't quite fit with it?"
+  - "Last step. If a friend had this thought, what kinder, more balanced way of seeing it might you offer them?"
