@@ -10,11 +10,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 4 — therapy router** (not started) |
-| Done | Step A and Phases 1-3. Phase 2 merged and pushed 2026-10-08; Phase 3 (verified PHQ-9/GAD-7 content, scoring, questionnaire state machine, screening-offer trigger, storage, API action, assessment card) merged to `main` 2026-10-09, not yet pushed; reports in `docs/reports/` |
-| In progress | — |
-| Next | Phase 4 (therapy router, signals, guard hook) on `phase-04-router` |
-| Blocked on | Nothing; open items 8-11 need Smriti but do not block Phase 4 |
+| Current phase | **Phase 4 — therapy router** (in progress) |
+| Done | Step A and Phases 1-3, all pushed. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required) |
+| In progress | Phase 4 (signals, router, exercise scripts, consent, guard hook) on `phase-04-therapy-router` |
+| Next | Phase 5 (psychoeducation) after Phase 4 approval |
+| Blocked on | Nothing; open items 8-10 need Smriti but do not block Phase 4 |
 
 ### Environment notes (development machine, 2026-10-07)
 - Windows 11. Python 3.12.15 managed by uv (system Python 3.11.9 is not used); uv 0.12.23 installed with `python -m pip install --user uv` and invoked as `python -m uv`.
@@ -83,6 +83,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-08 | Typing while an offer is open counts as "not now"; typing mid-questionnaire pauses it | Consent must be explicit; the user is never trapped in a questionnaire | Keeping the offer open |
 | 2026-10-08 | An explicit request overrides the 24-hour decline cooldown (Smriti) | The cooldown exists to stop OASIS asking again, not to refuse a user who changes their mind | Cooldown blocks explicit requests too (design as first written) |
 | 2026-10-08 | Paused questionnaires expire 24 h after they started and their answers are discarded | No separate pause timestamp needed; data minimisation | Storing a pause time |
+| 2026-10-09 | An explicit screening request is allowed after a crisis earlier in the conversation, once post-crisis mode is cleared; unprompted offers stay blocked (Smriti, CR-19) | A user who asks is not refused; OASIS still never raises screening itself after a crisis | Crisis placeholder blocks explicit requests too |
+| 2026-10-09 | UI redesign: soft-blue glassmorphism, light theme only (dark deferred); prototype banner removed; rule S13 updated (Smriti) | Owner's design direction; every text colour checked for WCAG AA over the darkest background orb | Keeping the original flat design |
+| 2026-10-09 | Self-hosted Nunito font; CSP `font-src` from `'none'` to `'self'`; rule F1 reworded to allow self-hosted fonts only (Smriti) | A rounded font fits the theme and looks the same on every device; still no external requests | System fonts only (no rounded body font on Windows) |
+| 2026-10-09 | The questionnaire instruction is its own message (`preface`, stored as a separate turn) before the first question and on resume; `/history` returns the open questionnaire's card | Clearer flow; a reload no longer loses the buttons | Instruction repeated on every card |
+| 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
 | 2026-10-07 | Git: commits authored as Smriti; no assistant attribution anywhere; assistant config files git-ignored; Conventional Commits; one branch per phase | Authorship and repository hygiene | — |
 
 ---
@@ -92,7 +97,6 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 8. **Browser check of crisis lines** that could not be fetched here, to promote them to Tier 1: Philippines NCMH 1553, Chile *4141, Colombia 192 option 4, Pakistan Umang, and Sweden's Mind line hours.
 9. **Confirm the `self_harm` tier** (CR-01).
 10. **A fresh external held-out phrase set**: the Phase 2 held-out set was used for tuning and is now consumed.
-11. **Push `main`**: Phase 3 is merged locally only (Phase 2 pushed 2026-10-08).
 2. **Python 3.12 and uv** need installing on the development machine.
 3. **Repository licence** (e.g. MIT, Apache-2.0).
 4. **Clinician reviewer** for `clinical_review.md`.
@@ -139,6 +143,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-08 | 3 | Coverage | 97.5% overall; `oasis.assessment` 99.0%; `oasis.safety` 97.1% |
 | 2026-10-08 | 3 | Trigger (24 labelled conversations) | before tuning P 0.80 / R 0.31; after P 1.00 / R 0.93, mean latency 0.85 turns |
 | 2026-10-08 | 3 | Mutation spot-check | 13/13 caught after two new tests (11/13 before) |
+| 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
 | 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |
 

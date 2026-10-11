@@ -25,6 +25,7 @@ Reviewer: _not yet assigned (open item O3)._
 | CR-16 | Distortion categories and guard markers | `content/guard/*.yaml` | 7 | pending | Burns's categories |
 | CR-17 | Trend-change flag (baseline sessions K, z threshold) and feature selection | `content/tracking/config.yaml` | 8 | pending | Labelled non-clinical in UI |
 | CR-18 | Templated fallback replies | `core/templates.py` | 1+ | pending | |
+| CR-19 | An explicit request for PHQ-9/GAD-7 is allowed after a crisis earlier in the conversation (once post-crisis mode is cleared); OASIS still never offers one unprompted after a crisis | `assessment/trigger.py` | 3 | pending | Decided 2026-10-09; PHQ-9 item 9 still escalates (CR-07) |
 
 ## Change log
 
@@ -33,3 +34,4 @@ Reviewer: _not yet assigned (open item O3)._
 | 2026-10-07 | Register created with seed items | Smriti |
 | 2026-10-08 | Phase 2: CR-01 adds the self-harm tier; CR-03..06 and CR-18 locations updated to the implementation | Smriti |
 | 2026-10-08 | Phase 3: CR-07..10 updated to the implementation | Smriti |
+| 2026-10-09 | CR-19 added: explicit screening requests allowed after a crisis | Smriti |
