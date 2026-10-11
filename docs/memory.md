@@ -12,7 +12,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 |---|---|
 | Current phase | **Phase 4 — therapy router** (in progress) |
 | Done | Step A and Phases 1-3, all pushed. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required) |
-| In progress | Phase 4 (signals, router, exercise scripts, consent, guard hook) on `phase-04-therapy-router` |
+| In progress | Phase 4 built and verified on `phase-04-therapy-router`; awaiting Smriti's approval (report: `docs/reports/phase-04.md`) |
 | Next | Phase 5 (psychoeducation) after Phase 4 approval |
 | Blocked on | Nothing; open items 8-10 need Smriti but do not block Phase 4 |
 
@@ -88,6 +88,12 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-09 | Self-hosted Nunito font; CSP `font-src` from `'none'` to `'self'`; rule F1 reworded to allow self-hosted fonts only (Smriti) | A rounded font fits the theme and looks the same on every device; still no external requests | System fonts only (no rounded body font on Windows) |
 | 2026-10-09 | The questionnaire instruction is its own message (`preface`, stored as a separate turn) before the first question and on resume; `/history` returns the open questionnaire's card | Clearer flow; a reload no longer loses the buttons | Instruction repeated on every card |
 | 2026-10-11 | Runtime dependency `vaderSentiment` (MIT) for the valence baseline; its `requests`/`nltk` use is confined to the package's `__main__` demo, so nothing touches the network at import | Design §5 baseline; a maintained lexicon instead of a hand-made one | NLTK's VADER (needs a lexicon download); vendoring the lexicon |
+| 2026-10-11 | Router consent: cbt, dbt and mindfulness ask once per session (Yes / Not now); Not now or typing over the offer resets the lead; grounding starts without asking (Smriti, CR-11) | Consent before structured modes; acute overwhelm needs immediate help | Entering structured modes silently |
+| 2026-10-11 | One low-risk exercise per mode: Thought check, STOP skill, Notice the breath, 5-4-3-2-1 senses; one step per user message (Smriti, CR-12) | Small, reviewable set within rules CL7 | Several scripts per mode in v1 |
+| 2026-10-11 | Exercise steps are phrased by the LLM from a `- script:` line and fall back to the step's own text; the fake LLM returns the step verbatim | Follows design §13.2 while keeping exercises working with the LLM down and visible without weights | Fixed-text steps only |
+| 2026-10-11 | `distortion` = clipped sum of the Burns category scores; acute overwhelm is decided in the router from `overwhelm` and the weights file's threshold | A message with several distortions scores higher; one threshold to review (CR-11) | Maximum category score; separate acute signal |
+| 2026-10-11 | Hysteresis inside `router/router.py`; exercise scripts in `router/exercise.py`; router memory as JSON in the existing `sessions.router_state` column; malformed memory loads as a fresh state | Fewer one-function modules; no migration; a bad row never breaks a turn | `router/hysteresis.py`, separate techniques package |
+| 2026-10-11 | No screening offer while an exercise runs, even on explicit request | Design §3.2 guard ("not mid-exercise") | Interrupting the exercise |
 | 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
 | 2026-10-07 | Git: commits authored as Smriti; no assistant attribution anywhere; assistant config files git-ignored; Conventional Commits; one branch per phase | Authorship and repository hygiene | — |
 
@@ -118,6 +124,8 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Qwen3.5 thinking-disable mechanism and sampling settings | To be re-verified against the current model card in Phase 1 |
 | Model licences (Qwen3.5, Gemma 4, Phi-4-mini) | To be re-verified in Phase 1 |
 | PHQ-9 / GAD-7 item wording | Verified 2026-10-08 against the official phqscreeners.com forms and instruction manual |
+| Router detector accuracy on natural messages | Not measured; scenario table and golden phrases only — needs a labelled set |
+| Real-model phrasing of exercise steps | Not verified here (fake LLM returns steps verbatim) |
 | Screening-offer trigger on unseen conversations | Precision 1.00 / recall 0.93 on the labelled set after tuning (0.80 / 0.31 before); needs a fresh labelled set |
 | Crisis resource numbers | Verified 2026-10-08 against official sources (Tier 1) and FCDO (Tier 2); re-verify before any participant use |
 | Post-crisis flag after an app restart with storage down | Falls back to normal mode (documented, CR-05) |
@@ -144,6 +152,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-08 | 3 | Coverage | 97.5% overall; `oasis.assessment` 99.0%; `oasis.safety` 97.1% |
 | 2026-10-08 | 3 | Trigger (24 labelled conversations) | before tuning P 0.80 / R 0.31; after P 1.00 / R 0.93, mean latency 0.85 turns |
 | 2026-10-08 | 3 | Mutation spot-check | 13/13 caught after two new tests (11/13 before) |
+| 2026-10-11 | 4 | Tests | 799 passed, 0 skipped |
+| 2026-10-11 | 4 | Coverage | 98.1% overall; `oasis.router` 100%, `oasis.assessment` 98.6%, `oasis.safety` 97.1% |
+| 2026-10-11 | 4 | Scenario table / stability | 34/34 rows; 0 mode changes over 12 alternating strong cues |
+| 2026-10-11 | 4 | Signals + routing latency (dev machine) | p50 0.24 ms, p99 0.52 ms; 2 000-character message 14 ms |
+| 2026-10-11 | 4 | Mutation spot-check | 15/15 caught on the first run |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
 | 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |
