@@ -1,0 +1,156 @@
+# Psychoeducation items (design §14 kind psychoed_item; FR-PSY). One item answers one cue
+# from the `psychoed` scorer in content/lexicons/cues.yaml. Items are tried in this order and
+# the first whose cues match the normalised message wins, so specific topics come first; the
+# general item has no cues and is the fallback. Each item is shown at most once per session.
+#
+# Cues are matched against the safety normaliser's base form (lowercase, apostrophes
+# removed). `reading_level` is the Flesch-Kincaid grade of `text` (oasis.psychoed.selector);
+# startup refuses a stale value or a grade above 8. Every source page was checked on
+# 2026-10-11. All text needs clinician review (CR-13).
+schema: oasis.content/v1
+kind: psychoed_item
+version: "2026.10.0"
+review_status: needs_clinician_review
+items:
+  - id: diagnosis
+    topic: Only a professional can diagnose
+    text: "I can't tell you whether you have a condition, and no chat can. A GP or other trained professional can, by talking with you about how you feel and how it affects your life. A questionnaire can be part of that talk, but it is a starting point, not an answer."
+    reading_level: 6.3
+    cues:
+      - '\bdo i have\b'
+      - '\bam i depressed\b'
+      - '\bdiagnos'
+      - '\bcould (?:it|this) be\b'
+      - '\bis (?:it|this) (?:depression|anxiety|adhd|ocd)\b'
+    source: "NHS, Diagnosis - Depression in adults: https://www.nhs.uk/mental-health/conditions/depression-in-adults/diagnosis/"
+    version: "1"
+    review_status: needs_clinician_review
+
+  - id: help_seeking
+    topic: Talking to someone is not only for a crisis
+    text: "Talking to a counsellor or therapist is not just for people in crisis. Talking therapies help with common things like low mood and worry, and with depression and anxiety too. Asking for support is a wise step, not a sign of weakness."
+    reading_level: 7.0
+    cues:
+      - '\btherap'
+      - '\bcounsell?'
+      - '\b(?:asking for|ask for|getting|get|needing|need) (?:some )?help\b'
+      - '\bprofessional help\b'
+      - '\btalk to someone\b'
+    source: "NHS, Talking therapies: https://www.nhs.uk/mental-health/talking-therapies-medicine-treatments/talking-therapies-and-counselling/nhs-talking-therapies/"
+    version: "1"
+    review_status: needs_clinician_review
+
+  - id: not_weakness
+    topic: Struggling is not weakness
+    text: "Struggling with your mental health is not a sign of weakness. Depression, for example, is a real illness with real symptoms, not something you can just snap out of. With the right support, most people get better."
+    reading_level: 5.5
+    cues:
+      - '\bweak'
+      - '\bpathetic\b'
+      - '\bsnap out\b'
+      - '\bpull (?:myself|yourself) together\b'
+      - '\breal illness\b'
+      - '\b(?:isnt|is not|not) (?:a )?real\b'
+      - '\breal men\b'
+      - '\bmade up\b'
+      - '\bfake\b'
+    source: "NHS, Overview - Depression in adults: https://www.nhs.uk/mental-health/conditions/depression-in-adults/overview/"
+    version: "1"
+    review_status: needs_clinician_review
+
+  - id: panic
+    topic: Panic attacks
+    text: "Panic attacks can feel very frightening, but they are not dangerous and will not cause you physical harm. Most last between 5 and 20 minutes. The racing heart and fast breathing come from the body's stress response, and they do pass."
+    reading_level: 6.1
+    cues:
+      - '\bpanic'
+    source: "NHS, Panic disorder: https://www.nhs.uk/mental-health/conditions/panic-disorder/ and Anxiety, fear and panic: https://www.nhs.uk/mental-health/feelings-symptoms-behaviours/feelings-and-symptoms/anxiety-fear-panic/"
+    version: "1"
+    review_status: needs_clinician_review
+
+  - id: grief
+    topic: Grief
+    text: "There is no right or wrong way to feel after a loss. Sadness, numbness, anger and guilt are all common, and they can come and go. For most people the strongest feelings ease with time, though grief can last a long while."
+    reading_level: 4.2
+    cues:
+      - '\b(?:died|dead|death|passed away|funeral)\b'
+      - '\bgrie(?:f|ve|ving)\b'
+      - '\bbereave'
+      - '\blost (?:my|our|a) (?:mum|mom|dad|mother|father|wife|husband|partner|son|daughter|brother|sister|friend|baby|pet|dog|cat|nan|grandma|grandad|grandmother|grandfather)\b'
+    source: "NHS, Grief after bereavement or loss: https://www.nhs.uk/mental-health/feelings-symptoms-behaviours/feelings-and-symptoms/grief-bereavement-loss/"
+    version: "1"
+    review_status: needs_clinician_review
+
+  - id: sleep
+    topic: Sleep and mood
+    text: "Sleep and mood are closely linked. Worry and stress can keep you awake, and poor sleep can leave you tired, low and less able to cope. This can turn into a cycle, and it is a very common pattern."
+    reading_level: 4.9
+    cues:
+      - '\bsleep'
+      - '\binsomnia\b'
+      - '\bawake\b'
+      - '\b(?:tired|exhausted)\b'
+    source: "NHS Every Mind Matters, Sleep problems: https://www.nhs.uk/every-mind-matters/mental-health-issues/sleep/"
+    version: "1"
+    review_status: needs_clinician_review
+
+  - id: loneliness
+    topic: Loneliness
+    text: "Most people feel lonely at some point, and it can happen at any age. You can feel lonely even when you are around other people, including friends or family. Loneliness is common, and it often comes with stress or low mood."
+    reading_level: 7.6
+    cues:
+      - '\blonel(?:y|iness)\b'
+      - '\bisolated\b'
+      - '\balone\b'
+      - '\bno (?:one|friends)\b'
+    source: "NHS, Feeling lonely: https://www.nhs.uk/mental-health/feelings-symptoms-behaviours/feelings-and-symptoms/feeling-lonely/"
+    version: "1"
+    review_status: needs_clinician_review
+
+  - id: anxiety
+    topic: Anxiety and the body
+    text: "Most people feel anxious or scared sometimes. When you feel anxious, your body releases stress hormones like adrenaline, which can make your heart beat faster and leave you sweaty or shaky. It becomes a problem when it starts to get in the way of daily life, and help is there when it does."
+    reading_level: 8.0
+    cues:
+      - '\banxi'
+      - '\bworr'
+      - '\bnervous\b'
+      - '\bscared\b'
+      - '\bon edge\b'
+    source: "NHS, Anxiety, fear and panic: https://www.nhs.uk/mental-health/feelings-symptoms-behaviours/feelings-and-symptoms/anxiety-fear-panic/"
+    version: "1"
+    review_status: needs_clinician_review
+
+  - id: stress
+    topic: Stress
+    text: "Stress is the body's reaction to feeling under pressure. In small amounts it can even help, but when it is constant it can affect sleep, appetite, focus and mood. Headaches, tense muscles and an upset stomach can be part of it too."
+    reading_level: 6.4
+    cues:
+      - '\bstress'
+      - '\bpressure\b'
+      - '\bburn(?:ed|t)? ?out\b'
+      - '\boverworked\b'
+      - '\bdeadlines?\b'
+    source: "NHS, Stress: https://www.nhs.uk/mental-health/feelings-symptoms-behaviours/feelings-and-symptoms/stress/"
+    version: "1"
+    review_status: needs_clinician_review
+
+  - id: low_mood
+    topic: Low mood
+    text: "Most people feel low sometimes, and a low mood often lifts within a few days or weeks. If it lasts two weeks or more, or you stop enjoying things, it is worth talking to a doctor. Feeling this way is common, and support can help."
+    reading_level: 5.2
+    cues:
+      - '\b(?:sad|sadness|low|down|empty|numb|hopeless|miserable|unhappy|cry|crying)\b'
+      - '\bdepress'
+    source: "NHS, Low mood, sadness and depression: https://www.nhs.uk/mental-health/feelings-symptoms-behaviours/feelings-and-symptoms/low-mood-sadness-depression/"
+    version: "1"
+    review_status: needs_clinician_review
+
+  - id: general
+    topic: "What's wrong with me?"
+    text: "Asking that usually means things feel hard right now, and that is a very human place to be. Feelings like sadness, worry and stress are common, and having them does not mean you are broken. Talking it through with someone you trust, a doctor or a counsellor can help make sense of what is going on."
+    reading_level: 6.9
+    cues: []
+    source: "WHO, Mental disorders fact sheet: https://www.who.int/news-room/fact-sheets/detail/mental-disorders and NHS, Low mood, sadness and depression: https://www.nhs.uk/mental-health/feelings-symptoms-behaviours/feelings-and-symptoms/low-mood-sadness-depression/"
+    version: "1"
+    review_status: needs_clinician_review

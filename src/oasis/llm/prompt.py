@@ -27,6 +27,8 @@ GOALS = {
     "to try it.",
     "mindfulness": "Guide one short, low-risk grounding step from the script.",
     "grounding": "Guide one short, low-risk grounding step from the script.",
+    "psychoed": "Explain the idea in the script line in two or three plain sentences, in your "
+    "own words, without diagnosing. Add nothing that is not in it.",
 }
 SCRIPT_MARK = "\n- script: "
 STEP_GOAL = (
@@ -48,7 +50,9 @@ def build_messages(
     history_turns: int,
     retry_reasons: Sequence[str] = (),
 ) -> list[ChatMessage]:
-    goal = STEP_GOAL if plan.snippet else GOALS.get(plan.mode, GOALS["companion"])
+    # A snippet is an exercise step, except in psychoed mode, where it is the item to explain.
+    step = plan.snippet and plan.mode != "psychoed"
+    goal = STEP_GOAL if step else GOALS.get(plan.mode, GOALS["companion"])
     system = SYSTEM_TEMPLATE.format(
         mode=plan.mode, goal=goal, constraints=", ".join(plan.constraints) or "none"
     )

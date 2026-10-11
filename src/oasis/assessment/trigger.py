@@ -52,6 +52,7 @@ class TriggerConfig:
 class Offer:
     instrument: InstrumentId
     reason: str  # JSON
+    explicit: bool = False  # the user asked for it
 
 
 @functools.cache
@@ -109,7 +110,7 @@ def decide(
         inst: InstrumentId = "GAD7" if cfg.anxiety_request.search(norm) else "PHQ9"
         if _recently_completed(records, inst, now, cfg):
             return None
-        return Offer(inst, json.dumps({"reason": "explicit_request"}))
+        return Offer(inst, json.dumps({"reason": "explicit_request"}), explicit=True)
 
     # A recent crisis or decline stops OASIS raising screening itself; neither refuses a
     # user who asks (decided 2026-10-08 and 2026-10-09).

@@ -273,7 +273,8 @@ Features are term-count rates, so the pre-clip value is a linear model — SHAP 
 - `distortion` is the **clipped sum** of the eleven category scores, not the maximum: several distortions in one message add up, and the sum is still linear before the clip. `distortion_types` lists the categories with any match.
 - `opt_out` is true when any opt-out phrase matches ("can we stop", "I don't want to do this"); it is read only while an exercise runs.
 - `acute_overwhelm` is not a separate signal: the router compares `overwhelm` with `acute_overwhelm_threshold` in its weights file (CR-11).
-- `Signals` holds only the fields used so far; `psychoed_cue`, `screening_cues`, `continue_request` and `behaviour` arrive with Phases 5, 3 (kept in the trigger) and 8.
+- `Signals` holds only the fields used so far; `screening_cues` and `continue_request` stay inside the trigger and the planner (Phase 3), and `behaviour` arrives with Phase 8.
+- `psychoed_cue` (Phase 5) is true when any phrase of the `psychoed` scorer in `cues.yaml` matches, like `opt_out`.
 
 ---
 
@@ -298,6 +299,21 @@ function plan(signals, state, style) -> Plan:
 - Exactly one mode per turn.
 - `post_crisis` sits above the precedence list given in the architecture because it is the post-crisis policy from the methodology; it is flagged for clinician review.
 - Style is attached to every plan but **read only by the prompt builder** (§12).
+
+### 6a. As built (Phase 5)
+
+```text
+post-crisis → exercise button → assessment button → open assessment
+  → (exercise running: router only)
+  → explicit questionnaire request (+ psychoeducation item as a preface, if cued)
+  → psychoeducation item → unprompted questionnaire offer → router
+```
+
+- An explicit request beats psychoeducation, but a message that is both gets the item first, as its own message, and then the offer (Smriti, 2026-10-11). An unprompted offer waits; the trigger can fire again on a later turn.
+- No psychoeducation while an exercise runs (same guard as the questionnaire offer) or under acute overwhelm, which goes to grounding first.
+- `psychoed/selector.py` picks the item: the first item in `content/psychoed/items.yaml`, in file order, whose topic cues match and that has not been shown this session; the general item (no cues, listed last) answers the rest. Shown item IDs are kept in `RouterState.psychoed_shown`, so they persist with the router memory and survive the acute override; once every matching item is used, the message goes to the router.
+- The plan is mode `psychoed`, constraints `no_diagnosis, use_snippet_only`, with the item text as the snippet (`- script:` line). If the LLM fails the reply is the item text itself. A psychoeducation turn lapses an open exercise offer, as typing over it does.
+- Items are checked at startup: provenance fields, `needs_clinician_review`, compilable cues, exactly one general item listed last, and `reading_level` equal to the Flesch-Kincaid grade computed from the text and at most 8.
 
 ---
 

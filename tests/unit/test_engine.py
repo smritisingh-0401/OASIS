@@ -12,6 +12,7 @@ from oasis.core.engine import CRISIS_PLACEHOLDER, ChatEngine, InvalidSession
 from oasis.core.templates import TEMPLATES
 from oasis.llm.client import LLMFailure
 from oasis.llm.fake import FakeLLM
+from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.router.exercise import technique_for
 from oasis.router.router import load_state
 from oasis.safety.gate import RuleBasedSafetyGate
@@ -545,3 +546,25 @@ async def test_exercise_buttons_reach_the_planner(settings: Settings) -> None:
     stopped = await engine.handle_turn("h", "Stop", ExerciseAction("stop"))
     assert stopped.reply == TEMPLATES["exercise_stopped"]
     assert stopped.exercise_card is None
+
+
+# --- psychoeducation (Phase 5) -----------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_a_psychoed_item_reaches_the_prompt_and_is_its_own_fallback(
+    settings: Settings,
+) -> None:
+    general = next(i for i in load_psychoed() if i.id == "general")
+    llm = FakeLLM(replies=["Lots of people wonder that."])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    result = await engine.handle_turn("h", "what's wrong with me?")
+    assert result.mode == "psychoed"
+    assert f"- script: {general.text}" in llm.last_messages[0].content
+
+    down = _engine(settings, llm=FakeLLM(fail="down"))
+    await _session(down)
+    fallback = await down.handle_turn("h", "what's wrong with me?")
+    assert fallback.reply == general.text
+    assert fallback.fallback_reason == "llm.down"

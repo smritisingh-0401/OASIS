@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 import oasis
 from oasis.api.app import create_app
 from oasis.llm.fake import FakeLLM
+from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
@@ -438,3 +439,18 @@ def test_malformed_exercise_actions_are_rejected(
         resp = c.post("/chat", json={"message": "Yes", "client_ts": TS, "action": action},
                       headers={HEADER: token})  # fmt: skip
     assert resp.status_code == 422
+
+
+# --- psychoeducation over HTTP (Phase 5) ---------------------------------------------
+
+
+def test_psychoeducation_over_http(settings: Settings) -> None:
+    general = next(i for i in load_psychoed() if i.id == "general")
+    with TestClient(create_app(settings, repo=MemoryRepository())) as c:
+        token = _session(c)
+        body = _chat(c, token, "what's wrong with me?").json()
+        assert (body["mode"], body["reply"]) == ("psychoed", general.text)
+        combined = _chat(c, token, "is something wrong with me? can I do a depression test").json()
+    assert combined["mode"] == "assessment"
+    assert combined["preface"]
+    assert combined["assessment"]["step"] == "offer"

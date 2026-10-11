@@ -10,11 +10,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 4 — therapy router** (in progress) |
-| Done | Step A and Phases 1-3, all pushed. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required) |
-| In progress | Phase 4 built and verified on `phase-04-therapy-router`; awaiting Smriti's approval (report: `docs/reports/phase-04.md`) |
-| Next | Phase 5 (psychoeducation) after Phase 4 approval |
-| Blocked on | Nothing; open items 8-10 need Smriti but do not block Phase 4 |
+| Current phase | **Phase 5 — psychoeducation** (in progress) |
+| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3) |
+| In progress | Phase 5 built and verified on `phase-05-psychoeducation`; awaiting Smriti's approval (report: `docs/reports/phase-05.md`) |
+| Next | Phase 6 (companion mode) after Phase 5 approval |
+| Blocked on | Nothing; open items 8-10 need Smriti but do not block Phase 5 |
 
 ### Environment notes (development machine, 2026-10-07)
 - Windows 11. Python 3.12.15 managed by uv (system Python 3.11.9 is not used); uv 0.12.23 installed with `python -m pip install --user uv` and invoked as `python -m uv`.
@@ -94,6 +94,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-11 | `distortion` = clipped sum of the Burns category scores; acute overwhelm is decided in the router from `overwhelm` and the weights file's threshold | A message with several distortions scores higher; one threshold to review (CR-11) | Maximum category score; separate acute signal |
 | 2026-10-11 | Hysteresis inside `router/router.py`; exercise scripts in `router/exercise.py`; router memory as JSON in the existing `sessions.router_state` column; malformed memory loads as a fresh state | Fewer one-function modules; no migration; a bad row never breaks a turn | `router/hysteresis.py`, separate techniques package |
 | 2026-10-11 | No screening offer while an exercise runs, even on explicit request | Design §3.2 guard ("not mid-exercise") | Interrupting the exercise |
+| 2026-10-11 | Psychoeducation precedence: an explicit questionnaire request beats it, but a message that is both gets the item first as its own message, then the offer; psychoeducation beats an unprompted offer (Smriti) | The user asked for an action; a short explanation still helps | Psychoeducation first, offer on a later turn |
+| 2026-10-11 | Each psychoeducation item is shown at most once per session; IDs kept in the router memory JSON | Venting "what's wrong with me" twice should not get the same explanation twice; no migration | Repeat every time; a new column |
+| 2026-10-11 | Eleven psychoeducation items from NHS and WHO pages, each page checked; first matching item in file order wins, general item last | Small, reviewable set; deterministic and explainable | Scored topic matching |
+| 2026-10-11 | No psychoeducation under acute overwhelm or mid-exercise | Grounding first; exercises are not interrupted | Explaining first |
+| 2026-10-11 | Psychoeducation cue is a `psychoed` scorer in `cues.yaml` (no `psychoed/cues.py`); reading level is a stdlib Flesch-Kincaid check at startup (no `scripts/readability.py`) | Reuses the Phase 4 scorer; bad content fails at boot | Separate cue module; a printing script |
 | 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
 | 2026-10-07 | Git: commits authored as Smriti; no assistant attribution anywhere; assistant config files git-ignored; Conventional Commits; one branch per phase | Authorship and repository hygiene | — |
 
@@ -125,6 +130,8 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Model licences (Qwen3.5, Gemma 4, Phi-4-mini) | To be re-verified in Phase 1 |
 | PHQ-9 / GAD-7 item wording | Verified 2026-10-08 against the official phqscreeners.com forms and instruction manual |
 | Router detector accuracy on natural messages | Not measured; scenario table and golden phrases only — needs a labelled set |
+| Psychoeducation cue recall on unseen phrasing | Not measured; trigger set written by the same author as the cues — needs a fresh labelled set |
+| Real-model phrasing of psychoeducation items | Not verified here (fake LLM returns the item verbatim) |
 | Real-model phrasing of exercise steps | Not verified here (fake LLM returns steps verbatim) |
 | Screening-offer trigger on unseen conversations | Precision 1.00 / recall 0.93 on the labelled set after tuning (0.80 / 0.31 before); needs a fresh labelled set |
 | Crisis resource numbers | Verified 2026-10-08 against official sources (Tier 1) and FCDO (Tier 2); re-verify before any participant use |
@@ -157,6 +164,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-11 | 4 | Scenario table / stability | 34/34 rows; 0 mode changes over 12 alternating strong cues |
 | 2026-10-11 | 4 | Signals + routing latency (dev machine) | p50 0.24 ms, p99 0.52 ms; 2 000-character message 14 ms |
 | 2026-10-11 | 4 | Mutation spot-check | 15/15 caught on the first run |
+| 2026-10-11 | 5 | Tests | 882 passed, 0 skipped |
+| 2026-10-11 | 5 | Coverage | 98.1% overall; `oasis.psychoed` 100%, `oasis.router` 100% |
+| 2026-10-11 | 5 | Psychoeducation cue | trigger set 23/23 fire with the expected item; false positives 0/22 near-miss ordinary messages, 0/104 Phase 3 conversation turns, 0/85 Phase 2 benign messages |
+| 2026-10-11 | 5 | Planner latency (dev machine) | p50 0.28 ms, p99 0.47 ms |
+| 2026-10-11 | 5 | Mutation spot-check | 10/10 caught after one new test (9/10 before) |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
 | 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |

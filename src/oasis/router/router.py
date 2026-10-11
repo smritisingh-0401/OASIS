@@ -35,8 +35,10 @@ def route(
     if rs.exercise is not None and not signals.opt_out and (rs.current == "grounding" or not acute):
         return decide("mid_exercise_hold", rs)
     if acute:
-        # Immediate, even mid-hysteresis or mid-exercise; consents are kept.
-        return decide("acute_override", RouterState(current="grounding", consented=rs.consented))
+        # Immediate, even mid-hysteresis or mid-exercise; consents and shown items are kept.
+        fresh = RouterState(current="grounding", consented=rs.consented,
+                            psychoed_shown=rs.psychoed_shown)  # fmt: skip
+        return decide("acute_override", fresh)
 
     rs = replace(rs, exercise=None, step=0)  # opted out (or nothing was running)
     if rs.current == "grounding":
@@ -66,6 +68,7 @@ _STRUCTURED = frozenset(ROUTER_MODES) - {"companion"}
 def dump_state(rs: RouterState) -> str:
     data = asdict(rs)
     data["consented"] = sorted(rs.consented)
+    data["psychoed_shown"] = sorted(rs.psychoed_shown)
     return json.dumps(data, separators=(",", ":"))
 
 
@@ -77,7 +80,8 @@ def load_state(text: str) -> RouterState:
     """
     try:
         raw = json.loads(text)
-        rs = RouterState(**{**raw, "consented": frozenset(raw.get("consented", ()))})
+        sets = {k: frozenset(raw.get(k, ())) for k in ("consented", "psychoed_shown")}
+        rs = RouterState(**{**raw, **sets})
     except (ValueError, TypeError, AttributeError):
         return RouterState()
     steps = len(load_all()[rs.exercise].steps) if rs.exercise in load_all() else 0
@@ -86,6 +90,7 @@ def load_state(text: str) -> RouterState:
         and rs.challenger in {None, *ROUTER_MODES}
         and rs.offered in {None, *_STRUCTURED}
         and rs.consented <= _STRUCTURED
+        and all(type(i) is str for i in rs.psychoed_shown)
         and type(rs.streak) is int and rs.streak >= 0
         and type(rs.step) is int
         and (0 <= rs.step < steps if rs.exercise is not None else rs.step == 0)
