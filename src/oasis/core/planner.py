@@ -42,7 +42,7 @@ _CONTINUE = re.compile(
 
 # Plan constraints per mode (design §13.2); the prompt builder turns them into rules.
 CONSTRAINTS: dict[str, tuple[str, ...]] = {
-    "companion": ("one_question", "no_advice", "no_praise"),
+    "companion": ("validate_first", "one_question", "no_advice", "no_praise"),
     "cbt": ("validate_first", "one_question", "socratic"),
     "dbt": ("validate_first", "offer_not_instruct"),
     "mindfulness": ("follow_script", "one_step"),
@@ -63,7 +63,8 @@ def plan_turn(message: str, state: ConversationState, action: Action | None = No
         if not wants_to_continue(message):
             return Plan(mode="post_crisis", templated=True, template_id="post_crisis",
                         reason_codes=("post_crisis.hold",))  # fmt: skip
-        return Plan(mode="companion", reason_codes=("post_crisis.cleared",))
+        return Plan(mode="companion", constraints=_rules("companion", extract(message)),
+                    reason_codes=("post_crisis.cleared",))  # fmt: skip
 
     now = state.now or datetime.datetime.now(datetime.UTC)
     open_rec, expired = flow.active(state.assessments, now)
@@ -78,7 +79,8 @@ def plan_turn(message: str, state: ConversationState, action: Action | None = No
 
     if open_rec is not None:  # typed instead of pressing a button
         step = flow.on_free_text(open_rec, now)
-        return Plan(mode="companion", assessment=step.record, card=step.card,
+        return Plan(mode="companion", constraints=_rules("companion", extract(message)),
+                    assessment=step.record, card=step.card,
                     reason_codes=("planner.passthrough", "assessment.free_text"))  # fmt: skip
 
     signals = extract(message)
@@ -142,7 +144,7 @@ def _routed(
                     exercise_card=ExerciseCard("offer", decision.offer, t.name),
                     router_state=rs, route=decision, assessment=expired,
                     reason_codes=tuple(codes))  # fmt: skip
-    return Plan(mode=decision.mode, constraints=CONSTRAINTS.get(decision.mode, ()),
+    return Plan(mode=decision.mode, constraints=_rules(decision.mode, signals),
                 router_state=rs, route=decision, assessment=expired,
                 reason_codes=tuple(codes))  # fmt: skip
 
@@ -177,6 +179,13 @@ def _exercise_button(action: ExerciseAction, rs: RouterState) -> Plan:
     return _step_plan(None, text, rs, card, ("exercise.accepted",))
 
 
+def _rules(mode: str, signals: Signals) -> tuple[str, ...]:
+    rules = CONSTRAINTS.get(mode, ())
+    if mode == "companion" and signals.asks_advice:  # advice was asked for (FR-CMP-2)
+        rules = tuple(r for r in rules if r != "no_advice")
+    return rules
+
+
 def _band_flags(records: Sequence[AssessmentRecord], now: datetime.datetime) -> dict[str, float]:
     """Moderate-or-worse PHQ-9 / GAD-7 results inside the re-administration window."""
     window = trigger.config().repeat_after
@@ -193,6 +202,7 @@ def _from_step(step: flow.Step, code: str) -> Plan:
         return Plan(mode="crisis", templated=True, assessment=step.record,
                     reason_codes=("assessment.item9",))  # fmt: skip
     if step.text is None:
-        return Plan(mode="companion", assessment=step.record, card=step.card, reason_codes=(code,))
+        return Plan(mode="companion", constraints=CONSTRAINTS["companion"], assessment=step.record,
+                    card=step.card, reason_codes=(code,))  # fmt: skip
     return Plan(mode="assessment", templated=True, text=step.text, preface=step.preface,
                 assessment=step.record, card=step.card, reason_codes=(code,))  # fmt: skip
