@@ -12,8 +12,7 @@ from dataclasses import dataclass, replace
 from importlib import resources
 from typing import Any
 
-import yaml
-
+from oasis.content import load_yaml, require_review
 from oasis.types import ExerciseCard, Mode, RouterState
 
 EXERCISE_MODES = frozenset({"cbt", "dbt", "mindfulness", "grounding"})
@@ -35,8 +34,7 @@ def parse(raw: Mapping[str, Any]) -> Technique:
     steps = raw.get("steps")
     if raw.get("mode") not in EXERCISE_MODES or not isinstance(steps, list) or not steps:
         raise ValueError(f"technique {raw.get('id')}: needs a structured mode and steps")
-    if raw.get("review_status") != "needs_clinician_review":
-        raise ValueError(f"technique {raw.get('id')}: must be flagged for review (rules CL6)")
+    require_review(raw, f"technique {raw.get('id')}")
     fields = ("id", "name", "offer", "source", "version")
     if not all(isinstance(raw.get(f), str) and raw[f] for f in fields):
         raise ValueError(f"technique {raw.get('id')}: missing {fields}")
@@ -49,9 +47,7 @@ def parse(raw: Mapping[str, Any]) -> Technique:
 def load_all() -> dict[str, Technique]:
     folder = resources.files("oasis.content") / "techniques"
     return index(
-        parse(yaml.safe_load(f.read_text(encoding="utf-8")))
-        for f in folder.iterdir()
-        if f.name.endswith(".yaml")
+        parse(load_yaml("techniques", f.name)) for f in folder.iterdir() if f.name.endswith(".yaml")
     )
 
 
@@ -78,7 +74,7 @@ def deliver(rs: RouterState) -> tuple[str, RouterState, ExerciseCard | None]:
     text, nxt = t.steps[rs.step], rs.step + 1
     if nxt >= len(t.steps):
         return text, replace(rs, exercise=None, step=0), None
-    card = ExerciseCard("active", rs.current, t.name, nxt, len(t.steps))
+    card = ExerciseCard("active", rs.current, t.name, nxt, len(t.steps), text)
     return text, replace(rs, step=nxt), card
 
 
@@ -88,5 +84,6 @@ def card_for(rs: RouterState) -> ExerciseCard | None:
         return ExerciseCard("offer", rs.offered, technique_for(rs.offered).name)
     if rs.exercise is not None:
         t = load_all()[rs.exercise]
-        return ExerciseCard("active", rs.current, t.name, rs.step, len(t.steps))
+        shown = t.steps[rs.step - 1] if rs.step else None
+        return ExerciseCard("active", rs.current, t.name, rs.step, len(t.steps), shown)
     return None

@@ -106,6 +106,7 @@ class Signals:
     wants_to_talk: float = 0.0
     opt_out: bool = False  # "stop the exercise"; read only while an exercise runs
     psychoed_cue: bool = False  # stigma, "is it normal", "what's wrong with me" (Phase 5)
+    asks_advice: bool = False  # "what should I do?": lifts companion's no_advice (Phase 6)
 
 
 @dataclass(frozen=True)
@@ -163,6 +164,7 @@ class ExerciseCard:
     name: str
     item: int | None = None  # the step just shown, 1-based
     item_count: int | None = None
+    instruction: str | None = None  # that step's fixed script text, shown on the card
 
 
 @dataclass(frozen=True)
@@ -187,6 +189,8 @@ class Plan:
     # Router memory to persist (None: this turn did not route), and the full decision.
     router_state: RouterState | None = None
     route: RouteDecision | None = None
+    # How recent companion replies began (first three words, normalised): not to be reused.
+    avoid_openers: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

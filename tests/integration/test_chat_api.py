@@ -15,6 +15,8 @@ import oasis
 from oasis.api.app import create_app
 from oasis.llm.fake import FakeLLM
 from oasis.psychoed.selector import load_all as load_psychoed
+from oasis.router.exercise import technique_for
+from oasis.router.weights import config as router_config
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
@@ -26,7 +28,9 @@ TS = "2026-10-07T10:00:00+05:30"
 
 @pytest.fixture
 def client(settings: Settings) -> Iterator[TestClient]:
-    with TestClient(create_app(settings, llm=FakeLLM(replies=["What's on your mind?"]))) as c:
+    with TestClient(
+        create_app(settings, llm=FakeLLM(replies=["That sounds like a lot. What's on your mind?"]))
+    ) as c:
         yield c
 
 
@@ -57,16 +61,16 @@ def test_multi_turn_chat_and_history(client: TestClient) -> None:
         resp = _chat(client, token, text)
         assert resp.status_code == 200
         body = resp.json()
-        assert body["reply"] == "What's on your mind?"
+        assert body["reply"] == "That sounds like a lot. What's on your mind?"
         assert body["mode"] == "companion"
         assert body["persisted"] is True
 
     history = client.get("/history", headers={HEADER: token}).json()["turns"]
     assert [(t["role"], t["content"]) for t in history] == [
         ("user", "first"),
-        ("assistant", "What's on your mind?"),
+        ("assistant", "That sounds like a lot. What's on your mind?"),
         ("user", "second"),
-        ("assistant", "What's on your mind?"),
+        ("assistant", "That sounds like a lot. What's on your mind?"),
     ]
 
 
@@ -75,7 +79,7 @@ def test_history_limit(client: TestClient) -> None:
     _chat(client, token, "a")
     _chat(client, token, "b")
     turns = client.get("/history?limit=1", headers={HEADER: token}).json()["turns"]
-    assert [t["content"] for t in turns] == ["What's on your mind?"]
+    assert [t["content"] for t in turns] == ["That sounds like a lot. What's on your mind?"]
 
 
 @pytest.mark.parametrize("token", [None, "not-a-real-session"])
@@ -145,6 +149,17 @@ def test_chat_page_has_help_card_and_disclaimer(client: TestClient) -> None:
     html = client.get("/").text
     assert "Need help now?" in html
     assert "not a diagnosis" in html
+    # Owner's wording (2026-10-12, CR-03): an invitation to talk in person, not an
+    # emergency instruction, at the top of the card.
+    assert "<h2>Talk to someone now</h2>" in html
+    assert "If you feel like talking to someone in person" in html
+    assert "If you are in danger right now" not in html
+
+
+def test_crisis_reply_invites_talking_in_person_and_points_to_the_card() -> None:
+    assert "If you feel like talking to someone in person" in HANDOFF_REPLY
+    assert '"Need help now?"' in HANDOFF_REPLY
+    assert "emergency" not in HANDOFF_REPLY
 
 
 def test_help_card_lists_crisis_lines_without_external_loads(client: TestClient) -> None:
@@ -205,13 +220,15 @@ def test_unexpected_engine_error_returns_templated_reply(settings: Settings) -> 
 
 def test_history_survives_restart(settings: Settings) -> None:
     on_disk = settings.model_copy(update={"storage_backend": "sqlite"})
-    with TestClient(create_app(on_disk, llm=FakeLLM(replies=["ok"]))) as c:
+    with TestClient(
+        create_app(on_disk, llm=FakeLLM(replies=["That sounds nice. What else happened?"]))
+    ) as c:
         token = _session(c)
         _chat(c, token, "remember me")
 
     with TestClient(create_app(on_disk)) as c:
         turns = c.get("/history", headers={HEADER: token}).json()["turns"]
-    assert [t["content"] for t in turns] == ["remember me", "ok"]
+    assert [t["content"] for t in turns] == ["remember me", "That sounds nice. What else happened?"]
 
 
 def test_default_llm_backend_is_llama_server(settings: Settings) -> None:
@@ -232,7 +249,7 @@ CRISIS = "I want to kill myself"
 
 def test_crisis_writes_audit_and_holds_post_crisis_mode(settings: Settings) -> None:
     repo = MemoryRepository()
-    llm = FakeLLM(replies=["What's on your mind?"])
+    llm = FakeLLM(replies=["That sounds like a lot. What's on your mind?"])
     with TestClient(create_app(settings, llm=llm, repo=repo)) as c:
         token = _session(c)
         crisis = _chat(c, token, CRISIS).json()
@@ -386,7 +403,7 @@ DISTORTED = "I'm such a failure, I always mess everything up"
 def test_structured_mode_offer_consent_steps_and_stop_over_http(settings: Settings) -> None:
     with TestClient(create_app(settings, repo=MemoryRepository())) as c:
         token = _session(c)
-        for _ in range(2):
+        for _ in range(router_config().hysteresis_turns - 1):
             assert _chat(c, token, DISTORTED).json()["exercise"] is None
         offer = _chat(c, token, DISTORTED).json()
         assert offer["exercise"]["step"] == "offer"
@@ -397,6 +414,7 @@ def test_structured_mode_offer_consent_steps_and_stop_over_http(settings: Settin
         first = _act(c, token, "Yes, let's try", {"type": "exercise_consent", "accept": True})
         assert first["mode"] == "cbt"
         assert (first["exercise"]["step"], first["exercise"]["item"]) == ("active", 1)
+        assert first["exercise"]["instruction"] == technique_for("cbt").steps[0]
         second = _chat(c, token, "It's the thought that I always get things wrong").json()
         assert second["exercise"]["item"] == 2
         assert c.get("/history", headers={HEADER: token}).json()["exercise"]["item"] == 2

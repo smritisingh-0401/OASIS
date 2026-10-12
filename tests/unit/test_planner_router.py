@@ -44,6 +44,16 @@ def offered() -> Plan:
     return plan
 
 
+def test_reworded_self_criticism_reaches_the_thought_check_offer() -> None:
+    # The manual test (2026-10-12) that never reached CBT: only the first message counted.
+    # The long second message falls just short of the margin, which holds the streak.
+    plans = turns(["I'm such a failure, I always mess everything up",
+                   "I always do something wrong, feeling very bad right now",
+                   "It feels like i am carrying a burden of my failure"])  # fmt: skip
+    assert [p.router_state.offered if p.router_state else None for p in plans] == [
+        None, None, "cbt"]  # fmt: skip
+
+
 def test_a_sustained_cue_ends_in_a_consent_offer() -> None:
     plans = turns([DISTORTED] * N)
     assert all(p.mode == "companion" for p in plans)
@@ -169,7 +179,12 @@ def test_every_routed_plan_carries_the_full_decision() -> None:
 
 def test_mode_constraints_follow_the_prompt_table() -> None:
     companion = plan_turn("I just want to vent about my day", state())
-    assert set(companion.constraints) == {"one_question", "no_advice", "no_praise"}
+    assert set(companion.constraints) == {
+        "validate_first",
+        "one_question",
+        "no_advice",
+        "no_praise",
+    }
     cbt = plan_turn(DISTORTED, state(RouterState(current="cbt", consented=frozenset({"cbt"}))))
     assert set(cbt.constraints) == {"validate_first", "one_question", "socratic"}
 

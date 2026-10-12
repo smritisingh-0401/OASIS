@@ -1,0 +1,60 @@
+# Reply checks for companion mode (design §8.2 C-PRAISE, C-ADVICE, C-DEPEND; FR-CMP).
+# Each list belongs to the plan rule of the same name; a reply fails a rule as described:
+#   validate_first  no phrase from the list appears before the question
+#   no_praise       any phrase matches (flattery, over-praise)
+#   no_advice       any phrase matches (only while the user has not asked for advice)
+#   no_dependency   any phrase matches; checked on every generated reply, in every mode
+# one_question is counted, not listed: exactly one "?". Patterns are matched against the
+# safety normaliser's base form (lowercase, apostrophes removed: "you're" is "youre").
+# Engineering start values (CR-14).
+schema: oasis.content/v1
+kind: companion_checks
+version: "2026.10.0"
+review_status: needs_clinician_review
+patterns:
+  validate_first:
+    - '\b(?:that|it|this) sounds\b'
+    - '\bsounds (?:like|really|so|very|incredibly)\b'
+    - '\b(?:it|that|this) (?:can |must |would )?feels? (?:like|really|so|very|deeply|hard|painful|disappointing|lonely|frustrating|heavy|overwhelming|upsetting|scary)\b'
+    - '\bmakes (?:a lot of |complete |total )?sense\b'
+    - '\b(?:im|i am) (?:so |really |very )?sorry\b'
+    - '\bno wonder\b'
+    - '\bunderstandabl[ey]\b'
+    - '\b(?:its|it is) (?:completely |totally |perfectly |very )?(?:okay|ok|natural|normal|understandable) to (?:feel|be)\b'
+    - '\bi can (?:hear|see|imagine|tell|understand)\b'
+    - '\bi hear you\b'
+    - '\bit seems (?:like|that|as if)\b'
+    - '\bcan (?:really |often |sometimes )?(?:feel|make you feel)\b'
+    - '\b(?:that|it|this) must (?:be|have|feel)\b'
+    - '\b(?:thats|that is|this is|its|it is) (?:a lot|really hard|so hard|hard|tough|painful|difficult|heavy|frustrating|exhausting)\b'
+    - '\bof course you\b'
+    - '\banyone would (?:feel|be)\b'
+  no_praise:
+    - '\b(?:youre|you are) (?:so |really |incredibly |truly |very |such an? )?(?:brave|amazing|strong|incredible|wonderful|awesome|inspiring|inspiration|hero|courageous|resilient)\b'
+    - '\b(?:im|i am) (?:so |really |very )?proud of you\b'
+    - '\byou should (?:be|feel) (?:so |really |very )?proud\b'
+    - '\b(?:great|good|amazing) (?:job|work)\b'
+    - '\bwell done\b'
+    - '\bgood for you\b'
+    - '\btakes (?:real |a lot of |so much )?courage\b'
+    - '\bwhat an? (?:strong|brave|amazing|incredible|wonderful)\b'
+    - '\b(?:thats|that is) (?:so )?(?:amazing|wonderful|fantastic|incredible|awesome|brilliant)\b'
+  no_advice:
+    - '(?<!what )(?<!like )\byou (?:should|need to|must|ought to|have to)\b'
+    - '\bhave you (?:ever )?(?:tried|thought about|considered)\b(?! (?:what|why|how|who|where|when|whether)\b)'
+    - '\bwhy (?:dont|not) you\b'
+    - '\bi (?:would )?(?:suggest|recommend|advise)\b'
+    - '\bmy advice\b'
+    - '\bit (?:might|may|could|would|can) help to\b'
+    - '\b(?:you could|you might|maybe) try\b'
+    - '(?:^|[.!?]\s+)(?:try|consider|make sure|remember to|go for|reach out|talk to|take a)\b'
+  no_dependency:
+    - '\balways (?:be )?here for you\b'
+    - '\b(?:you dont|you do not) need (?:anyone|anybody|other people) else\b'
+    - '\bonly i (?:really |truly )?(?:understand|get|know) you\b'
+    - '\b(?:im|i am) all you need\b'
+    - '\byou only need me\b'
+    - '\b(?:talk to|rely on|lean on|come to) me instead\b'
+    - '\b(?:im|i am) the only one (?:who|that)\b'
+    - '\bwhen you have me\b'
+    - '\byou (?:dont|do not) need (?:a )?(?:therapist|counsellor|counselor|friends|anyone)\b'

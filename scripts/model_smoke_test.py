@@ -1,7 +1,7 @@
 """Real-model smoke test against a running llama-server. NOT run in CI (needs model weights).
 
 Start the server first, for example:
-    llama-server -m models/Qwen3.5-4B-Q4_K_M.gguf --jinja -c 4096 --host 127.0.0.1 --port 8080
+    llama-server -m models/Qwen3.5-4B-Q4_K_M.gguf --jinja -c 4096 -np 1 --host 127.0.0.1 --port 8080
 Then:
     uv run python scripts/model_smoke_test.py [--url http://127.0.0.1:8080]
 

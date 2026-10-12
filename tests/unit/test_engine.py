@@ -15,6 +15,7 @@ from oasis.llm.fake import FakeLLM
 from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.router.exercise import technique_for
 from oasis.router.router import load_state
+from oasis.router.weights import config as router_config
 from oasis.safety.gate import RuleBasedSafetyGate
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.safety.rules import load_ruleset
@@ -119,18 +120,18 @@ async def _session(engine: ChatEngine, session_hash: str = "h") -> str:
 
 @pytest.mark.anyio
 async def test_normal_turn_is_generated_and_recorded(settings: Settings) -> None:
-    llm = FakeLLM(replies=["How are you feeling about it?"])
+    llm = FakeLLM(replies=["That sounds long. How are you feeling about it?"])
     engine = _engine(settings, llm=llm)
     uid = await _session(engine)
 
     result = await engine.handle_turn("h", "I had a long day")
 
-    assert result.reply == "How are you feeling about it?"
+    assert result.reply == "That sounds long. How are you feeling about it?"
     assert (result.mode, result.templated, result.persisted) == ("companion", False, True)
     turns = await engine.repo.recent_turns(uid, "h", limit=10)
     assert [(t.role, t.content) for t in turns] == [
         ("user", "I had a long day"),
-        ("assistant", "How are you feeling about it?"),
+        ("assistant", "That sounds long. How are you feeling about it?"),
     ]
     assert turns[1].turn_id == result.turn_id
 
@@ -272,13 +273,13 @@ async def test_guard_rejection_then_retry_succeeds(settings: Settings) -> None:
 
 
 @pytest.mark.anyio
-async def test_guard_rejecting_twice_uses_socratic_fallback(settings: Settings) -> None:
+async def test_guard_rejecting_twice_uses_the_fallback(settings: Settings) -> None:
     llm = FakeLLM()
     engine = _engine(settings, llm=llm, guard=_guard_rejecting(99))
     await _session(engine)
     result = await engine.handle_turn("h", "hello")
     assert llm.calls == 2
-    assert result.reply == TEMPLATES["guard_fallback"]
+    assert result.reply == TEMPLATES["companion_fallback"]  # a companion turn
     assert result.fallback_reason == "guard.fallback"
 
 
@@ -377,7 +378,7 @@ async def test_every_post_crisis_message_still_passes_the_safety_gate(settings: 
 
 @pytest.mark.anyio
 async def test_user_can_choose_to_continue_after_a_crisis(settings: Settings) -> None:
-    llm = FakeLLM(replies=["I'm glad you're still here. What's on your mind?"])
+    llm = FakeLLM(replies=["I'm sorry it has been so hard. What's on your mind?"])
     engine = _engine(settings, llm=llm)
     uid = await _session(engine)
     crisis = await engine.handle_turn("h", "I want to die")
@@ -439,6 +440,7 @@ async def test_record_crisis_ignores_unknown_sessions(settings: Settings) -> Non
 # --- router (Phase 4) ----------------------------------------------------------------
 
 DISTORTED = "I'm such a failure, I always mess everything up"
+N = router_config().hysteresis_turns  # turns a mode must lead before its offer
 ACUTE = "I can't breathe, everything is too much, I'm falling apart"
 
 
@@ -451,11 +453,11 @@ class RouterSaveFails(MemoryRepository):
 async def test_router_memory_carries_across_turns(settings: Settings) -> None:
     engine = _engine(settings)
     await _session(engine)
-    for _ in range(2):
+    for _ in range(N - 1):
         assert (await engine.handle_turn("h", DISTORTED)).exercise_card is None
-    third = await engine.handle_turn("h", DISTORTED)
-    assert third.exercise_card is not None
-    assert (third.exercise_card.step, third.exercise_card.mode) == ("offer", "cbt")
+    last = await engine.handle_turn("h", DISTORTED)
+    assert last.exercise_card is not None
+    assert (last.exercise_card.step, last.exercise_card.mode) == ("offer", "cbt")
     info = await engine.repo.get_session("h")
     assert info is not None
     assert load_state(info.router_state).offered == "cbt"
@@ -496,10 +498,10 @@ async def test_routing_needs_no_llm(settings: Settings) -> None:
     llm = FakeLLM(fail="down")
     engine = _engine(settings, llm=llm)
     await _session(engine)
-    for _ in range(3):
+    for _ in range(N):
         result = await engine.handle_turn("h", DISTORTED)
     assert result.exercise_card is not None  # the offer is templated: no LLM needed
-    assert llm.calls == 2
+    assert llm.calls == N - 1
 
 
 @pytest.mark.anyio
@@ -538,7 +540,7 @@ async def test_trace_holds_the_decision_but_no_text(
 async def test_exercise_buttons_reach_the_planner(settings: Settings) -> None:
     engine = _engine(settings)
     await _session(engine)
-    for _ in range(3):
+    for _ in range(N):
         await engine.handle_turn("h", DISTORTED)
     started = await engine.handle_turn("h", "Yes, let's try", ExerciseAction("accept"))
     assert started.mode == "cbt"
@@ -568,3 +570,103 @@ async def test_a_psychoed_item_reaches_the_prompt_and_is_its_own_fallback(
     fallback = await down.handle_turn("h", "what's wrong with me?")
     assert fallback.reply == general.text
     assert fallback.fallback_reason == "llm.down"
+
+
+# --- companion checks through the default guard (Phase 6) ------------------------------------
+
+
+@pytest.mark.anyio
+async def test_the_default_guard_retries_a_sycophantic_companion_reply(settings: Settings) -> None:
+    good = "That sounds like a long day. What was the hardest part?"
+    llm = FakeLLM(replies=["You're so brave! I'm always here for you.", good])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    result = await engine.handle_turn("h", "I had a long day at work")
+    assert result.reply == good
+    assert llm.calls == 2
+    retry = llm.last_messages[0].content.split("previous draft", 1)[1]
+    assert "Do not praise or flatter" in retry
+
+
+@pytest.mark.anyio
+async def test_a_companion_reply_rejected_twice_ends_in_the_fallback(settings: Settings) -> None:
+    llm = FakeLLM(replies=["That sounds hard, and you're so brave. What happened?"])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    result = await engine.handle_turn("h", "I had a long day at work")
+    assert result.reply == TEMPLATES["companion_fallback"]
+    assert result.fallback_reason == "guard.fallback"
+    assert llm.calls == 2
+
+
+@pytest.mark.anyio
+async def test_a_reply_failing_only_form_rules_is_kept_after_its_retry(settings: Settings) -> None:
+    llm = FakeLLM(replies=["Moving adds a layer of uncertainty. What do you hope for? And fear?"])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    result = await engine.handle_turn("h", "I'm moving to a new city")
+    assert llm.calls == 2  # retried, naming the rules
+    assert result.reply == "Moving adds a layer of uncertainty. What do you hope for? And fear?"
+    assert result.fallback_reason is None
+
+
+@pytest.mark.anyio
+async def test_other_modes_keep_the_socratic_fallback(settings: Settings) -> None:
+    engine = _engine(settings, guard=_guard_rejecting(99))
+    await _session(engine)
+    for _ in range(N):
+        result = await engine.handle_turn("h", DISTORTED)
+    await engine.handle_turn("h", "Yes, let's try", ExerciseAction("accept"))
+    result = await engine.handle_turn("h", "It's the thought that I always fail")
+    assert result.mode == "cbt"
+    assert result.reply == technique_for("cbt").steps[1]  # an exercise step is its own fallback
+
+
+SAID = "It sounds like a long day. What was the hardest part?"
+
+
+@pytest.mark.anyio
+async def test_a_repeated_opener_is_retried_with_a_fresh_one(settings: Settings) -> None:
+    fresh = "That must be tiring. What was the hardest part?"
+    llm = FakeLLM(replies=[SAID, SAID, fresh])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    await engine.handle_turn("h", "I had a long day at work")
+    result = await engine.handle_turn("h", "and the bus was late")
+    assert result.reply == fresh
+    assert llm.calls == 3
+    assert '"it sounds like"' in llm.last_messages[0].content
+
+
+@pytest.mark.anyio
+async def test_a_repeated_opener_alone_never_costs_the_reply(settings: Settings) -> None:
+    llm = FakeLLM(replies=[SAID])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    await engine.handle_turn("h", "I had a long day at work")
+    result = await engine.handle_turn("h", "and the bus was late")
+    assert result.reply == SAID  # style, not safety: no fallback
+    assert result.fallback_reason is None
+
+
+@pytest.mark.anyio
+async def test_a_soft_first_draft_beats_a_failed_retry(settings: Settings) -> None:
+    llm = FakeLLM(replies=[SAID, SAID, "You're so brave. What happened? Why?"])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    await engine.handle_turn("h", "I had a long day at work")
+    result = await engine.handle_turn("h", "and the bus was late")
+    assert result.reply == SAID
+    assert result.fallback_reason is None
+
+
+@pytest.mark.anyio
+async def test_a_soft_draft_is_kept_when_there_is_no_time_to_retry(settings: Settings) -> None:
+    tight = settings.model_copy(update={"guard_retry_min_budget_s": 1000})
+    llm = FakeLLM(replies=[SAID])
+    engine = _engine(tight, llm=llm)
+    await _session(engine)
+    await engine.handle_turn("h", "I had a long day at work")
+    result = await engine.handle_turn("h", "and the bus was late")
+    assert result.reply == SAID
+    assert llm.calls == 2  # one per turn: no retry

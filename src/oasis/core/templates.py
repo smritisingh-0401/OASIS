@@ -39,13 +39,15 @@ TEMPLATES: dict[str, str] = {
         "That sounds really hard to sit with. If a close friend told you they felt this way "
         "about themselves, what would you want them to know?"
     ),
+    # Companion drafts rejected twice: neutral, so it fits good news as well as bad (CR-18).
+    "companion_fallback": "I hear you. What feels most important to talk about right now?",
 }
 
 
-def fallback_template(reason: str) -> str:
+def fallback_template(reason: str, mode: str = "") -> str:
     """Template ID for a trace fallback reason such as "llm.busy" or "guard.fallback"."""
     if reason == "llm.busy":
         return "busy"
     if reason.startswith("guard."):
-        return "guard_fallback"
+        return "companion_fallback" if mode == "companion" else "guard_fallback"
     return "llm_unavailable"

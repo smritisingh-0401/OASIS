@@ -1,0 +1,30 @@
+# Companion replies that must pass every companion check (FR-CMP-1): a validating phrase,
+# then exactly one gentle question; no praise, no unprompted advice, no dependency language.
+# Written before the check phrase lists.
+version: "2026.10.0"
+replies:
+  - "That sounds really exhausting. What has been weighing on you the most?"
+  - "It makes sense that you'd feel hurt after that. How are you feeling about it now?"
+  - "I'm sorry you're going through this. What's been the hardest part?"
+  - "No wonder you feel drained after a week like that. What would feel good to talk about first?"
+  - "That sounds lonely, especially at the weekend. What do your weekends usually look like?"
+  - "It sounds like you've been carrying a lot on your own. Would you like to tell me more about it?"
+  - "That must have been really frustrating. What happened next?"
+  - "It's understandable to feel nervous before something this big. What part worries you most?"
+  - "I can hear how tired you are. What has your sleep been like lately?"
+  - "That's a lot to deal with at once. Where would you like to start?"
+  - "It's okay to feel angry about that. What do you wish they had done instead?"
+  - "I can see why that stung. How did you respond in the moment?"
+  # Found by the first real-model tone check: "try to" inside a question is not advice.
+  - "That sounds confusing. What comes up when you try to think about the good news?"
+  - "It feels like a deep disappointment when someone cancels on you. What happened this time?"
+  - "It sounds like the exams are weighing on you. How is your mind holding up when you think about what you have to do?"
+  - "It feels really disappointing when someone cancels on you again. What was the plan you'd made?"
+  # Found by the conversation tone check: validation in words the first lists missed.
+  - "It seems like the silence is making you feel anxious. What do you think is going on?"
+  - "That silence can feel really heavy. What thoughts are coming up for you?"
+  - "It is completely normal to feel overwhelmed right now. What feels biggest?"
+  - "I hear you. What feels most important to talk about right now?"
+  - "It sounds like a lot is changing. Do you feel like you need to talk it through before you move?"
+  - "That must have brought up some heavy feelings. What stayed with you?"
+  - "That sounds lonely. Have you thought about what might be going on for her?"

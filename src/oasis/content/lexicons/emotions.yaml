@@ -27,10 +27,16 @@ scorers:
       '\bnervous\b': 1.0
       '\b(?:scared|afraid|frightened|terrified)\b': 1.0
       '\bpanick?(?:ing|ed|y)?\b': 1.0
-      '\bon edge\b': 0.8
-      '\b(?:tense|uneasy|restless)\b': 0.7
+      '\bon edge\b': 1.0
+      '\b(?:tense|uneasy|restless)\b': 1.0
       '\bdread(?:ing)?\b': 1.0
       '\bfreaking out\b': 1.0
+      '\bstress(?:ed|ful)?\b': 1.0
+      '\b(?:anxious|worried|nervous|stressed) about everything\b': 0.8
+      '\b(?:mind|thoughts?) (?:wont stop |keeps? |is |are )?racing\b': 1.2
+      '\boverthink\w*\b': 1.2
+      '\ball over the place\b': 1.5
+      '\b(?:cant|cannot) settle\b': 0.8
   anger:
     bias: 0.0
     scale: 3.0
@@ -38,7 +44,8 @@ scorers:
       '\b(?:angry|anger)\b': 1.0
       '\bfurious\b': 1.0
       '\bmad (?:at|with)\b': 0.8
-      '\brage\b': 1.0
+      '\bso mad\b': 1.0
+      '\brag(?:e|ing)\b': 1.0
       '\bpissed\b': 1.0
       '\b(?:irritated|annoyed|frustrated)\b': 0.7
       '\bhate\b': 0.6

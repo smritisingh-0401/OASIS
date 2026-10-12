@@ -16,8 +16,13 @@ scorers:
       '\b(?:losing|lose|lost) control\b': 1.0
       '\bout of control\b': 1.0
       '\burges?\b': 0.8
-      '\bwant to (?:scream|smash|break|hit|punch|throw)\b': 1.0
-      '\b(?:explode|exploding|snap|snapping)\b': 0.7
+      '\bwant to (?:scream|smash|break|hit|punch|throw)\b': 1.2
+      '\b(?:explode|exploding|snap|snapping)\b': 1.0
+      '\bcould (?:scream|smash|break|hit|punch|throw)\b': 1.2
+      '\blost my temper\b': 1.2
+      '\byell(?:ed|ing)? at\b': 0.8
+      '\b(?:cant|cannot) calm down\b': 1.0
+      '\bgoing to (?:explode|snap|lose it)\b': 1.0
       '\bimpulsive(?:ly)?\b': 0.8
       '\bcant stop (?:myself|shaking|crying)\b': 0.8
   overwhelm:
@@ -86,3 +91,16 @@ scorers:
       '\bshould be able to (?:handle|deal with|cope with|fix) (?:this|it|things) (?:by )?(?:myself|on my own|alone)\b': 1.0
       '\b(?:real )?men dont (?:cry|need help|get depressed|talk about)\b': 1.0
       '\bpeople will think (?:im|i am) (?:crazy|weak|mad)\b': 1.0
+  # Explicit requests for advice (FR-CMP-2): while one matches, a companion reply may give
+  # advice; otherwise the no_advice rule applies. Any match counts (CR-14).
+  asks_advice:
+    bias: 0.0
+    scale: 1.0
+    terms:
+      '\bwhat (?:should|can|do|could) i do\b': 1.0
+      '\b(?:any|some|got any|have any) (?:advice|tips|suggestions|ideas)\b': 1.0
+      '\bhow (?:do|can|should|could) i (?:cope|deal|handle|stop|get|make|fix|manage|deal with)\b': 1.0
+      '\bcan you (?:give me|suggest|recommend|advise|help me (?:with|figure))\b': 1.0
+      '\bwhat (?:would|do) you (?:suggest|recommend|advise|do)\b': 1.0
+      '^\W*should i\b': 1.0
+      '\b(?:need|want) (?:some )?(?:advice|tips)\b': 1.0

@@ -12,15 +12,12 @@ import functools
 import re
 from collections.abc import Collection, Mapping
 from dataclasses import dataclass
-from importlib import resources
 from typing import Any
 
-import yaml
-
+from oasis.content import REVIEW, load_yaml, require_review
 from oasis.safety.normalize import base_form
 
 MAX_GRADE = 8.0  # Flesch-Kincaid grade ceiling for every item (CR-13)
-REVIEW = "needs_clinician_review"
 _FIELDS = ("id", "topic", "text", "source", "version")
 _WORD = re.compile(r"[a-z]+(?:'[a-z]+)?")
 _VOWEL_GROUP = re.compile(r"[aeiouy]+")
@@ -62,8 +59,7 @@ def _item(raw: Mapping[str, Any]) -> Item:
     name = f"psychoed item {raw.get('id')}"
     if not all(isinstance(raw.get(f), str) and raw[f] for f in _FIELDS):
         raise ValueError(f"{name}: needs {', '.join(_FIELDS)}")
-    if raw.get("review_status") != REVIEW:
-        raise ValueError(f"{name}: must be flagged for review (rules CL6)")
+    require_review(raw, name)
     if not isinstance(raw.get("cues"), list):
         raise ValueError(f"{name}: cues must be a list")
     try:
@@ -80,8 +76,7 @@ def _item(raw: Mapping[str, Any]) -> Item:
 
 
 def parse(raw: Mapping[str, Any]) -> tuple[Item, ...]:
-    if not raw.get("version") or raw.get("review_status") != REVIEW:
-        raise ValueError(f"psychoed file needs version and review_status: {REVIEW}")
+    require_review(raw, "psychoed file")
     items = tuple(_item(r) for r in raw.get("items") or ())
     if len({i.id for i in items}) != len(items):
         raise ValueError("psychoed item ids must be unique")
@@ -93,10 +88,7 @@ def parse(raw: Mapping[str, Any]) -> tuple[Item, ...]:
 
 @functools.cache
 def load_all() -> tuple[Item, ...]:
-    text = (resources.files("oasis.content") / "psychoed" / "items.yaml").read_text(
-        encoding="utf-8"
-    )
-    return parse(yaml.safe_load(text))
+    return parse(load_yaml("psychoed", "items.yaml"))
 
 
 def select(message: str, shown: Collection[str]) -> Item | None:

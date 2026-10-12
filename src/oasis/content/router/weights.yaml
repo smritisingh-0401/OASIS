@@ -7,7 +7,7 @@ kind: router_weights
 version: "2026.10.0"
 review_status: needs_clinician_review
 margin: 0.15                    # the leader must beat the runner-up by this much
-hysteresis_turns: 3             # ...for this many turns in a row before a switch or offer
+hysteresis_turns: 2             # ...for this many turns in a row before a switch or offer (3 until 2026-10-12)
 acute_overwhelm_threshold: 0.6  # overwhelm at or above this goes straight to grounding
 modes:
   companion:
@@ -32,5 +32,5 @@ modes:
     bias: 0.0
     weights:
       overwhelm: 1.2
-      anxiety: 0.5
+      anxiety: 0.85  # 0.5 until 2026-10-12: anxiety alone could never lead
       gad_moderate_plus: 0.1

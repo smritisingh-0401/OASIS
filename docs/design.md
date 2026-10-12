@@ -66,7 +66,7 @@ class Plan:
     assessment_step: AssessmentStep | None
     constraints: tuple[str, ...]  # e.g. ("one_question", "no_advice", "socratic")
     style: StyleProfile
-    reason_codes: tuple[str, ...]  # e.g. ("router.margin_met", "hysteresis.3_of_3")
+    reason_codes: tuple[str, ...]  # e.g. ("router.margin_met", "hysteresis.1_of_2")
 
 
 @dataclass(frozen=True)
@@ -178,19 +178,20 @@ R_t = Σ_{k=0}^{W-1} (1 − k/W) · e_{t−k}  /  Σ_{k=0}^{W-1} (1 − k/W)
 Offer the instrument whose domains contributed more (PHQ-9 vs GAD-7; tie → PHQ-9) when:
 
 - `explicit_screen_request` is true (immediate), **or**
-- `R ≥ θ_offer` (start: 0.45) for `k = 3` consecutive turns,
+- `R ≥ θ_offer` (start: 0.45) for `k = 2` consecutive turns (3 until 2026-10-12),
 
-**and all guards pass:** not crisis / post-crisis; not mid-exercise; not mid-assessment; not declined in the last `D = 10` turns or 24 h; no completed administration of the same instrument in the last **14 days** (both instruments use a two-week look-back).
+**and all guards pass:** not crisis / post-crisis; not mid-exercise; not mid-assessment; not declined in the last `D = 10` turns or 24 h; no completed administration of the same instrument in the last **10 days** (14 until 2026-10-12; both instruments still ask about the last two weeks).
 
-The stored offer reason is a reason code plus the numeric score, e.g. `{"reason": "sustained_readiness", "R": 0.52, "turns": 3, "top_domains": ["anhedonia","sleep"]}`.
+The stored offer reason is a reason code plus the numeric score, e.g. `{"reason": "sustained_readiness", "R": 0.52, "turns": 2, "top_domains": ["anhedonia","sleep"]}`.
 
 ### 3.2a As built (Phase 3)
 - Lexicon, weights and parameters live in `content/assessment/trigger.yaml` (CR-09, CR-10). Each PHQ-9 item 1-8 and GAD-7 item 1-7 has a domain pattern (weight 0.7; uncontrolled worry 0.4); a `duration` domain (weight 0.4) raises evidence without choosing the instrument. Per-turn evidence is capped at 1. PHQ-9 item 9 has no trigger domain: the safety layer handles it.
 - The valence term `w_v · max(0, −valence_t)` waits for the Phase 4 signals object (no valence detector yet), so it contributes 0.
 - A message counts only if it is not about someone else: one with a third-person subject ("my friend", "she") and no first-person word contributes nothing.
 - Naming an instrument is not a request ("I read about the PHQ-9"); an explicit request needs a verb such as take, do or try, or a phrase such as "depression test".
-- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, the same instrument completed in the last 14 days, or a crisis placeholder among the loaded turns. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. All guards apply to explicit requests except the decline cooldown and the crisis placeholder: they stop OASIS from raising screening itself, but a user who asks is never refused (decided 2026-10-08 for declines, 2026-10-09 for a crisis earlier in the conversation; the post-crisis hold must still be cleared first, and a positive PHQ-9 item 9 still escalates to crisis).
-- Readiness uses the design formula with the full-window denominator, so the earliest sustained offer is the fifth symptomatic turn (W = 6, k = 3, θ = 0.45). The engine loads up to 20 turns for the trigger.
+- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, or the same instrument completed in the last 10 days. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. All guards apply to explicit requests except the decline cooldown: it stops OASIS from raising screening itself, but a user who asks is never refused (decided 2026-10-08).
+- A crisis: the planner's post-crisis hold blocks every offer until the user says they want to keep talking. After that, an earlier crisis blocks nothing, offered or asked for (Smriti, 2026-10-12; from 2026-10-09 it blocked unprompted offers). A positive PHQ-9 item 9 still escalates to crisis.
+- Readiness uses the design formula with the full-window denominator, so the earliest sustained offer is the third symptomatic turn (W = 6, k = 2, θ = 0.45; the fourth with k = 3). The engine loads up to 20 turns for the trigger.
 
 ### 3.3 Evaluation
 Labelled sample conversations (`should_offer` per turn) → precision, recall and offer latency (turns from first eligible point) reported in Phase 3.
@@ -268,7 +269,7 @@ score(x) = clip( b + Σ_i w_i · count_i(x) / max(1, n_tokens(x)) · scale , 0, 
 Features are term-count rates, so the pre-clip value is a linear model — SHAP values for it are exact (§10). Weights live in YAML with `version` and `review_status`.
 
 ### 5a. As built (Phase 4)
-- `core/signals.py` (`extract`) runs every lexicon over the safety normaliser's base form (lowercase, apostrophes removed, stretched letters collapsed) and VADER over the raw text. `core/detectors/lexicon.py` is the scorer above; `core/detectors/valence.py` wraps VADER.
+- `core/signals.py` (`extract`) runs every lexicon over the safety normaliser's base form (lowercase, apostrophes removed, stretched letters collapsed) and VADER over the raw text. `core/detectors/lexicon.py` is the scorer above; `valence()` in `core/signals.py` wraps VADER.
 - Lexicons: `content/lexicons/emotions.yaml` (sadness, anxiety, anger, shame, loneliness), `cues.yaml` (dysregulation, overwhelm, wants_to_talk, opt_out) and `distortions.yaml` (one scorer per Burns category). All `needs_clinician_review` (CR-20); invalid files stop startup.
 - `distortion` is the **clipped sum** of the eleven category scores, not the maximum: several distortions in one message add up, and the sum is still linear before the clip. `distortion_types` lists the categories with any match.
 - `opt_out` is true when any opt-out phrase matches ("can we stop", "I don't want to do this"); it is read only while an exercise runs.
@@ -357,12 +358,12 @@ function route(x, rs: RouterState) -> RouteDecision:
 
 ### 7.3 As built (Phase 4)
 - **Files:** `router/weights.py` (config, feature vector, `score_modes`), `router/router.py` (`route`, `accept`, `decline`, `stop`, state JSON), `router/exercise.py` (scripts, one step per turn), `content/router/weights.yaml`, `content/techniques/*.yaml`. Hysteresis is one rule inside `route`, so it has no module of its own.
-- **Features:** `valence_neg = max(0, -valence)`, the five emotions, `dysregulation`, `distortion`, `overwhelm`, `wants_to_talk`, plus `phq_moderate_plus` / `gad_moderate_plus` (1.0 when a moderate-or-worse result was scored inside the 14-day re-administration window).
+- **Features:** `valence_neg = max(0, -valence)`, the five emotions, `dysregulation`, `distortion`, `overwhelm`, `wants_to_talk`, plus `phq_moderate_plus` / `gad_moderate_plus` (1.0 when a moderate-or-worse result was scored inside the 10-day re-administration window).
 - **Start values:** margin 0.15, N = 3, acute threshold 0.6; companion bias 0.35 (others 0); dominant weights distortion → cbt 0.9, dysregulation → dbt 0.9, overwhelm → mindfulness 1.2, wants_to_talk → companion 0.8 (CR-11). Ties go to companion.
 - **Order inside `route`:** a running exercise holds unless the user opts out (grounding also holds under fresh overwhelm instead of restarting) → acute override (keeps consents, drops any offer) → opt-out clears the exercise → grounding ends with its script (back to companion) → typing over an open offer counts as "not now" and resets the streak → incumbent / margin / hysteresis / consent offer / switch.
 - **State:** `RouterState(current, challenger, streak, offered, exercise, step, consented)` stored as JSON in `sessions.router_state`. Malformed JSON or values load as a fresh state (companion), never an error. Saving is best effort: a failure is logged as `storage.down` and the turn still replies.
 - **Consent:** entering cbt, dbt or mindfulness asks first ("Would you like to try …?", Yes / Not now). Yes switches, records the consent for the session and starts that mode's exercise; later switches to a consented mode do not ask again and do not restart the exercise. Not now, or typing instead, clears the offer and the streak. Grounding never asks.
-- **Exercises:** one script per mode — Thought check (cbt), STOP skill (dbt), Notice the breath (mindfulness), 5-4-3-2-1 senses (grounding) — shown one step per user message (CR-12). The LLM phrases each step (`- script:` line, constraints `follow_script`, `one_step`); if the LLM fails or the guard rejects twice, the step's own text is the reply. A "Stop exercise" button or a typed opt-out ends it; no screening offer is made mid-exercise.
+- **Exercises:** one script per mode — Thought check (cbt), STOP skill (dbt), Notice the breath (mindfulness), 5-4-3-2-1 senses (grounding) — shown one step per user message (CR-12). The LLM phrases each step (`- script:` line, constraints `follow_script`, `one_step`); if the LLM fails or the guard rejects twice, the step's own text is the reply. The card under the reply always shows the step's fixed text and "Reply in your own words when you're ready for the next step.", because the model can drop the step from its phrasing (manual test, 2026-10-12); the last step has no card. A "Stop exercise" button or a typed opt-out ends it; no screening offer is made mid-exercise.
 - **Planner:** post-crisis → open questionnaire → questionnaire offer (skipped mid-exercise) → router. Constraints per mode follow §13.2; every routed plan carries the full `RouteDecision`, which the trace stores (signal names and numbers only).
 
 ---
@@ -399,6 +400,16 @@ return socratic_bank.pick(signals.distortion_types, style)       # deterministic
 ```
 
 Exactly one retry; no other LLM calls. The same `guard.check` is used for therapy and companion replies.
+
+### 8.4 As built (Phase 6: companion checks)
+- `guard/checks.py` (`check(draft, plan)`) is the engine's default guard; the Phase 4 pass-through `guard/hook.py` is gone. Reason codes are plan rule names, so a retry names the broken rule back in plain words (`llm/prompt.py` `RULES`); the design codes map as C-ONEQ → `one_question`, C-PRAISE → `no_praise`, C-ADVICE → `no_advice`, C-DEPEND → `no_dependency`, plus `validate_first`.
+- **Companion replies only** (Smriti, 2026-10-11), and only for the rules the plan carries: `validate_first` (a validating phrase before the question), `one_question` (exactly one "?", ending the reply), `no_praise`, `no_advice`. CBT and DBT replies are not checked for these until Phase 7.
+- **Every generated reply:** `no_dependency`. The system prompt also tells the model never to encourage reliance on OASIS instead of other people.
+- Phrase lists: `content/companion/checks.yaml` (CR-14), matched on the safety normaliser's base form; invalid files stop startup.
+- **Asked-for advice:** an `asks_advice` cue in `content/lexicons/cues.yaml` ("what should I do", "any tips", "how do I deal with") swaps `no_advice` for `offer_ideas` in that turn's companion plan (FR-CMP-2 "unprompted"); companion rule order is `validate_first, no_advice|offer_ideas, one_question, no_praise`, so suggestions come before the closing question.
+- Every LLM-phrased companion plan carries the rules: routed turns, the turn after a crisis is cleared, and typing during a questionnaire.
+- **Varied openers:** the planner puts the first three words (normalised) of the last 3 companion replies into `Plan.avoid_openers`; the prompt says "do not begin with: ..." and `fresh_opener` fails a draft that still does.
+- **Soft and hard rules:** `validate_first`, `one_question` and `fresh_opener` are soft (`SOFT_RULES`): a draft failing only these is retried, then kept rather than replaced (also when there is no time to retry). `no_praise`, `no_advice` and `no_dependency` are hard: two failures give the fallback, `companion_fallback` ("I hear you. What feels most important to talk about right now?") in companion mode and `guard_fallback` elsewhere. Phase 7 replaces `guard_fallback` with the Socratic bank.
 
 ---
 
@@ -441,7 +452,7 @@ Latency uses **server** timestamps (client clocks are untrusted); client time is
   "version": "1",
   "scope_note": "Explains why this response strategy was chosen. It does not explain the exact wording, which is generated by a language model.",
   "safety": {"is_crisis": false, "ruleset_version": "2026.10.0"},
-  "plan": {"mode": "cbt", "reason_codes": ["router.switch", "hysteresis.3_of_3"]},
+  "plan": {"mode": "cbt", "reason_codes": ["router.switch", "hysteresis.1_of_2"]},
   "router": {
     "chosen": "cbt",
     "scores": {"companion": 0.41, "cbt": 0.62, "dbt": 0.18, "mindfulness": 0.30},
@@ -669,7 +680,7 @@ History is passed as alternating chat messages (last `H` turns), followed by the
 ### 13.2 Plan → prompt mapping
 | Mode | Goal text (example) | Constraints | Snippet |
 |---|---|---|---|
-| companion | "Reflect the feeling you notice, then ask one gentle open question." | one_question, no_advice, no_praise | none |
+| companion | "Respond to what they said, then ask one gentle open question." | one_question, no_advice, no_praise | none |
 | cbt | "Acknowledge the feeling. Invite them to examine the thought with one Socratic question." | validate_first, one_question, socratic | one CBT technique snippet |
 | dbt | "Acknowledge the intensity. Offer the named skill briefly and ask if they'd like to try it." | validate_first, offer_not_instruct | one DBT skill snippet |
 | mindfulness / grounding | "Guide one short, low-risk grounding step from the script." | follow_script, one_step | one script step |

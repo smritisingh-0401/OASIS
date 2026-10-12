@@ -12,7 +12,7 @@ from oasis.types import ChatMessage
 
 _DEFAULT_REPLIES = (
     "That sounds like a lot to carry. What feels heaviest about it right now?",
-    "Thank you for telling me. How has this been affecting your day?",
+    "That sounds like a lot to hold. How has it been affecting your day?",
     "It makes sense that you'd feel that way. What would help most to talk through?",
 )
 

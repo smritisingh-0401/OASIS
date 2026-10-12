@@ -13,6 +13,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from oasis.core.signals import extract
 from oasis.router.router import accept, decline, dump_state, load_state, route, stop
 from oasis.router.weights import config, features, parse, score_modes
 from oasis.types import ROUTER_MODES, RouterState, Signals
@@ -65,6 +66,61 @@ SCENARIOS: list[tuple[str, Signals, dict[str, float], str]] = [
     ("lonely but distorted", sig(loneliness=0.6, distortion=0.9), {}, "cbt"),
     ("everything low", sig(sadness=0.1, anxiety=0.1, distortion=0.1), {}, "companion"),
 ]
+
+
+# Natural phrasings from manual testing (2026-10-12). Each one alone must lead its mode by
+# the margin, so reworded messages in a row keep building the streak instead of resetting it.
+PHRASINGS = {
+    "cbt": [
+        "I'm such a failure, I always mess everything up",
+        "I always do something wrong",
+        "I always do everything wrong",
+        "It feels like i am carrying a burden of my failure",
+        "I feel like a failure",
+        "I never do anything right",
+        "I can't do anything right",
+        "I'm not good enough",
+        "nobody likes me",
+        "it's all my fault",
+    ],
+    "dbt": [
+        "I'm so angry I want to scream",
+        "I can't control my anger",
+        "I'm furious and I want to smash something",
+        "I lost my temper and yelled at everyone",
+        "I can't calm down, I'm so angry",
+        "I feel like I'm going to explode",
+        "I'm so mad I could punch a wall",
+        "I keep snapping at people",
+        "my emotions are out of control",
+    ],
+    "mindfulness": [
+        "I feel overwhelmed and anxious about everything",
+        "I feel anxious about everything",
+        "I feel so stressed and anxious",
+        "my mind won't stop racing",
+        "I can't stop overthinking",
+        "I feel tense and on edge all the time",
+        "I'm really stressed out",
+        "my thoughts are all over the place",
+        "I feel restless and worried",
+        "I'm so nervous I can't settle",
+    ],
+}
+
+
+@pytest.mark.parametrize(("mode", "message"),
+                         [(m, t) for m, ts in PHRASINGS.items() for t in ts])  # fmt: skip
+def test_natural_phrasings_lead_their_mode(mode: str, message: str) -> None:
+    s = extract(message)
+    assert s.overwhelm < CFG.acute_threshold  # an offer, not straight to grounding
+    first, second = score_modes(features(s, None), CFG)[:2]
+    assert first.mode == mode
+    assert first.score - second.score >= CFG.margin
+
+
+def test_a_mode_leads_for_two_turns_before_an_offer() -> None:
+    assert N == 2  # lowered from 3 (Smriti, 2026-10-12)
 
 
 @pytest.mark.parametrize(("name", "signals", "extra", "expected"), SCENARIOS,

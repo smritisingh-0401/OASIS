@@ -10,11 +10,11 @@ import datetime
 import functools
 from collections.abc import Sequence
 from dataclasses import dataclass
-from importlib import resources
 from typing import Any, get_args
 
 import yaml
 
+from oasis.content import load_yaml
 from oasis.types import InstrumentId
 
 INSTRUMENT_IDS: tuple[InstrumentId, ...] = get_args(InstrumentId)
@@ -56,9 +56,9 @@ def score(inst: Instrument, answers: Sequence[int]) -> tuple[int, str]:
 
 
 def load_instrument(inst_id: InstrumentId, text: str | None = None) -> Instrument:
-    if text is None:
-        text = _content(f"{inst_id.lower()}.yaml")
-    raw = yaml.safe_load(text)
+    raw = (
+        load_yaml("assessment", f"{inst_id.lower()}.yaml") if text is None else yaml.safe_load(text)
+    )
     try:
         return _validate(inst_id, raw)
     except (KeyError, TypeError, ValueError) as exc:
@@ -110,7 +110,7 @@ def instrument(inst_id: str) -> Instrument:
 @functools.cache
 def texts() -> dict[str, Any]:
     """Result text per instrument and band, and the non-diagnostic disclaimer (CR-08)."""
-    doc: dict[str, Any] = yaml.safe_load(_content("result_text.yaml"))
+    doc: dict[str, Any] = load_yaml("assessment", "result_text.yaml")
     for inst_id in INSTRUMENT_IDS:
         missing = {b.label for b in instrument(inst_id).bands} - set(doc[inst_id])
         if missing:
@@ -123,7 +123,3 @@ def load_all() -> None:
     for inst_id in INSTRUMENT_IDS:
         instrument(inst_id)
     texts()
-
-
-def _content(name: str) -> str:
-    return (resources.files("oasis.content") / "assessment" / name).read_text(encoding="utf-8")

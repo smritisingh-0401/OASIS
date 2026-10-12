@@ -2,12 +2,25 @@
 
 from __future__ import annotations
 
+import functools
+
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
 from oasis.core.detectors.lexicon import load
-from oasis.core.detectors.valence import valence
 from oasis.safety.normalize import base_form
 from oasis.types import Signals
 
 EMOTIONS = ("sadness", "anxiety", "anger", "shame", "loneliness")
+
+
+@functools.cache
+def _vader() -> SentimentIntensityAnalyzer:
+    return SentimentIntensityAnalyzer()  # loads the bundled lexicon once
+
+
+def valence(text: str) -> float:
+    """VADER compound score in [-1, 1]: the valence baseline (design §5)."""
+    return float(_vader().polarity_scores(text)["compound"])
 
 
 def load_all() -> None:
@@ -33,4 +46,5 @@ def extract(message: str) -> Signals:
         wants_to_talk=cues["wants_to_talk"].score(norm, n),
         opt_out=cues["opt_out"].score(norm, n) > 0,
         psychoed_cue=cues["psychoed"].score(norm, n) > 0,
+        asks_advice=cues["asks_advice"].score(norm, n) > 0,
     )

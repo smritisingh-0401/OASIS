@@ -10,15 +10,15 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 5 — psychoeducation** (in progress) |
-| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3) |
-| In progress | Phase 5 built and verified on `phase-05-psychoeducation`; awaiting Smriti's approval (report: `docs/reports/phase-05.md`) |
-| Next | Phase 6 (companion mode) after Phase 5 approval |
+| Current phase | **Phase 6 — companion mode** (approved 2026-10-13, PR open) |
+| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing) |
+| In progress | Phase 6: `phase-06-companion` rebased onto `main` and pushed; merge after CI passes and Smriti says to merge |
+| Next | Phase 7 (hypercompliance guard), after the Phase 6 merge |
 | Blocked on | Nothing; open items 8-10 need Smriti but do not block Phase 5 |
 
 ### Environment notes (development machine, 2026-10-07)
 - Windows 11. Python 3.12.15 managed by uv (system Python 3.11.9 is not used); uv 0.12.23 installed with `python -m pip install --user uv` and invoked as `python -m uv`.
-- No `make` on Windows: `uv run python scripts/verify.py` is the verify command; the Makefile is a thin wrapper for CI/Linux/macOS.
+- Verify command on every platform (and in CI): `uv run python scripts/verify.py`. The Makefile wrapper was removed 2026-10-12.
 - Local dev server: copy `.env.example` to `.env`, then `uv run uvicorn oasis.api.app:create_app --factory`.
 - Git identity: the global config (`smritisingh-0401`) is used, as approved 2026-10-07.
 - Assistant config files are excluded through `.git/info/exclude` (local, uncommitted).
@@ -98,6 +98,21 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-11 | Each psychoeducation item is shown at most once per session; IDs kept in the router memory JSON | Venting "what's wrong with me" twice should not get the same explanation twice; no migration | Repeat every time; a new column |
 | 2026-10-11 | Eleven psychoeducation items from NHS and WHO pages, each page checked; first matching item in file order wins, general item last | Small, reviewable set; deterministic and explainable | Scored topic matching |
 | 2026-10-11 | No psychoeducation under acute overwhelm or mid-exercise | Grounding first; exercises are not interrupted | Explaining first |
+| 2026-10-11 | Companion checks (validate first, one question ending the reply, no praise, no advice) apply to companion replies only; dependency language is checked on every generated reply (Smriti) | Keeps the change to companion mode; CBT/DBT get their checks with the Phase 7 guard | Checking every mode that carries the rule |
+| 2026-10-11 | An explicit advice request swaps `no_advice` for `offer_ideas` for that turn via an `asks_advice` cue (Smriti); the real model ignored the request until the prompt said suggestions were wanted | FR-CMP-2 forbids *unprompted* advice | Never giving advice; only dropping `no_advice` |
+| 2026-10-11 | Real model: `unsloth/Qwen3.5-4B-GGUF` Q4_K_M (Apache-2.0, 2.74 GB) on llama.cpp b11552 (winget `ggml.llamacpp`, Vulkan build), started with `llama-server -hf unsloth/Qwen3.5-4B-GGUF:Q4_K_M --no-mmproj --jinja -c 4096` (`-np 1` added 2026-10-12) | First real-model runs; official Qwen repo publishes no GGUF | Other quantisers |
+| 2026-10-11 | Checks live in `guard/checks.py` as the engine's default guard (pass-through `guard/hook.py` removed); reason codes are rule names; no `companion/plan.py`; one checks file | Design §8.2 puts the C-* checks in the guard; the companion plan is one dictionary entry | Separate companion package; two YAML files |
+| 2026-10-11 | Prompt "must" line and retry note use plain sentences per rule instead of rule names | A real model follows sentences, not snake_case | Rule names |
+| 2026-10-12 | Simplification pass: one `load_yaml` / `require_review` in `oasis.content` for every non-safety content file; one best-effort storage-write helper in the engine; VADER `valence()` folded into `core/signals.py`; Makefile removed (`scripts/verify.py` is the only verify command) | Less repeated code; the safety loaders stay separate for isolation (rules S8) | Keeping the copies |
+| 2026-10-12 | Varied openers: the last 3 companion openers go into the plan, the prompt and a `fresh_opener` check | The 4B model opened most replies the same way; a concrete "do not begin with" works where "vary your wording" does not | Prompt instruction only; higher sampling temperature |
+| 2026-10-12 | `validate_first`, `one_question` and `fresh_opener` are soft rules: retried, then kept; praise, advice and dependency stay hard | A phrase list cannot know every way to validate; as a hard rule it sent 5/48 out-of-place fallbacks in the conversation tone check | Ever-longer phrase lists |
+| 2026-10-12 | Companion fallback "I hear you. What feels most important to talk about right now?"; the Socratic `guard_fallback` stays for other modes. Warmth about good news allowed (Smriti) | The Socratic question does not fit companion talk, especially good news | One fallback for every mode; blocking "glad to hear" |
+| 2026-10-12 | Companion tone: the goal and `validate_first` say "respond to / acknowledge what they said", and the system text says to keep small talk light and never make a feeling bigger or darker | "hi" and "this traffic is killing me" got worried, inflated replies; the signals were clean, the prompt forced a feeling | Gating on the signals ("my boss yelled at me" scores the same as "hi") |
+| 2026-10-12 | Crisis reply and help card: "If you feel like talking to someone in person…" replaces "If you are in immediate danger, please call your local emergency number" and the card's "If you are in danger right now / Call your local emergency number" (CR-03) | Owner's decision on tone | Keeping a short danger line (recommended, since safe-messaging guidance favours a route to immediate help); flagged for the clinician |
+| 2026-10-12 | Screening trigger: `k` lowered from 3 to 2 turns in a row, and an earlier crisis no longer blocks unprompted offers once post-crisis mode is cleared (CR-09, CR-19) | Owner's decision: offers came too late; the post-crisis hold still blocks every offer until the user says they want to keep talking | Keeping k = 3; keeping the crisis block on unprompted offers |
+| 2026-10-12 | PHQ-9/GAD-7 re-administration window lowered from 14 to 10 days, for offers and requests (CR-10); the router's moderate-or-worse flag uses the same window | Owner's decision | Keeping 14 days, matching the instruments' two-week recall period |
+| 2026-10-12 | Router: a mode must lead for 2 turns in a row (was 3) before its offer, for cbt, dbt and mindfulness; mindfulness's anxiety weight 0.5 -> 0.85; distortion, dysregulation, anger and anxiety phrases widened from manual testing (CR-11, CR-20) | Reworded self-criticism ("I always do something wrong", "burden of my failure") reset the streak, so CBT was never offered; anxiety alone could never lead to mindfulness | Raising the anger weight (would send anger alone to DBT); adding stress to overwhelm (would start grounding at once) |
+| 2026-10-12 | llama-server runs with one slot (`-np 1`) | OASIS already sends one request at a time (`llm_max_concurrency = 1`), so it costs nothing. Measured: no speed gain. Qwen3.5's hybrid (linear-attention) layers mean llama.cpp re-reads the whole prompt every turn (201-378 tokens at ~55 tokens/s, 4-7 s), because the prompt changes near its start (the per-turn plan). Turns took 9-11 s, or ~22 s with a guard retry | Moving the plan to the end and keeping history append-only (the only way to get prefix reuse with this model; declined for now); a shorter history; a smaller model |
 | 2026-10-11 | Psychoeducation cue is a `psychoed` scorer in `cues.yaml` (no `psychoed/cues.py`); reading level is a stdlib Flesch-Kincaid check at startup (no `scripts/readability.py`) | Reuses the Phase 4 scorer; bad content fails at boot | Separate cue module; a printing script |
 | 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
 | 2026-10-07 | Git: commits authored as Smriti; no assistant attribution anywhere; assistant config files git-ignored; Conventional Commits; one branch per phase | Authorship and repository hygiene | — |
@@ -132,6 +147,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Router detector accuracy on natural messages | Not measured; scenario table and golden phrases only — needs a labelled set |
 | Psychoeducation cue recall on unseen phrasing | Not measured; trigger set written by the same author as the cues — needs a fresh labelled set |
 | Real-model phrasing of psychoeducation items | Not verified here (fake LLM returns the item verbatim) |
+| Real-model companion tone | Measured 2026-10-11 on the dev machine (12 single-turn samples); transcript `docs/reports/phase-06-tone-check.md` awaits Smriti's review; multi-turn variety (same opener) not yet measured |
 | Real-model phrasing of exercise steps | Not verified here (fake LLM returns steps verbatim) |
 | Screening-offer trigger on unseen conversations | Precision 1.00 / recall 0.93 on the labelled set after tuning (0.80 / 0.31 before); needs a fresh labelled set |
 | Crisis resource numbers | Verified 2026-10-08 against official sources (Tier 1) and FCDO (Tier 2); re-verify before any participant use |
@@ -169,6 +185,13 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-11 | 5 | Psychoeducation cue | trigger set 23/23 fire with the expected item; false positives 0/22 near-miss ordinary messages, 0/104 Phase 3 conversation turns, 0/85 Phase 2 benign messages |
 | 2026-10-11 | 5 | Planner latency (dev machine) | p50 0.28 ms, p99 0.47 ms |
 | 2026-10-11 | 5 | Mutation spot-check | 10/10 caught after one new test (9/10 before) |
+| 2026-10-11 | 6 | Tests | 975 passed, 0 skipped |
+| 2026-10-11 | 6 | Real-model tone check (Qwen3.5-4B Q4_K_M, llama.cpp b11552, dev machine) | Final run 10/12 first drafts pass, both rejections genuine; 0 fallbacks in every run; 4.7–6 s per reply after a 15.7 s first reply |
+| 2026-10-11 | 6 | Coverage | 98.2% overall; `oasis.guard` 100% |
+| 2026-10-11 | 6 | Companion checks | 12/12 curated good replies pass; 21/21 curated bad replies fail with exactly the labelled rules; guard fallback and the fake model's replies pass |
+| 2026-10-11 | 6 | Mutation spot-check | 11/11 caught after one test rewrite (10/11 before); opener and soft-rule round 9/9 after one test fix (8/9 before) |
+| 2026-10-12 | 6 | Conversation tone check (real model, 48 turns) | Fallbacks 5/48 -> 0/48; repeated openers in conversations 8/18 -> 4/18; first drafts passing 41/48 -> 38/48 |
+| 2026-10-12 | 6 | Screening trigger with k = 2 (24 labelled conversations) | Precision 1.00 -> 0.93, recall 0.93 -> 1.00 (TP 13, FP 1 too early, FN 0, TN 10); mean offer latency 0.85 -> 0.23 turns |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
 | 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |

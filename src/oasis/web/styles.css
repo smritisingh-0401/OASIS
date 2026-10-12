@@ -213,6 +213,8 @@ body {
   margin-bottom: 12px;
 }
 .card-title { margin: 0 0 10px; font-weight: 600; }
+.card-step { margin: 0 0 8px; }
+.card-hint { margin: 0; color: var(--muted); font-size: 15px; }
 .card-options { display: flex; flex-wrap: wrap; gap: 10px; }
 .card-options button {
   font: inherit;

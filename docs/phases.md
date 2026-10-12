@@ -8,7 +8,7 @@ Each phase runs on its own branch (`phase-NN-short-name`) and merges to `main` o
 2. Explain the plan: files, classes/functions, and why.
 3. Write tests first for critical logic (safety, scoring, routing, guard, privacy).
 4. Implement.
-5. Run `make verify` and show the real output.
+5. Run `uv run python scripts/verify.py` and show the real output.
 6. Walk through the code module by module.
 7. Write the report section (`docs/reports/phase-NN.md`): design, evaluation, results, known limits.
 8. Update [memory.md](memory.md) and commit.
@@ -77,7 +77,7 @@ These are **skeletons, not features**:
 - `tests/unit/test_logging_privacy.py`: logs contain no marker message text or session ID; trace has no text fields.
 - `tests/fault_injection/test_llm_hang.py`: slow fake LLM → reply within `request_timeout_s`.
 
-**Done when.** Multi-turn chat works in the UI against `FakeLLM`; history survives restart; LLM timeout returns a fallback, never a hang; `make verify` runs lint, types, import rules, security scan and tests with coverage.
+**Done when.** Multi-turn chat works in the UI against `FakeLLM`; history survives restart; LLM timeout returns a fallback, never a hang; `scripts/verify.py` runs lint, types, import rules, security scan and tests with coverage.
 
 **Report topic.** Architecture skeleton and failure-first design: process isolation, deadlines, templated fallback, repository contract.
 

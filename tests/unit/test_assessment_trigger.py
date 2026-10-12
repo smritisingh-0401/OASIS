@@ -10,14 +10,15 @@ import pytest
 import yaml
 
 from oasis.assessment.trigger import decide, evaluate
-from oasis.types import AssessmentRecord, TurnRecord
+from oasis.core.planner import plan_turn
+from oasis.types import AssessmentRecord, ConversationState, TurnRecord
 
 NOW = datetime.datetime(2026, 10, 8, 12, 0, tzinfo=datetime.UTC)
 LABELLED = (
     Path(__file__).resolve().parents[1] / "data" / "assessment" / "labelled_conversations.yaml"
 )
 
-# With W = 6 and k = 3 (design §3.2) the earliest possible offer is the fifth turn.
+# With W = 6 and k = 2 (k lowered from 3, 2026-10-12) these offer on the fourth turn.
 LOW_MOOD = [
     "I've been feeling really down for weeks",
     "nothing feels enjoyable anymore",
@@ -28,7 +29,8 @@ LOW_MOOD = [
 
 
 def test_sustained_readiness_needs_k_turns_above_threshold() -> None:
-    assert decide(_history(*LOW_MOOD[:3]), LOW_MOOD[3], (), NOW) is None
+    assert decide(_history(*LOW_MOOD[:2]), LOW_MOOD[2], (), NOW) is None
+    assert decide(_history(*LOW_MOOD[:3]), LOW_MOOD[3], (), NOW) is not None
 
 
 def _history(*messages: str) -> tuple[TurnRecord, ...]:
@@ -51,7 +53,7 @@ def test_sustained_readiness_offers_phq9_with_its_score() -> None:
     reason = json.loads(offer.reason)
     assert reason["reason"] == "sustained_readiness"
     assert reason["R"] >= 0.45
-    assert reason["turns"] == 3
+    assert reason["turns"] == 2
     assert reason["top_domains"]
 
 
@@ -98,22 +100,30 @@ def test_explicit_request_overrides_a_recent_decline() -> None:
     assert json.loads(offer.reason)["reason"] == "explicit_request"
 
 
-def test_completed_instrument_is_not_repeated_within_14_days() -> None:
-    done = _record("PHQ9", "scored", datetime.timedelta(days=13))
+def test_completed_instrument_is_not_repeated_within_10_days() -> None:
+    done = _record("PHQ9", "scored", datetime.timedelta(days=9))
     assert decide((), REQUEST, (done,), NOW) is None
     assert decide((), "can I take an anxiety questionnaire?", (done,), NOW) is not None
-    old = _record("PHQ9", "scored", datetime.timedelta(days=15))
+    old = _record("PHQ9", "scored", datetime.timedelta(days=11))
     assert decide((), REQUEST, (old,), NOW) is not None
 
 
-def test_recent_crisis_blocks_unprompted_offers_but_not_a_request() -> None:
-    # OASIS never raises screening itself after a crisis, but a user who asks is not refused
-    # (decided 2026-10-09). Item 9 still escalates to crisis during the questionnaire.
+def test_an_earlier_crisis_does_not_block_offers() -> None:
+    # Once post-crisis mode is cleared (the planner holds everything until then), an earlier
+    # crisis no longer stops an offer (Smriti, 2026-10-12; was blocked since 2026-10-09).
+    # Item 9 still escalates to crisis during the questionnaire.
     crisis = (TurnRecord("p", 99, "placeholder", "x", "crisis", ""),)
-    assert decide(_history(*LOW_MOOD[:-1]) + crisis, LOW_MOOD[-1], (), NOW) is None
+    assert decide(_history(*LOW_MOOD[:-1]) + crisis, LOW_MOOD[-1], (), NOW) is not None
     offer = decide(crisis, REQUEST, (), NOW)
     assert offer is not None
     assert json.loads(offer.reason)["reason"] == "explicit_request"
+
+
+def test_no_offer_until_post_crisis_mode_is_cleared() -> None:
+    held = ConversationState(history=_history(*LOW_MOOD[:-1]), post_crisis=True, now=NOW)
+    plan = plan_turn(LOW_MOOD[-1], held)
+    assert plan.mode == "post_crisis"
+    assert plan.card is None
 
 
 # --- labelled conversations (reported in full by scripts/trigger_eval.py) -------------
