@@ -10,10 +10,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 6 — companion mode** (in progress) |
-| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3) |
-| In progress | Phase 5 approved 2026-10-11, push and PR planned for 2026-10-12. Phase 6 built and verified on `phase-06-companion` (branched from `phase-05-psychoeducation`; rebase onto `main` after the Phase 5 merge); awaiting Smriti's approval and the real-model tone check (report: `docs/reports/phase-06.md`) |
-| Next | Phase 7 (hypercompliance guard) after Phase 6 approval |
+| Current phase | **Phase 6 — companion mode** (approved 2026-10-13, PR open) |
+| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing) |
+| In progress | Phase 6: `phase-06-companion` rebased onto `main` and pushed; merge after CI passes and Smriti says to merge |
+| Next | Phase 7 (hypercompliance guard), after the Phase 6 merge |
 | Blocked on | Nothing; open items 8-10 need Smriti but do not block Phase 5 |
 
 ### Environment notes (development machine, 2026-10-07)
