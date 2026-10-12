@@ -15,6 +15,7 @@ import oasis
 from oasis.api.app import create_app
 from oasis.llm.fake import FakeLLM
 from oasis.psychoed.selector import load_all as load_psychoed
+from oasis.router.exercise import technique_for
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
@@ -412,6 +413,7 @@ def test_structured_mode_offer_consent_steps_and_stop_over_http(settings: Settin
         first = _act(c, token, "Yes, let's try", {"type": "exercise_consent", "accept": True})
         assert first["mode"] == "cbt"
         assert (first["exercise"]["step"], first["exercise"]["item"]) == ("active", 1)
+        assert first["exercise"]["instruction"] == technique_for("cbt").steps[0]
         second = _chat(c, token, "It's the thought that I always get things wrong").json()
         assert second["exercise"]["item"] == 2
         assert c.get("/history", headers={HEADER: token}).json()["exercise"]["item"] == 2

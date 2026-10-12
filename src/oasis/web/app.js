@@ -145,7 +145,10 @@ function renderExercise(ex) {
   const controls = document.createElement("div");
   controls.className = "card-controls";
   controls.append(button("Stop exercise", act("Stop", { type: "exercise_stop" }), "link"));
-  card.append(line("p", ex.name + " · Step " + ex.item + " of " + ex.item_count, "card-title"), controls);
+  card.append(line("p", ex.name + " · Step " + ex.item + " of " + ex.item_count, "card-title"));
+  // The fixed step text, in case the reply above phrased it loosely.
+  if (ex.instruction) card.append(line("p", ex.instruction, "card-step"));
+  card.append(line("p", "Reply in your own words when you're ready for the next step.", "card-hint"), controls);
   if (!help.contains(document.activeElement)) input.focus();
 }
 

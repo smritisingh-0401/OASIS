@@ -69,6 +69,9 @@ def test_steps_are_delivered_in_order_and_the_exercise_then_ends() -> None:
             assert card is not None
             assert (card.step, card.mode, card.item, card.item_count) == (
                 "active", "dbt", k, len(t.steps))  # fmt: skip
+            # The fixed step text is on the card, so the step is never lost if the model
+            # drops it from its reply (manual test, 2026-10-12).
+            assert card.instruction == text
             assert rs.exercise == t.id
         else:
             assert card is None
@@ -86,6 +89,8 @@ def test_card_for_restores_an_offer_or_the_running_step() -> None:
     active = card_for(RouterState(current="mindfulness", exercise=t.id, step=2))
     assert active is not None
     assert (active.step, active.item, active.item_count) == ("active", 2, len(t.steps))
+    assert active.instruction == t.steps[1]
+    assert offer.instruction is None
 
 
 # --- invalid content stops startup -----------------------------------------------------------

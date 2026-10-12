@@ -74,7 +74,7 @@ def deliver(rs: RouterState) -> tuple[str, RouterState, ExerciseCard | None]:
     text, nxt = t.steps[rs.step], rs.step + 1
     if nxt >= len(t.steps):
         return text, replace(rs, exercise=None, step=0), None
-    card = ExerciseCard("active", rs.current, t.name, nxt, len(t.steps))
+    card = ExerciseCard("active", rs.current, t.name, nxt, len(t.steps), text)
     return text, replace(rs, step=nxt), card
 
 
@@ -84,5 +84,6 @@ def card_for(rs: RouterState) -> ExerciseCard | None:
         return ExerciseCard("offer", rs.offered, technique_for(rs.offered).name)
     if rs.exercise is not None:
         t = load_all()[rs.exercise]
-        return ExerciseCard("active", rs.current, t.name, rs.step, len(t.steps))
+        shown = t.steps[rs.step - 1] if rs.step else None
+        return ExerciseCard("active", rs.current, t.name, rs.step, len(t.steps), shown)
     return None

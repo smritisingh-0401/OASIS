@@ -164,6 +164,7 @@ class ExerciseCard:
     name: str
     item: int | None = None  # the step just shown, 1-based
     item_count: int | None = None
+    instruction: str | None = None  # that step's fixed script text, shown on the card
 
 
 @dataclass(frozen=True)

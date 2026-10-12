@@ -81,6 +81,7 @@ class ExerciseCardOut(BaseModel):
     name: str
     item: int | None
     item_count: int | None
+    instruction: str | None = None
 
 
 class ChatResponse(BaseModel):
