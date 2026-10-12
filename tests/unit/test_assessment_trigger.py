@@ -100,11 +100,11 @@ def test_explicit_request_overrides_a_recent_decline() -> None:
     assert json.loads(offer.reason)["reason"] == "explicit_request"
 
 
-def test_completed_instrument_is_not_repeated_within_14_days() -> None:
-    done = _record("PHQ9", "scored", datetime.timedelta(days=13))
+def test_completed_instrument_is_not_repeated_within_10_days() -> None:
+    done = _record("PHQ9", "scored", datetime.timedelta(days=9))
     assert decide((), REQUEST, (done,), NOW) is None
     assert decide((), "can I take an anxiety questionnaire?", (done,), NOW) is not None
-    old = _record("PHQ9", "scored", datetime.timedelta(days=15))
+    old = _record("PHQ9", "scored", datetime.timedelta(days=11))
     assert decide((), REQUEST, (old,), NOW) is not None
 
 

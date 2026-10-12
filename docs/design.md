@@ -180,7 +180,7 @@ Offer the instrument whose domains contributed more (PHQ-9 vs GAD-7; tie → PHQ
 - `explicit_screen_request` is true (immediate), **or**
 - `R ≥ θ_offer` (start: 0.45) for `k = 2` consecutive turns (3 until 2026-10-12),
 
-**and all guards pass:** not crisis / post-crisis; not mid-exercise; not mid-assessment; not declined in the last `D = 10` turns or 24 h; no completed administration of the same instrument in the last **14 days** (both instruments use a two-week look-back).
+**and all guards pass:** not crisis / post-crisis; not mid-exercise; not mid-assessment; not declined in the last `D = 10` turns or 24 h; no completed administration of the same instrument in the last **10 days** (14 until 2026-10-12; both instruments still ask about the last two weeks).
 
 The stored offer reason is a reason code plus the numeric score, e.g. `{"reason": "sustained_readiness", "R": 0.52, "turns": 2, "top_domains": ["anhedonia","sleep"]}`.
 
@@ -189,7 +189,7 @@ The stored offer reason is a reason code plus the numeric score, e.g. `{"reason"
 - The valence term `w_v · max(0, −valence_t)` waits for the Phase 4 signals object (no valence detector yet), so it contributes 0.
 - A message counts only if it is not about someone else: one with a third-person subject ("my friend", "she") and no first-person word contributes nothing.
 - Naming an instrument is not a request ("I read about the PHQ-9"); an explicit request needs a verb such as take, do or try, or a phrase such as "depression test".
-- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, or the same instrument completed in the last 14 days. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. All guards apply to explicit requests except the decline cooldown: it stops OASIS from raising screening itself, but a user who asks is never refused (decided 2026-10-08).
+- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, or the same instrument completed in the last 10 days. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. All guards apply to explicit requests except the decline cooldown: it stops OASIS from raising screening itself, but a user who asks is never refused (decided 2026-10-08).
 - A crisis: the planner's post-crisis hold blocks every offer until the user says they want to keep talking. After that, an earlier crisis blocks nothing, offered or asked for (Smriti, 2026-10-12; from 2026-10-09 it blocked unprompted offers). A positive PHQ-9 item 9 still escalates to crisis.
 - Readiness uses the design formula with the full-window denominator, so the earliest sustained offer is the third symptomatic turn (W = 6, k = 2, θ = 0.45; the fourth with k = 3). The engine loads up to 20 turns for the trigger.
 
@@ -358,7 +358,7 @@ function route(x, rs: RouterState) -> RouteDecision:
 
 ### 7.3 As built (Phase 4)
 - **Files:** `router/weights.py` (config, feature vector, `score_modes`), `router/router.py` (`route`, `accept`, `decline`, `stop`, state JSON), `router/exercise.py` (scripts, one step per turn), `content/router/weights.yaml`, `content/techniques/*.yaml`. Hysteresis is one rule inside `route`, so it has no module of its own.
-- **Features:** `valence_neg = max(0, -valence)`, the five emotions, `dysregulation`, `distortion`, `overwhelm`, `wants_to_talk`, plus `phq_moderate_plus` / `gad_moderate_plus` (1.0 when a moderate-or-worse result was scored inside the 14-day re-administration window).
+- **Features:** `valence_neg = max(0, -valence)`, the five emotions, `dysregulation`, `distortion`, `overwhelm`, `wants_to_talk`, plus `phq_moderate_plus` / `gad_moderate_plus` (1.0 when a moderate-or-worse result was scored inside the 10-day re-administration window).
 - **Start values:** margin 0.15, N = 3, acute threshold 0.6; companion bias 0.35 (others 0); dominant weights distortion → cbt 0.9, dysregulation → dbt 0.9, overwhelm → mindfulness 1.2, wants_to_talk → companion 0.8 (CR-11). Ties go to companion.
 - **Order inside `route`:** a running exercise holds unless the user opts out (grounding also holds under fresh overwhelm instead of restarting) → acute override (keeps consents, drops any offer) → opt-out clears the exercise → grounding ends with its script (back to companion) → typing over an open offer counts as "not now" and resets the streak → incumbent / margin / hysteresis / consent offer / switch.
 - **State:** `RouterState(current, challenger, streak, offered, exercise, step, consented)` stored as JSON in `sessions.router_state`. Malformed JSON or values load as a fresh state (companion), never an error. Saving is best effort: a failure is logged as `storage.down` and the turn still replies.
