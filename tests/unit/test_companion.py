@@ -44,7 +44,6 @@ def test_bad_replies_fail_with_exactly_the_rules_they_break(case: dict[str, Any]
 
 
 def test_the_fallbacks_pass_their_own_checks() -> None:
-    assert check(TEMPLATES["guard_fallback"], COMPANION).ok
     assert check(TEMPLATES["companion_fallback"], COMPANION).ok
 
 

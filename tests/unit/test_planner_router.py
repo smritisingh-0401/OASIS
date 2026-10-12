@@ -186,7 +186,8 @@ def test_mode_constraints_follow_the_prompt_table() -> None:
         "no_praise",
     }
     cbt = plan_turn(DISTORTED, state(RouterState(current="cbt", consented=frozenset({"cbt"}))))
-    assert set(cbt.constraints) == {"validate_first", "one_question", "socratic"}
+    # A thinking-trap message also adds no_agreeing (Phase 7 hypercompliance guard).
+    assert set(cbt.constraints) == {"validate_first", "one_question", "socratic", "no_agreeing"}
 
 
 # --- precedence ----------------------------------------------------------------------------

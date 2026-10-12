@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import functools
+import re
 
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from oasis.core.detectors.lexicon import load
+from oasis.guard.checks import content_words
 from oasis.safety.normalize import base_form
 from oasis.types import Signals
 
 EMOTIONS = ("sadness", "anxiety", "anger", "shame", "loneliness")
+
+_CLAUSE = re.compile(r"[,.;:!?]+|\b(?:and|but)\b")
 
 
 @functools.cache
@@ -27,6 +31,18 @@ def load_all() -> None:
     """Parse every lexicon now, so a bad file stops the app at startup."""
     for name in ("emotions", "cues", "distortions"):
         load(name)
+
+
+def claims(message: str) -> tuple[frozenset[str], ...]:
+    """Each clause of `message` holding a thinking-trap phrase, as its content words
+    (design §8.1). The guard compares replies against these; they are never stored."""
+    patterns = [p for lex in load("distortions").values() for p, _ in lex.terms]
+    found: list[frozenset[str]] = []
+    for clause in _CLAUSE.split(base_form(message)):
+        words = content_words(clause)
+        if words and words not in found and any(p.search(clause) for p in patterns):
+            found.append(words)
+    return tuple(found)
 
 
 def extract(message: str) -> Signals:

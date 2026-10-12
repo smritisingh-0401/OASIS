@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from dataclasses import replace
 
 from oasis.assessment import flow, trigger
-from oasis.core.signals import extract
+from oasis.core.signals import claims, extract
 from oasis.core.templates import TEMPLATES
 from oasis.guard.checks import opener
 from oasis.psychoed import selector as psychoed
@@ -51,6 +51,8 @@ CONSTRAINTS: dict[str, tuple[str, ...]] = {
     "psychoed": ("no_diagnosis", "use_snippet_only"),
 }
 STEP_CONSTRAINTS = ("follow_script", "one_step")
+# Added to any generated reply to a thinking-trap message, in every mode (design §8.2).
+DISTORTION_RULES = ("validate_first", "one_question", "socratic", "no_agreeing")
 RECENT_OPENERS = 3  # companion replies whose openers the next one must not reuse
 MODERATE_PLUS = frozenset({"moderate", "moderately severe", "severe"})
 
@@ -63,7 +65,10 @@ def wants_to_continue(message: str) -> bool:
 
 def plan_turn(message: str, state: ConversationState, action: Action | None = None) -> Plan:
     plan = _plan(message, state, action)
-    if plan.mode != "companion" or plan.templated:
+    if plan.templated or plan.snippet is not None:
+        return plan
+    plan = with_thinking_trap(plan, message)
+    if plan.mode != "companion":
         return plan
     # So a conversation does not open every reply the same way (tone check, 2026-10-11).
     said = [t.content for t in state.history if t.role == "assistant" and t.mode == "companion"]
@@ -76,7 +81,7 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
         if not wants_to_continue(message):
             return Plan(mode="post_crisis", templated=True, template_id="post_crisis",
                         reason_codes=("post_crisis.hold",))  # fmt: skip
-        return Plan(mode="companion", constraints=_rules("companion", extract(message)),
+        return Plan(mode="companion", constraints=rules_for("companion", extract(message)),
                     reason_codes=("post_crisis.cleared",))  # fmt: skip
 
     now = state.now or datetime.datetime.now(datetime.UTC)
@@ -92,7 +97,7 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
 
     if open_rec is not None:  # typed instead of pressing a button
         step = flow.on_free_text(open_rec, now)
-        return Plan(mode="companion", constraints=_rules("companion", extract(message)),
+        return Plan(mode="companion", constraints=rules_for("companion", extract(message)),
                     assessment=step.record, card=step.card,
                     reason_codes=("planner.passthrough", "assessment.free_text"))  # fmt: skip
 
@@ -157,7 +162,7 @@ def _routed(
                     exercise_card=ExerciseCard("offer", decision.offer, t.name),
                     router_state=rs, route=decision, assessment=expired,
                     reason_codes=tuple(codes))  # fmt: skip
-    return Plan(mode=decision.mode, constraints=_rules(decision.mode, signals),
+    return Plan(mode=decision.mode, constraints=rules_for(decision.mode, signals),
                 router_state=rs, route=decision, assessment=expired,
                 reason_codes=tuple(codes))  # fmt: skip
 
@@ -192,7 +197,17 @@ def _exercise_button(action: ExerciseAction, rs: RouterState) -> Plan:
     return _step_plan(None, text, rs, card, ("exercise.accepted",))
 
 
-def _rules(mode: str, signals: Signals) -> tuple[str, ...]:
+def with_thinking_trap(plan: Plan, message: str) -> Plan:
+    """A reply to a thinking trap validates the feeling, then asks one Socratic question, and
+    never agrees with the distortion; the guard gets the distorted claim (design §8)."""
+    found = extract(message).distortion_types
+    if not found:
+        return plan
+    rules = plan.constraints + tuple(r for r in DISTORTION_RULES if r not in plan.constraints)
+    return replace(plan, constraints=rules, distortion_types=found, claims=claims(message))
+
+
+def rules_for(mode: str, signals: Signals) -> tuple[str, ...]:
     rules = CONSTRAINTS.get(mode, ())
     if mode == "companion" and signals.asks_advice:  # advice was asked for (FR-CMP-2)
         rules = tuple("offer_ideas" if r == "no_advice" else r for r in rules)

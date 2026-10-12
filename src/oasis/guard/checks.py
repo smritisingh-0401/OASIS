@@ -1,10 +1,13 @@
-"""Reply checks every generated draft passes through (design §8.2, FR-CMP).
+"""Reply checks every generated draft passes through (design §8.2, FR-CMP, FR-GRD).
 
 Each check enforces a plan rule the prompt already states, and its reason code is that rule's
-name, so a retry can name it back in plain words. Companion replies are checked for
-validate_first, one_question, no_praise and no_advice (only the rules the plan carries);
-every mode is checked for no_dependency. The engine owns the retry and the fallback; Phase 7
-adds the hypercompliance checks here.
+name, so a retry can name it back in plain words.
+- Companion replies: validate_first, one_question, no_praise, no_advice (only the rules the
+  plan carries) and fresh_opener.
+- Replies to a thinking-trap message, in every mode: validate_first and one_question, plus
+  no_agreeing and no_presupposing against the user's distorted claim (G-AGREE, G-PRESUP).
+- Every generated reply: no_self_label, no_diagnosis, no_medication, no_dependency, not_empty.
+The engine owns the retry and the fallback.
 """
 
 from __future__ import annotations
@@ -18,40 +21,79 @@ from oasis.content import load_yaml, require_review
 from oasis.safety.normalize import base_form
 from oasis.types import GuardVerdict, Plan
 
-LISTED = ("validate_first", "no_praise", "no_advice", "no_dependency")
+COMPANION_LISTED = ("validate_first", "no_praise", "no_advice", "no_dependency")
+GUARD_LISTED = ("agreement", "hedges", "presupposing", "advice_words", "self_label",
+                "diagnosis", "medication")  # fmt: skip
 COMPANION_RULES = ("validate_first", "one_question", "no_praise", "no_advice")
 # Form, not content: a draft failing only these is retried, but kept rather than replaced
 # by the fixed fallback (the validating-phrase list cannot know every way to validate).
 SOFT_RULES = frozenset({"validate_first", "one_question", "fresh_opener"})
+# Content: a draft failing any of these twice is replaced by a vetted fallback.
+HARD_RULES = frozenset({"no_praise", "no_advice", "no_dependency", "no_agreeing",
+                        "no_self_label", "no_presupposing", "no_diagnosis", "no_medication",
+                        "not_empty"})  # fmt: skip
+# Checked on every generated reply: (rule, phrase list).
+EVERY_REPLY = (("no_self_label", "self_label"), ("no_diagnosis", "diagnosis"),
+               ("no_medication", "medication"), ("no_dependency", "no_dependency"))  # fmt: skip
+ECHO = 0.6  # share of a claim's content words a sentence must repeat to echo it (design §8.2)
+
+# Function words dropped before comparing a reply with a claim, so "I'm such a failure" and
+# "you are a failure" share their content word. Matched on the base form.
+_STOP = (
+    "i im ive id ill me my myself mine you youre youve youd youll your yours yourself a "
+    "an the is am are was were be been being to of at in on for it its that this these "
+    "those such so just really very do does did and but or with about up out as by from "
+    "we us our they them their he him his she her"
+)
+STOPWORDS = frozenset(_STOP.split())
+_WORD = re.compile(r"[a-z]+")
+_SENTENCE = re.compile(r"[^.!?]+[.!?]*")
+_CLAUSE = re.compile(r"[,;:]+|\b(?:and|but)\b")
 
 Rules = Mapping[str, tuple[re.Pattern[str], ...]]
 
 
-def parse(raw: Mapping[str, Any]) -> dict[str, tuple[re.Pattern[str], ...]]:
-    require_review(raw, "companion checks")
+def content_words(text: str) -> frozenset[str]:
+    """The words of base-form `text`, without function words."""
+    return frozenset(w for w in _WORD.findall(text) if w not in STOPWORDS)
+
+
+def _compile(raw: Mapping[str, Any], names: tuple[str, ...], what: str) -> dict[str, Any]:
+    require_review(raw, what)
     patterns = raw.get("patterns") or {}
     out = {}
-    for rule in LISTED:
-        listed = patterns.get(rule)
+    for name in names:
+        listed = patterns.get(name)
         if not isinstance(listed, list) or not listed:
-            raise ValueError(f"companion checks: {rule} needs a list of patterns")
+            raise ValueError(f"{what}: {name} needs a list of patterns")
         try:
-            out[rule] = tuple(re.compile(p) for p in listed)
+            out[name] = tuple(re.compile(p) for p in listed)
         except (re.error, TypeError) as exc:
-            raise ValueError(f"companion checks: bad pattern in {rule}") from exc
+            raise ValueError(f"{what}: bad pattern in {name}") from exc
     return out
+
+
+def parse(raw: Mapping[str, Any]) -> dict[str, tuple[re.Pattern[str], ...]]:
+    return _compile(raw, COMPANION_LISTED, "companion checks")
+
+
+def parse_guard(raw: Mapping[str, Any]) -> dict[str, tuple[re.Pattern[str], ...]]:
+    return _compile(raw, GUARD_LISTED, "guard checks")
 
 
 @functools.cache
 def load_rules() -> Rules:
-    return parse(load_yaml("companion", "checks.yaml"))
+    return {**parse(load_yaml("companion", "checks.yaml")),
+            **parse_guard(load_yaml("guard", "checks.yaml"))}  # fmt: skip
 
 
 def check(draft: str, plan: Plan) -> GuardVerdict:
     rules = load_rules()
     norm = base_form(draft)
+    if not norm.strip():
+        return GuardVerdict(ok=False, reasons=("not_empty",))
     failed = []
-    if plan.mode == "companion":
+    if plan.mode == "companion" or plan.distortion_types:
         active = [r for r in COMPANION_RULES if r in plan.constraints]
         question = norm.find("?")
         before = norm if question < 0 else norm[:question]
@@ -59,19 +101,54 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
             failed.append("validate_first")
         if "one_question" in active and (norm.count("?") != 1 or not norm.rstrip().endswith("?")):
             failed.append("one_question")
+    if plan.mode == "companion":
+        active = [r for r in COMPANION_RULES if r in plan.constraints]
         failed += [r for r in ("no_praise", "no_advice") if r in active and _any(rules[r], norm)]
         if opener(draft) in plan.avoid_openers:
             failed.append("fresh_opener")
-    if _any(rules["no_dependency"], norm):
-        failed.append("no_dependency")
+    if plan.claims:
+        failed += _claim_rules(norm, plan.claims, rules)
+    failed += [rule for rule, listed in EVERY_REPLY if _any(rules[listed], norm)]
     return GuardVerdict(ok=not failed, reasons=tuple(failed))
+
+
+def _claim_rules(norm: str, claims: tuple[frozenset[str], ...], rules: Rules) -> list[str]:
+    """G-AGREE and G-PRESUP: a sentence that repeats a distorted claim and agrees with it,
+    states it as fact, or builds advice on it."""
+    failed = []
+    for sentence in (s.strip() for s in _SENTENCE.findall(norm)):
+        if not _echoes(content_words(sentence), claims):
+            continue
+        if _any(rules["agreement"], sentence) or _states_as_fact(sentence, claims, rules):
+            failed.append("no_agreeing")
+        if _any(rules["presupposing"], sentence) and _any(rules["advice_words"], sentence):
+            failed.append("no_presupposing")
+    return sorted(set(failed), key=failed.index)
+
+
+def _states_as_fact(sentence: str, claims: tuple[frozenset[str], ...], rules: Rules) -> bool:
+    """A clause that restates the claim with no hedge, reflection or negation ("it is your
+    fault"). Questions are not statements. Words of the claim itself never count as hedges,
+    so "you can't do anything right" stays a statement of "I can't do anything right"."""
+    if sentence.endswith("?"):
+        return False
+    for clause in _CLAUSE.split(sentence):
+        words = content_words(clause)
+        hit = [c for c in claims if len(c & words) >= ECHO * len(c)]
+        if not hit:
+            continue
+        stripped = " ".join(w for w in _WORD.findall(clause) if not any(w in c for c in hit))
+        if not _any(rules["hedges"], stripped):
+            return True
+    return False
+
+
+def _echoes(words: frozenset[str], claims: tuple[frozenset[str], ...]) -> bool:
+    return any(len(c & words) >= ECHO * len(c) for c in claims)
 
 
 def _any(patterns: tuple[re.Pattern[str], ...], text: str) -> bool:
     return any(p.search(text) for p in patterns)
-
-
-_WORD = re.compile(r"[a-z]+")
 
 
 def opener(text: str) -> str:

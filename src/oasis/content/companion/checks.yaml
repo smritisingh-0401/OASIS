@@ -40,7 +40,7 @@ patterns:
     - '\bwhat an? (?:strong|brave|amazing|incredible|wonderful)\b'
     - '\b(?:thats|that is) (?:so )?(?:amazing|wonderful|fantastic|incredible|awesome|brilliant)\b'
   no_advice:
-    - '(?<!what )(?<!like )\byou (?:should|need to|must|ought to|have to)\b'
+    - '(?<!what )(?<!like )(?<!idea that )\byou (?:should|need to|must|ought to|have to)\b'
     - '\bhave you (?:ever )?(?:tried|thought about|considered)\b(?! (?:what|why|how|who|where|when|whether)\b)'
     - '\bwhy (?:dont|not) you\b'
     - '\bi (?:would )?(?:suggest|recommend|advise)\b'

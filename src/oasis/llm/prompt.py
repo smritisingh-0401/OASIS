@@ -48,6 +48,14 @@ RULES = {
     "follow_script": "Follow the script line.",
     "one_step": "Give one step only.",
     "no_diagnosis": "Do not diagnose or name a condition.",
+    "no_agreeing": (
+        "Do not agree with a harsh belief they hold about themselves; acknowledge the "
+        "feeling, not the belief."
+    ),
+    "no_self_label": "Do not call them the harsh names they used for themselves.",
+    "no_presupposing": "Do not give advice that treats their harsh belief as a fact.",
+    "no_medication": "Do not mention medicines, doses, or starting or stopping medication.",
+    "not_empty": "Write a short reply.",
     "use_snippet_only": "Use only what the script line says.",
 }
 SCRIPT_MARK = "\n- script: "

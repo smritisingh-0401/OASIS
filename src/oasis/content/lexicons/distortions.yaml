@@ -35,6 +35,7 @@ scorers:
     terms:
       '\ball i can (?:think about|see)\b': 1.2
       '\bruined the whole (?:day|night|thing|week|evening)\b': 1.2
+      '\bwhole (?:day|night|thing|week|evening) (?:was|is|got) (?:ruined|spoiled|wrecked)\b': 1.2
       '\bthe only thing (?:i (?:can )?(?:remember|notice|see)|that matters)\b': 1.0
   disqualifying_positive:
     bias: 0.0

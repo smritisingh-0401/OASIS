@@ -35,19 +35,16 @@ TEMPLATES: dict[str, str] = {
     "exercise_unavailable": (
         "That exercise isn't open any more, so let's leave it for now. We can keep talking."
     ),
-    "guard_fallback": (
-        "That sounds really hard to sit with. If a close friend told you they felt this way "
-        "about themselves, what would you want them to know?"
-    ),
     # Companion drafts rejected twice: neutral, so it fits good news as well as bad (CR-18).
     "companion_fallback": "I hear you. What feels most important to talk about right now?",
 }
 
 
-def fallback_template(reason: str, mode: str = "") -> str:
-    """Template ID for a trace fallback reason such as "llm.busy" or "guard.fallback"."""
+def fallback_template(reason: str) -> str:
+    """Template ID for a trace fallback reason such as "llm.busy" or "guard.fallback".
+    Thinking-trap, CBT and DBT turns use the Socratic bank instead (guard/socratic.py)."""
     if reason == "llm.busy":
         return "busy"
     if reason.startswith("guard."):
-        return "companion_fallback" if mode == "companion" else "guard_fallback"
+        return "companion_fallback"
     return "llm_unavailable"

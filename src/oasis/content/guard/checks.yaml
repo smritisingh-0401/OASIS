@@ -1,0 +1,47 @@
+# Hypercompliance checks (design §8.2, FR-GRD-2). Each list belongs to the guard rule of the
+# same name. Patterns are matched against the safety normaliser's base form (lowercase,
+# apostrophes removed: "you're" is "youre").
+#   agreement     an agreement marker; with an echo of the user's distorted claim in the same
+#                 sentence it fails no_agreeing (G-AGREE). A clause that restates the claim
+#                 with no hedge, reflection or negation fails it too.
+#   hedges        words that make a restated claim a reflection or a question, not agreement
+#   presupposing  a "since / because / given that" opener; with an advice word and an echo of
+#                 the claim it fails no_presupposing (G-PRESUP)
+#   advice_words  what makes a presupposing sentence advice
+#   self_label    calls the user a harsh global name (G-LABEL); every generated reply
+#   diagnosis     names a condition the user has (G-DX); every generated reply
+#   medication    drug names, doses, starting or stopping medicine (G-MED); every reply
+# Engineering start values (CR-16).
+schema: oasis.content/v1
+kind: guard_checks
+version: "2026.10.0"
+review_status: needs_clinician_review
+patterns:
+  agreement:
+    - '\b(?:youre|you are) (?:absolutely |completely |totally |probably |quite |so )?right\b'
+    - '\b(?:thats|that is|its|it is) (?:so |very |completely |totally )?(?:true|right|fair|correct)\b'
+    - '\bi (?:totally |completely |fully )?agree\b'
+    - '\bexactly\b'
+    - '^(?:yes|yeah|yep|true)\b'
+    - '\bit makes sense that (?:you are|youre)\b'
+  hedges:
+    - '\b(?:sounds?|feels?|feeling|felt|seems?|wonder\w*|think\w*|believe\w*|thought)\b'
+    - '\b(?:might|may|could|can|maybe|perhaps|if|whether|sometimes)\b'
+    - '\b(?:not|isnt|arent|doesnt|dont|didnt|wasnt|werent|wont|hardly)\b'
+  presupposing:
+    - '^(?:since|because|as|given that|seeing as|now that)\b'
+  advice_words:
+    - '\b(?:try|trying|could|should|maybe|might|consider|need to|have to|why not|focus|look for)\b'
+  self_label:
+    - '(?<!mean )(?<!make )\b(?:youre|you are)(?! not)(?: (?:such|so|really|just|a|an|total|totally|complete|completely|absolute|absolutely|utter|utterly|a bit of))* (?:failure|loser|idiot|stupid|worthless|useless|pathetic|burden|disappointment|mess|fraud|joke|hopeless|unlovable|broken)\b'
+    - '\b(?:as|being|to be) (?:a |an |such a |so )?(?:failure|loser|idiot|stupid|worthless|useless|pathetic|burden|disappointment|fraud)\b'
+  diagnosis:
+    - '\b(?:you|youve) (?:probably |might |may |could |clearly |definitely |obviously )?(?:have|has|got) (?:a |an |some )?(?:clinical |major |generali[sz]ed |social |severe |mild )?(?:depression|bipolar|ocd|adhd|add|ptsd|bpd|borderline|schizophrenia|psychosis|insomnia|\w+ disorder)\b'
+    - '\b(?:youre|you are|you might be|you may be|you could be|you must be) (?:probably |clearly |definitely )?(?:clinically depressed|depressed|bipolar|manic|psychotic|schizophrenic|autistic|suffering from)\b'
+    - '\b(?:sounds|looks|seems) like (?:you have |a |an )?(?:clinical )?(?:depression|bipolar|ocd|adhd|ptsd|bpd|\w+ disorder)\b'
+    - '\b(?:a |the )?(?:symptoms?|signs?) of (?:clinical )?(?:depression|bipolar|ocd|adhd|ptsd|\w+ disorder)\b'
+  medication:
+    - '\b(?:sertraline|fluoxetine|prozac|zoloft|citalopram|escitalopram|lexapro|paroxetine|venlafaxine|duloxetine|mirtazapine|bupropion|wellbutrin|amitriptyline|lithium|lamotrigine|quetiapine|seroquel|olanzapine|aripiprazole|risperidone|diazepam|valium|lorazepam|ativan|alprazolam|xanax|clonazepam|propranolol|zopiclone|zolpidem|ambien|melatonin|methylphenidate|ritalin|adderall|pregabalin|gabapentin|hydroxyzine|buspirone)\b'
+    - '\b\d+ ?(?:mg|milligrams?|mcg|micrograms?)\b'
+    - '\b(?:stop|start|quit|skip|come off|increase|reduce|double|halve)(?:ping|ting|ing|s)? (?:taking (?:them|it)|a dose|(?:taking )?your (?:meds|medication|medicine|pills|tablets|dose|antidepressants?))\b'
+    - '\b(?:take|taking|try|trying|start|starting|ask for|get) (?:taking )?(?:an? |some )?(?:antidepressants?|ssris?|snris?|sleeping (?:pills?|tablets?)|benzos?|benzodiazepines?|sedatives?|tranquill?i[sz]ers?|beta.blockers?|antipsychotics?)\b'
