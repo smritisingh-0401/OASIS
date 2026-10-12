@@ -178,19 +178,20 @@ R_t = Σ_{k=0}^{W-1} (1 − k/W) · e_{t−k}  /  Σ_{k=0}^{W-1} (1 − k/W)
 Offer the instrument whose domains contributed more (PHQ-9 vs GAD-7; tie → PHQ-9) when:
 
 - `explicit_screen_request` is true (immediate), **or**
-- `R ≥ θ_offer` (start: 0.45) for `k = 3` consecutive turns,
+- `R ≥ θ_offer` (start: 0.45) for `k = 2` consecutive turns (3 until 2026-10-12),
 
 **and all guards pass:** not crisis / post-crisis; not mid-exercise; not mid-assessment; not declined in the last `D = 10` turns or 24 h; no completed administration of the same instrument in the last **14 days** (both instruments use a two-week look-back).
 
-The stored offer reason is a reason code plus the numeric score, e.g. `{"reason": "sustained_readiness", "R": 0.52, "turns": 3, "top_domains": ["anhedonia","sleep"]}`.
+The stored offer reason is a reason code plus the numeric score, e.g. `{"reason": "sustained_readiness", "R": 0.52, "turns": 2, "top_domains": ["anhedonia","sleep"]}`.
 
 ### 3.2a As built (Phase 3)
 - Lexicon, weights and parameters live in `content/assessment/trigger.yaml` (CR-09, CR-10). Each PHQ-9 item 1-8 and GAD-7 item 1-7 has a domain pattern (weight 0.7; uncontrolled worry 0.4); a `duration` domain (weight 0.4) raises evidence without choosing the instrument. Per-turn evidence is capped at 1. PHQ-9 item 9 has no trigger domain: the safety layer handles it.
 - The valence term `w_v · max(0, −valence_t)` waits for the Phase 4 signals object (no valence detector yet), so it contributes 0.
 - A message counts only if it is not about someone else: one with a third-person subject ("my friend", "she") and no first-person word contributes nothing.
 - Naming an instrument is not a request ("I read about the PHQ-9"); an explicit request needs a verb such as take, do or try, or a phrase such as "depression test".
-- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, the same instrument completed in the last 14 days, or a crisis placeholder among the loaded turns. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. All guards apply to explicit requests except the decline cooldown and the crisis placeholder: they stop OASIS from raising screening itself, but a user who asks is never refused (decided 2026-10-08 for declines, 2026-10-09 for a crisis earlier in the conversation; the post-crisis hold must still be cleared first, and a positive PHQ-9 item 9 still escalates to crisis).
-- Readiness uses the design formula with the full-window denominator, so the earliest sustained offer is the fifth symptomatic turn (W = 6, k = 3, θ = 0.45). The engine loads up to 20 turns for the trigger.
+- Guards: an open assessment (offered, in progress or paused), a decline in the last 24 h, or the same instrument completed in the last 14 days. The "last D = 10 turns" decline condition is subsumed by the 24-hour window in practice and is not implemented separately. All guards apply to explicit requests except the decline cooldown: it stops OASIS from raising screening itself, but a user who asks is never refused (decided 2026-10-08).
+- A crisis: the planner's post-crisis hold blocks every offer until the user says they want to keep talking. After that, an earlier crisis blocks nothing, offered or asked for (Smriti, 2026-10-12; from 2026-10-09 it blocked unprompted offers). A positive PHQ-9 item 9 still escalates to crisis.
+- Readiness uses the design formula with the full-window denominator, so the earliest sustained offer is the third symptomatic turn (W = 6, k = 2, θ = 0.45; the fourth with k = 3). The engine loads up to 20 turns for the trigger.
 
 ### 3.3 Evaluation
 Labelled sample conversations (`should_offer` per turn) → precision, recall and offer latency (turns from first eligible point) reported in Phase 3.

@@ -3,8 +3,9 @@
 Per user turn, evidence e = min(cap, sum of weights of the symptom domains it mentions).
 Readiness R is the linearly decayed mean of e over the last W user turns. An offer is made
 on an explicit request, or when R stays at or above the threshold for k turns in a row,
-and only if every guard passes; a recent crisis or decline blocks only offers the user did
-not ask for. The stored reason is a code plus the numbers behind it.
+and only if every guard passes; a recent decline blocks only offers the user did not ask
+for. A crisis holds everything until post-crisis mode is cleared (in the planner), and after
+that it blocks nothing. The stored reason is a code plus the numbers behind it.
 """
 
 from __future__ import annotations
@@ -107,10 +108,8 @@ def decide(
             return None
         return Offer(inst, json.dumps({"reason": "explicit_request"}), explicit=True)
 
-    # A recent crisis or decline stops OASIS raising screening itself; neither refuses a
-    # user who asks (decided 2026-10-08 and 2026-10-09).
-    if any(t.role == "placeholder" for t in history):
-        return None
+    # A recent decline stops OASIS raising screening itself but never refuses a user who asks
+    # (decided 2026-10-08). An earlier crisis no longer blocks offers (Smriti, 2026-10-12).
     if any(r.status == "declined" and now - _when(r) < cfg.decline_cooldown for r in records):
         return None
 
