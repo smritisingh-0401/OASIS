@@ -17,6 +17,7 @@ replies:
   - {reply: "That sounds like a tough week, and I'm so proud of you. How are you feeling now?", fails: [no_praise]}
   - {reply: "That sounds painful. You're amazing for handling it so well. What helped?", fails: [no_praise]}
   - {reply: "That sounds hard. Well done for getting through it. What's next for you?", fails: [no_praise]}
+  - {reply: "I hear you. It takes courage to share that. How are you feeling right now?", fails: [no_praise]}
   # --- unprompted advice ----------------------------------------------------------------
   - {reply: "That sounds stressful. You should try going for a walk. Would that help?", fails: [no_advice]}
   - {reply: "I'm sorry it's been so hard. Have you tried talking to your manager?", fails: [no_advice]}

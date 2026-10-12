@@ -679,7 +679,7 @@ History is passed as alternating chat messages (last `H` turns), followed by the
 ### 13.2 Plan → prompt mapping
 | Mode | Goal text (example) | Constraints | Snippet |
 |---|---|---|---|
-| companion | "Reflect the feeling you notice, then ask one gentle open question." | one_question, no_advice, no_praise | none |
+| companion | "Respond to what they said, then ask one gentle open question." | one_question, no_advice, no_praise | none |
 | cbt | "Acknowledge the feeling. Invite them to examine the thought with one Socratic question." | validate_first, one_question, socratic | one CBT technique snippet |
 | dbt | "Acknowledge the intensity. Offer the named skill briefly and ask if they'd like to try it." | validate_first, offer_not_instruct | one DBT skill snippet |
 | mindfulness / grounding | "Guide one short, low-risk grounding step from the script." | follow_script, one_step | one script step |

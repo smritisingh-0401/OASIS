@@ -36,6 +36,7 @@ patterns:
     - '\b(?:great|good|amazing) (?:job|work)\b'
     - '\bwell done\b'
     - '\bgood for you\b'
+    - '\btakes (?:real |a lot of |so much )?courage\b'
     - '\bwhat an? (?:strong|brave|amazing|incredible|wonderful)\b'
     - '\b(?:thats|that is) (?:so )?(?:amazing|wonderful|fantastic|incredible|awesome|brilliant)\b'
   no_advice:

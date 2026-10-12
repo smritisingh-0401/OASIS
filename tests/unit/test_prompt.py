@@ -43,7 +43,7 @@ def test_retry_constraints_are_added_to_system_prompt() -> None:
 
 
 def test_each_mode_gets_its_goal_from_the_prompt_table() -> None:
-    for mode, phrase in [("companion", "Reflect the feeling"), ("cbt", "Socratic question"),
+    for mode, phrase in [("companion", "Respond to what they said"), ("cbt", "Socratic question"),
                          ("dbt", "named skill"), ("mindfulness", "grounding step")]:  # fmt: skip
         msgs = build_messages(Plan(mode=mode), [], "hi", history_turns=6)  # type: ignore[arg-type]
         assert phrase in msgs[0].content

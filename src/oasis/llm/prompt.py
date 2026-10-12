@@ -11,6 +11,8 @@ SYSTEM_TEMPLATE = (
     "Never diagnose. Never give medication advice. Never claim to be human.\n"
     "Never encourage them to rely on you instead of the people in their life.\n"
     "Write three sentences or fewer, in plain words, with no lists and no emojis.\n"
+    "Match their tone: keep small talk light, and never make a feeling sound bigger or "
+    "darker than they said it.\n"
     "Follow the PLAN exactly. Do not change its approach.\n"
     "PLAN:\n"
     "- mode: {mode}\n"
@@ -21,7 +23,7 @@ SYSTEM_TEMPLATE = (
 # Goal text per mode (design §13.2). The decision plane picks the mode; this only says how
 # that mode should sound.
 GOALS = {
-    "companion": "Reflect the feeling you notice, then ask one gentle open question.",
+    "companion": "Respond to what they said, then ask one gentle open question.",
     "cbt": "Acknowledge the feeling. Invite them to examine the thought with one Socratic "
     "question.",
     "dbt": "Acknowledge the intensity. Offer the named skill briefly and ask if they'd like "
@@ -34,7 +36,7 @@ GOALS = {
 # Plan rules in plain words, for the "must" line and for naming a broken rule on a retry.
 # A reason code without an entry (a future guard check) is passed through as it is.
 RULES = {
-    "validate_first": "Start by reflecting their feeling back in your own words.",
+    "validate_first": "Start by acknowledging what they said, in your own words.",
     "one_question": "Ask exactly one gentle, open question, at the end.",
     "no_advice": "Do not give advice or tell them what to do.",
     "offer_ideas": "They asked for ideas: offer one or two gentle, practical suggestions.",

@@ -51,6 +51,11 @@ Smriti chose companion-only scope: CBT and DBT replies carry similar rules in th
    - Phrases added: "it seems like", "can feel", "I hear you", "completely normal to feel", "that must have".
    - Two advice phrases corrected: "do you feel like you need to..." is not advice; "have you **ever** tried..." is.
 
+**Tuned on manual testing** (2026-10-12):
+- **Small talk got a worried tone.** "hi, how are you?" got "It takes courage to share that...", and "This traffic is killing me." got "...extremely frustrated and overwhelmed. Do you feel like you have nowhere else to go?". The signals were clean; the prompt told the model to reflect a feeling every turn, so it invented and inflated one.
+- **The fix:** the goal now reads "Respond to what they said...", `validate_first` reads "acknowledging what they said", and the system text says to keep small talk light and never make a feeling bigger or darker than they said it. "takes courage" is now praise. Gating on the signals was rejected: "my boss yelled at me" scores the same as "hi".
+- **After:** "I'm doing well, thanks for asking. How is your day going so far?" and "That sounds really frustrating when you're stuck in traffic...". Harder messages still get support.
+
 **Departures from the phase plan's file list.**
 - No `companion/plan.py`: the companion plan is one dictionary entry in the planner.
 - The checks live in `guard/checks.py`, because design §8.2 lists the C-* checks as guard checks and the engine's guard hook is where every draft passes.
@@ -61,7 +66,7 @@ Smriti chose companion-only scope: CBT and DBT replies carry similar rules in th
 
 - **Curated replies** (`tests/data/companion/`, written before the phrase lists):
   - 12 good companion replies must pass.
-  - 21 bad replies must fail with exactly the labelled rules: 4 validation, 3 question-count, 4 praise, 6 advice, 4 dependency. Some bad replies break two rules.
+  - 23 bad replies must fail with exactly the labelled rules: 4 validation, 3 question-count, 5 praise, 6 advice, 5 dependency. Some bad replies break two rules.
 - **Scope:** a reply that breaks every companion rule must pass in CBT, DBT, mindfulness, grounding and psychoeducation modes. Dependency language must fail in all six modes.
 - **Self-consistency:** both fallback templates and every canned fake-model reply must pass, so the fake-model demo never falls back.
 - **Soft and hard rules:**

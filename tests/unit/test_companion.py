@@ -183,6 +183,9 @@ def test_rules_reach_the_prompt_as_plain_sentences() -> None:
     assert "makes sense" not in system  # no stock phrase for the model to copy
     assert "Do not give advice" in system
     assert "rely on you" in system  # the system text guards against dependency in every mode
+    # "This traffic is killing me" is a gripe, not a crisis: no inflating or darkening it.
+    assert "never make a feeling sound bigger or darker" in system
+    assert "reflecting their feeling" not in system  # it made small talk sound like worry
 
 
 def test_a_retry_names_the_broken_rules_in_plain_words() -> None:
