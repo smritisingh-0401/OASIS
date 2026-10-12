@@ -15,6 +15,8 @@ scorers:
       '\bif im not perfect\b': 1.0
       '\b(?:all|perfect) or nothing\b': 1.0
       '\balways (?:mess|screw|ruin|fail|get it wrong)\b': 1.0
+      '\balways do (?:something|everything|things|it) wrong\b': 1.5
+      '\b(?:never|cant|cannot) do anything right\b': 1.0
   overgeneralisation:
     bias: 0.0
     scale: 3.0
@@ -25,6 +27,7 @@ scorers:
       '\b(?:no ?one|nobody)\b': 0.5
       '\bevery (?:single )?time\b': 0.8
       '\bnothing ever\b': 1.0
+      '\b(?:no ?one|nobody) (?:likes|loves|cares about|wants) me\b': 1.2
       '\beverything goes wrong\b': 1.0
   mental_filter:
     bias: 0.0
@@ -86,6 +89,9 @@ scorers:
       '\bim (?:such )?(?:a|an) (?:complete |total |absolute )?(?:failure|loser|idiot|mess|disappointment|fraud|burden|joke)\b': 1.5
       '\bim (?:so )?(?:stupid|worthless|useless|pathetic|hopeless|unlovable|broken)\b': 1.5
       '\bi am (?:a )?(?:failure|loser|stupid|worthless|useless)\b': 1.5
+      '\bmy failures?\b': 1.2
+      '\b(?:burden|weight) of (?:my )?failures?\b': 1.5
+      '\b(?:im|i am) not good enough\b': 1.5
   personalisation:
     bias: 0.0
     scale: 3.0

@@ -16,6 +16,7 @@ from oasis.api.app import create_app
 from oasis.llm.fake import FakeLLM
 from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.router.exercise import technique_for
+from oasis.router.weights import config as router_config
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
@@ -402,7 +403,7 @@ DISTORTED = "I'm such a failure, I always mess everything up"
 def test_structured_mode_offer_consent_steps_and_stop_over_http(settings: Settings) -> None:
     with TestClient(create_app(settings, repo=MemoryRepository())) as c:
         token = _session(c)
-        for _ in range(2):
+        for _ in range(router_config().hysteresis_turns - 1):
             assert _chat(c, token, DISTORTED).json()["exercise"] is None
         offer = _chat(c, token, DISTORTED).json()
         assert offer["exercise"]["step"] == "offer"

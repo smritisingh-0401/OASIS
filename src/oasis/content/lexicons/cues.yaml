@@ -16,8 +16,13 @@ scorers:
       '\b(?:losing|lose|lost) control\b': 1.0
       '\bout of control\b': 1.0
       '\burges?\b': 0.8
-      '\bwant to (?:scream|smash|break|hit|punch|throw)\b': 1.0
-      '\b(?:explode|exploding|snap|snapping)\b': 0.7
+      '\bwant to (?:scream|smash|break|hit|punch|throw)\b': 1.2
+      '\b(?:explode|exploding|snap|snapping)\b': 1.0
+      '\bcould (?:scream|smash|break|hit|punch|throw)\b': 1.2
+      '\blost my temper\b': 1.2
+      '\byell(?:ed|ing)? at\b': 0.8
+      '\b(?:cant|cannot) calm down\b': 1.0
+      '\bgoing to (?:explode|snap|lose it)\b': 1.0
       '\bimpulsive(?:ly)?\b': 0.8
       '\bcant stop (?:myself|shaking|crying)\b': 0.8
   overwhelm:

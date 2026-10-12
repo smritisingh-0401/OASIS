@@ -15,6 +15,7 @@ from oasis.llm.fake import FakeLLM
 from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.router.exercise import technique_for
 from oasis.router.router import load_state
+from oasis.router.weights import config as router_config
 from oasis.safety.gate import RuleBasedSafetyGate
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.safety.rules import load_ruleset
@@ -439,6 +440,7 @@ async def test_record_crisis_ignores_unknown_sessions(settings: Settings) -> Non
 # --- router (Phase 4) ----------------------------------------------------------------
 
 DISTORTED = "I'm such a failure, I always mess everything up"
+N = router_config().hysteresis_turns  # turns a mode must lead before its offer
 ACUTE = "I can't breathe, everything is too much, I'm falling apart"
 
 
@@ -451,11 +453,11 @@ class RouterSaveFails(MemoryRepository):
 async def test_router_memory_carries_across_turns(settings: Settings) -> None:
     engine = _engine(settings)
     await _session(engine)
-    for _ in range(2):
+    for _ in range(N - 1):
         assert (await engine.handle_turn("h", DISTORTED)).exercise_card is None
-    third = await engine.handle_turn("h", DISTORTED)
-    assert third.exercise_card is not None
-    assert (third.exercise_card.step, third.exercise_card.mode) == ("offer", "cbt")
+    last = await engine.handle_turn("h", DISTORTED)
+    assert last.exercise_card is not None
+    assert (last.exercise_card.step, last.exercise_card.mode) == ("offer", "cbt")
     info = await engine.repo.get_session("h")
     assert info is not None
     assert load_state(info.router_state).offered == "cbt"
@@ -496,10 +498,10 @@ async def test_routing_needs_no_llm(settings: Settings) -> None:
     llm = FakeLLM(fail="down")
     engine = _engine(settings, llm=llm)
     await _session(engine)
-    for _ in range(3):
+    for _ in range(N):
         result = await engine.handle_turn("h", DISTORTED)
     assert result.exercise_card is not None  # the offer is templated: no LLM needed
-    assert llm.calls == 2
+    assert llm.calls == N - 1
 
 
 @pytest.mark.anyio
@@ -538,7 +540,7 @@ async def test_trace_holds_the_decision_but_no_text(
 async def test_exercise_buttons_reach_the_planner(settings: Settings) -> None:
     engine = _engine(settings)
     await _session(engine)
-    for _ in range(3):
+    for _ in range(N):
         await engine.handle_turn("h", DISTORTED)
     started = await engine.handle_turn("h", "Yes, let's try", ExerciseAction("accept"))
     assert started.mode == "cbt"
@@ -612,8 +614,8 @@ async def test_a_reply_failing_only_form_rules_is_kept_after_its_retry(settings:
 async def test_other_modes_keep_the_socratic_fallback(settings: Settings) -> None:
     engine = _engine(settings, guard=_guard_rejecting(99))
     await _session(engine)
-    for _ in range(3):
-        result = await engine.handle_turn("h", "I'm such a failure, I always mess everything up")
+    for _ in range(N):
+        result = await engine.handle_turn("h", DISTORTED)
     await engine.handle_turn("h", "Yes, let's try", ExerciseAction("accept"))
     result = await engine.handle_turn("h", "It's the thought that I always fail")
     assert result.mode == "cbt"
