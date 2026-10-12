@@ -147,6 +147,17 @@ def test_chat_page_has_help_card_and_disclaimer(client: TestClient) -> None:
     html = client.get("/").text
     assert "Need help now?" in html
     assert "not a diagnosis" in html
+    # Owner's wording (2026-10-12, CR-03): an invitation to talk in person, not an
+    # emergency instruction, at the top of the card.
+    assert "<h2>Talk to someone now</h2>" in html
+    assert "If you feel like talking to someone in person" in html
+    assert "If you are in danger right now" not in html
+
+
+def test_crisis_reply_invites_talking_in_person_and_points_to_the_card() -> None:
+    assert "If you feel like talking to someone in person" in HANDOFF_REPLY
+    assert '"Need help now?"' in HANDOFF_REPLY
+    assert "emergency" not in HANDOFF_REPLY
 
 
 def test_help_card_lists_crisis_lines_without_external_loads(client: TestClient) -> None:
