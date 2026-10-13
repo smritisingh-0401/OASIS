@@ -15,8 +15,13 @@
 #                 vetted script gives steps (no_exercise_step); every generated reply
 #   step_text     an instruction the model wrote itself; an exercise-step reply is one
 #                 acknowledging sentence, and the real step follows it (ack_only)
-#   refusals      the reply declining to diagnose or advise; a diagnosis or medication phrase
-#                 in the same clause is allowed ("I can't tell you if you have depression")
+#   refusals      the reply declining to diagnose or advise, as "can't tell / say / know if or
+#                 whether": a diagnosis or medication phrase in the same clause is allowed ("I
+#                 can't tell you if you have depression"); "I can't say for sure you have
+#                 depression" is not a refusal
+#   label_nouns   words for a person; after an adjective VADER scores <= -0.3 ("a horrible
+#                 person", "a terrible mother") they make a harsh global label (G-LABEL)
+#   harsh_words   label words that are harsh on their own ("a failure", "a monster")
 # Engineering start values (CR-16).
 schema: oasis.content/v1
 kind: guard_checks
@@ -49,12 +54,16 @@ patterns:
   medication:
     - '\b(?:sertraline|fluoxetine|prozac|zoloft|citalopram|escitalopram|lexapro|paroxetine|venlafaxine|duloxetine|mirtazapine|bupropion|wellbutrin|amitriptyline|lithium|lamotrigine|quetiapine|seroquel|olanzapine|aripiprazole|risperidone|diazepam|valium|lorazepam|ativan|alprazolam|xanax|clonazepam|propranolol|zopiclone|zolpidem|ambien|melatonin|methylphenidate|ritalin|adderall|pregabalin|gabapentin|hydroxyzine|buspirone)\b'
     - '\b\d+ ?(?:mg|milligrams?|mcg|micrograms?)\b'
-    - '\b(?:stop|start|quit|skip|come off|increase|reduce|double|halve)(?:ping|ting|ing|s)? (?:taking (?:them|it)|a dose|(?:taking )?your (?:meds|medication|medicine|pills|tablets|dose|antidepressants?))\b'
+    - '\b(?:stop(?:s|ped|ping)?|start(?:s|ed|ing)?|quit(?:s|ting)?|skip(?:s|ped|ping)?|(?:come|comes|coming|came|get|gets|getting|got|go|going) off|wean(?:s|ed|ing)? (?:yourself )?off|taper(?:s|ed|ing)?(?: off)?|cut(?:s|ting)? (?:down|back) on|increas(?:e|es|ed|ing)|reduc(?:e|es|ed|ing)|doubl(?:e|es|ed|ing)|halv(?:e|es|ed|ing)) (?:taking (?:them|it)|a dose|(?:taking )?your (?:meds|medication|medications|medicine|pills|tablets|dose|antidepressants?))\b'
     - '\b(?:take|taking|try|trying|start|starting|ask for|get) (?:taking )?(?:an? |some )?(?:antidepressants?|ssris?|snris?|sleeping (?:pills?|tablets?)|benzos?|benzodiazepines?|sedatives?|tranquill?i[sz]ers?|beta.blockers?|antipsychotics?)\b'
   refusals:
-    - '\bi (?:cannot|cant|can not|am not able to|im not able to|am unable to|im unable to|wont|will not|am not going to|im not going to) (?:\w+ )?(?:tell|say|diagnose|advise|give|decide|recommend)\b'
+    - '\b(?:cannot|cant|can not|unable to|not able to|wont|will not|not going to)\b[^.!?,;:]*?\b(?:tell|say|know|decide)(?: you)?(?: for (?:sure|certain))? (?:if|whether)\b'
     - '\bnot (?:something|for me|my place) (?:i can |to )(?:say|tell|decide|diagnose|judge)\b'
   made_up_step:
     - '\b[a-z] is for\b'
   step_text:
     - '^(?:(?:okay|ok|alright|now|so|just|lets|let us|gently|slowly),? )*(?:take|breathe|notice|try|close|focus|feel|imagine|pause|stop|sit|put|place|look|name|keep|count|relax|let|hold|rest|step)\b'
+  label_nouns:
+    - '^(?:person|human|friend|partner|parent|mother|mom|mum|father|dad|son|daughter|sister|brother|sibling|student|employee|worker|wife|husband|girlfriend|boyfriend|colleague|boss|kid|child|man|woman|guy|girl)$'
+  harsh_words:
+    - '\b(?:failure|loser|monster|burden|disappointment|idiot|fraud|joke|waste|nobody|mess|worst|toxic|pathetic|worthless|useless|hopeless|unlovable|disgrace)\b'

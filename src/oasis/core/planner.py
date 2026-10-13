@@ -55,6 +55,7 @@ STEP_CONSTRAINTS = ("ack_only",)
 # Added to any generated reply to a thinking-trap message, in every mode (design §8.2).
 DISTORTION_RULES = ("validate_first", "one_question", "socratic", "no_agreeing")
 RECENT_OPENERS = 3  # companion replies whose openers the next one must not reuse
+SHORT_REPLY_WORDS = 2  # "okay", "yes sure": nothing to respond to before an exercise step
 MODERATE_PLUS = frozenset({"moderate", "moderately severe", "severe"})
 
 Action = AssessmentAction | ExerciseAction
@@ -66,6 +67,10 @@ def wants_to_continue(message: str) -> bool:
 
 def plan_turn(message: str, state: ConversationState, action: Action | None = None) -> Plan:
     plan = _plan(message, state, action)
+    if plan.is_step and not plan.templated and len(message.split()) <= SHORT_REPLY_WORDS:
+        # The model only had "Okay." or "That is a good start." to add (tone check, 2026-10-13).
+        return replace(plan, templated=True, text=plan.snippet,
+                       reason_codes=(*plan.reason_codes, "exercise.short_reply"))  # fmt: skip
     if plan.templated or plan.snippet is not None:
         return plan
     plan = with_thinking_trap(plan, message)

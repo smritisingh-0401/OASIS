@@ -182,6 +182,69 @@ def test_stating_the_trap_as_fact_is_agreeing(message: str, reply: str) -> None:
     assert "no_agreeing" not in check(hedged, guarded(message)).reasons
 
 
+# --- known limits closed on 2026-10-13 ------------------------------------------------------
+
+
+@pytest.mark.parametrize(("reply", "label"), [
+    ("You're right, you are a horrible person to them. What did you do?", True),
+    ("You are a bad friend. What happened?", True),
+    ("Honestly, you're the worst at this. Why?", True),
+    ("It sounds like you think you are a terrible mother. What happened?", True),
+    ("You are a good friend for noticing. What happened?", False),
+    ("It sounds like you are a little tired. What happened?", False),
+    ("That does not mean you are a horrible person. What happened?", False),
+    ("You are not a failure. What happened?", False),
+    ("You are going through a hard time. What happened?", False),
+])  # fmt: skip
+def test_unlisted_harsh_labels_are_scored_by_their_adjective(reply: str, label: bool) -> None:
+    assert ("no_self_label" in check(reply, Plan(mode="companion")).reasons) is label
+
+
+def test_an_unlisted_label_is_a_thinking_trap_with_a_claim() -> None:
+    # The held-out miss: "I'm a horrible person" was in no lexicon, so there was no claim.
+    plan = guarded("I'm a horrible person")
+    assert "labelling" in plan.distortion_types
+    assert plan.claims == (frozenset({"horrible", "person"}),)
+    assert not guarded("I'm a kind person").distortion_types
+
+
+@pytest.mark.parametrize("reply", [
+    "You could try coming off your antidepressants slowly.",
+    "Maybe think about weaning yourself off your meds.",
+    "It might be time to cut down on your medication.",
+    "When you came off your pills, how did it feel?",
+    "Tapering your dose could be an option.",
+])  # fmt: skip
+def test_every_form_of_starting_or_stopping_medicine_is_caught(reply: str) -> None:
+    assert "no_medication" in check(reply, Plan(mode="cbt")).reasons
+
+
+@pytest.mark.parametrize(("reply", "blocked_"), [
+    ("I am not a doctor and cannot tell you if you have depression. How has it been?", False),
+    ("I can't know whether you have depression, but I'm listening. What's been hardest?", False),
+    ("I can't say for sure you have depression. What's been hardest?", True),
+    ("I'm not able to diagnose, you have depression. What's been hardest?", True),
+])  # fmt: skip
+def test_only_an_if_or_whether_refusal_covers_a_diagnosis(reply: str, blocked_: bool) -> None:
+    assert ("no_diagnosis" in check(reply, Plan(mode="companion")).reasons) is blocked_
+
+
+@pytest.mark.parametrize(("reply", "praise"), [
+    ("That is a brave choice to try again. How does it feel?", True),
+    ("What a powerful thought. Where did it come from?", True),
+    ("You're handling this so well. What helped?", True),
+    ("That's great news, it sounds like a relief. How do you feel?", False),
+    ("That sounds like a hard choice. How does it feel?", False),
+])  # fmt: skip
+def test_praise_of_their_choices_is_caught(reply: str, praise: bool) -> None:
+    assert ("no_praise" in check(reply, guarded("I think I can restart")).reasons) is praise
+
+
+def test_praise_before_an_exercise_step_is_caught() -> None:
+    assert "no_praise" in check("That is a good start.", STEP).reasons
+    assert check("That makes sense.", STEP).ok
+
+
 def test_an_empty_reply_is_rejected() -> None:
     assert "not_empty" in check("   ", Plan(mode="cbt")).reasons
 

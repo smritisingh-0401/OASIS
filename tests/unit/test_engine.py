@@ -80,6 +80,22 @@ class UntouchableLLM(FakeLLM):
         raise AssertionError("LLM called")
 
 
+class SoftThenFails(FakeLLM):
+    """A first draft breaking only a style rule, then a retry that times out or fails."""
+
+    def __init__(self, error: Exception) -> None:
+        super().__init__()
+        self.error = error
+
+    async def generate(
+        self, messages: Sequence[ChatMessage], *, max_tokens: int, timeout_s: float
+    ) -> str:
+        self.calls += 1
+        if self.calls == 1:
+            return "Moving adds a layer of uncertainty. What do you hope for? And fear?"
+        raise self.error
+
+
 class BrokenRepo(MemoryRepository):
     def __init__(self, fail_on: str, exc: type[Exception] = StorageUnavailable) -> None:
         super().__init__()
@@ -632,6 +648,18 @@ async def test_a_reply_failing_only_form_rules_is_kept_after_its_retry(settings:
     await _session(engine)
     result = await engine.handle_turn("h", "I'm moving to a new city")
     assert llm.calls == 2  # retried, naming the rules
+    assert result.reply == "Moving adds a layer of uncertainty. What do you hope for? And fear?"
+    assert result.fallback_reason is None
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("error", [TimeoutError(), LLMFailure("down")])
+async def test_a_kept_draft_survives_a_failed_retry(settings: Settings, error: Exception) -> None:
+    # Tone check, 2026-10-13: a draft breaking only a style rule was replaced by the
+    # "trouble finding the right words" reply because its retry timed out.
+    engine = _engine(settings, llm=SoftThenFails(error))
+    await _session(engine)
+    result = await engine.handle_turn("h", "I'm moving to a new city")
     assert result.reply == "Moving adds a layer of uncertainty. What do you hope for? And fear?"
     assert result.fallback_reason is None
 

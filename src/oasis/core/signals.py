@@ -2,29 +2,22 @@
 
 from __future__ import annotations
 
-import functools
 import re
 
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-
 from oasis.core.detectors.lexicon import load
-from oasis.guard.checks import content_words
+from oasis.guard.checks import FIRST_PERSON, content_words, harsh_label, vader
 from oasis.safety.normalize import base_form
 from oasis.types import Signals
 
 EMOTIONS = ("sadness", "anxiety", "anger", "shame", "loneliness")
+LABEL_TERM = 3.0 * 1.5  # labelling scorer scale x a labelling term's weight (distortions.yaml)
 
 _CLAUSE = re.compile(r"[,.;:!?]+|\b(?:and|but)\b")
 
 
-@functools.cache
-def _vader() -> SentimentIntensityAnalyzer:
-    return SentimentIntensityAnalyzer()  # loads the bundled lexicon once
-
-
 def valence(text: str) -> float:
     """VADER compound score in [-1, 1]: the valence baseline (design §5)."""
-    return float(_vader().polarity_scores(text)["compound"])
+    return float(vader().polarity_scores(text)["compound"])
 
 
 def load_all() -> None:
@@ -40,7 +33,8 @@ def claims(message: str) -> tuple[frozenset[str], ...]:
     found: list[frozenset[str]] = []
     for clause in _CLAUSE.split(base_form(message)):
         words = content_words(clause)
-        if words and words not in found and any(p.search(clause) for p in patterns):
+        trap = any(p.search(clause) for p in patterns) or harsh_label(clause, FIRST_PERSON)
+        if words and words not in found and trap:
             found.append(words)
     return tuple(found)
 
@@ -50,6 +44,9 @@ def extract(message: str) -> Signals:
     n = len(norm.split())
     emotions, cues, distortions = load("emotions"), load("cues"), load("distortions")
     by_type = {name: lex.score(norm, n) for name, lex in distortions.items()}
+    if harsh_label(norm, FIRST_PERSON):
+        # An unlisted harsh label ("I'm a horrible person") scores like one labelling term.
+        by_type["labelling"] = max(by_type["labelling"], min(1.0, LABEL_TERM / max(n, 1)))
     return Signals(
         valence=valence(message),
         emotions={e: emotions[e].score(norm, n) for e in EMOTIONS},

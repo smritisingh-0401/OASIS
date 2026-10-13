@@ -123,6 +123,16 @@ def test_each_message_moves_the_exercise_one_step_until_it_ends() -> None:
     assert after.mode == "companion"
 
 
+def test_a_short_reply_mid_exercise_gets_the_step_as_written() -> None:
+    # Tone check, 2026-10-13: after "okay" the model could only add "That is a good start."
+    rs = RouterState(current="dbt", exercise="stop_skill", step=1, consented=frozenset({"dbt"}))
+    plan = plan_turn("okay", state(rs))
+    assert plan.templated
+    assert plan.text == technique_for("dbt").steps[1]
+    assert "exercise.short_reply" in plan.reason_codes
+    assert not plan_turn("my chest is tight", state(rs)).templated
+
+
 def test_a_strong_other_cue_does_not_interrupt_the_exercise() -> None:
     rs = RouterState(current="cbt", exercise="thought_check", step=1, consented=frozenset({"cbt"}))
     plan = plan_turn("I'm so angry I want to smash something, I can't control it", state(rs))

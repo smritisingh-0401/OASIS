@@ -374,9 +374,9 @@ class ChatEngine:
                     # after a good first sentence: keep only that sentence.
                     text = _FIRST_SENTENCE.match(text).group(0).strip()  # type: ignore[union-attr]
             except TimeoutError:
-                return _fallback(plan, "llm.timeout", attempt, outcomes, seed)
+                return soft or _fallback(plan, "llm.timeout", attempt, outcomes, seed)
             except LLMFailure as failure:
-                return _fallback(plan, f"llm.{failure.reason}", attempt, outcomes, seed)
+                return soft or _fallback(plan, f"llm.{failure.reason}", attempt, outcomes, seed)
 
             verdict = self.guard(text, plan)
             outcomes.append("pass" if verdict.ok else "reject")

@@ -7,7 +7,7 @@ name, so a retry can name it back in plain words.
 - Replies to a thinking-trap message, in every mode: validate_first and one_question, plus
   no_agreeing and no_presupposing against the user's distorted claim (G-AGREE, G-PRESUP).
 - Exercise steps: ack_only (no question, no step or instruction of its own; the engine
-  keeps one sentence).
+  keeps one sentence) and no_praise.
 - Every generated reply: no_self_label, no_diagnosis, no_medication, no_dependency,
   no_exercise_step (after an exercise the model copies its "X is for" steps), not_empty.
   A clause that declines ("I can't tell you if you have depression") does not fail
@@ -22,13 +22,16 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
 from oasis.content import load_yaml, require_review
 from oasis.safety.normalize import base_form
 from oasis.types import GuardVerdict, Plan
 
 COMPANION_LISTED = ("validate_first", "no_praise", "no_advice", "no_dependency")
 GUARD_LISTED = ("agreement", "hedges", "presupposing", "advice_words", "self_label",
-                "diagnosis", "medication", "refusals", "step_text", "made_up_step")  # fmt: skip
+                "diagnosis", "medication", "refusals", "step_text", "made_up_step", "label_nouns",
+                "harsh_words")  # fmt: skip
 COMPANION_RULES = ("validate_first", "one_question", "no_praise", "no_advice")
 # Form, not content: a draft failing only these is retried, but kept rather than replaced
 # by the fixed fallback (the validating-phrase list cannot know every way to validate).
@@ -58,6 +61,16 @@ _SENTENCE = re.compile(r"[^.!?]+[.!?]*")
 _CLAUSE = re.compile(r"[,;:]+|\b(?:and|but)\b")
 
 Rules = Mapping[str, tuple[re.Pattern[str], ...]]
+
+# Global labels (G-LABEL), beyond the listed phrasings: "<subject> (such) a/an/the" and up to
+# three words, harsh when they hold a harsh word or a person word after a negative adjective.
+FIRST_PERSON = r"im|i am|i feel like(?: im| i am)?"
+SECOND_PERSON = r"youre|you are"
+HARSH = -0.3  # VADER score at or below which an adjective before a person word is harsh
+_INTENSIFIERS = r"(?: (?:such|so|really|just|truly|basically|literally|kind of|sort of))*"
+_LABEL = (
+    r"(?<!mean )(?<!make )\b(?:{subject})" + _INTENSIFIERS + r" (?:a|an|the)((?: [a-z]+){{1,3}})"
+)
 
 
 def content_words(text: str) -> frozenset[str]:
@@ -89,6 +102,32 @@ def parse_guard(raw: Mapping[str, Any]) -> dict[str, tuple[re.Pattern[str], ...]
 
 
 @functools.cache
+def vader() -> SentimentIntensityAnalyzer:
+    return SentimentIntensityAnalyzer()  # loads the bundled lexicon once
+
+
+@functools.cache
+def _label_pattern(subject: str) -> re.Pattern[str]:
+    return re.compile(_LABEL.format(subject=subject))
+
+
+def harsh_label(norm: str, subject: str = SECOND_PERSON) -> bool:
+    """A harsh global label on the subject in base-form text: "you are a failure", "I'm a
+    horrible person". Adjectives are scored with VADER, so unlisted ones count too."""
+    rules = load_rules()
+    for match in _label_pattern(subject).finditer(norm):
+        words = match.group(1).split()
+        if _any(rules["harsh_words"], " ".join(words)):
+            return True
+        noun = next((i for i, w in enumerate(words) if _any(rules["label_nouns"], w)), None)
+        if noun is not None and any(
+            vader().polarity_scores(w)["compound"] <= HARSH for w in words[:noun]
+        ):
+            return True
+    return False
+
+
+@functools.cache
 def load_rules() -> Rules:
     return {**parse(load_yaml("companion", "checks.yaml")),
             **parse_guard(load_yaml("guard", "checks.yaml"))}  # fmt: skip
@@ -108,6 +147,8 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
             failed.append("validate_first")
         if "one_question" in active and (norm.count("?") != 1 or not norm.rstrip().endswith("?")):
             failed.append("one_question")
+    if plan.is_step and _any(rules["no_praise"], norm):
+        failed.append("no_praise")  # "That is a good start." before a step (tone check)
     if plan.mode == "companion":
         active = [r for r in COMPANION_RULES if r in plan.constraints]
         failed += [r for r in ("no_praise", "no_advice") if r in active and _any(rules[r], norm)]
@@ -118,6 +159,8 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
     if plan.claims:
         failed += _claim_rules(norm, plan.claims, rules)
     failed += [rule for rule, listed in EVERY_REPLY if _uses(rules, listed, norm)]
+    if "no_self_label" not in failed and harsh_label(norm):
+        failed.append("no_self_label")
     return GuardVerdict(ok=not failed, reasons=tuple(failed))
 
 
