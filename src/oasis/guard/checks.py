@@ -7,6 +7,8 @@ name, so a retry can name it back in plain words.
 - Replies to a thinking-trap message, in every mode: validate_first and one_question, plus
   no_agreeing and no_presupposing against the user's distorted claim (G-AGREE, G-PRESUP).
 - Every generated reply: no_self_label, no_diagnosis, no_medication, no_dependency, not_empty.
+  A clause that declines ("I can't tell you if you have depression") does not fail
+  no_diagnosis or no_medication.
 The engine owns the retry and the fallback.
 """
 
@@ -23,7 +25,7 @@ from oasis.types import GuardVerdict, Plan
 
 COMPANION_LISTED = ("validate_first", "no_praise", "no_advice", "no_dependency")
 GUARD_LISTED = ("agreement", "hedges", "presupposing", "advice_words", "self_label",
-                "diagnosis", "medication")  # fmt: skip
+                "diagnosis", "medication", "refusals")  # fmt: skip
 COMPANION_RULES = ("validate_first", "one_question", "no_praise", "no_advice")
 # Form, not content: a draft failing only these is retried, but kept rather than replaced
 # by the fixed fallback (the validating-phrase list cannot know every way to validate).
@@ -35,6 +37,7 @@ HARD_RULES = frozenset({"no_praise", "no_advice", "no_dependency", "no_agreeing"
 # Checked on every generated reply: (rule, phrase list).
 EVERY_REPLY = (("no_self_label", "self_label"), ("no_diagnosis", "diagnosis"),
                ("no_medication", "medication"), ("no_dependency", "no_dependency"))  # fmt: skip
+REFUSABLE = frozenset({"diagnosis", "medication"})  # a refusal clause may name these
 ECHO = 0.6  # share of a claim's content words a sentence must repeat to echo it (design §8.2)
 
 # Function words dropped before comparing a reply with a claim, so "I'm such a failure" and
@@ -108,7 +111,7 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
             failed.append("fresh_opener")
     if plan.claims:
         failed += _claim_rules(norm, plan.claims, rules)
-    failed += [rule for rule, listed in EVERY_REPLY if _any(rules[listed], norm)]
+    failed += [rule for rule, listed in EVERY_REPLY if _uses(rules, listed, norm)]
     return GuardVerdict(ok=not failed, reasons=tuple(failed))
 
 
@@ -141,6 +144,17 @@ def _states_as_fact(sentence: str, claims: tuple[frozenset[str], ...], rules: Ru
         if not _any(rules["hedges"], stripped):
             return True
     return False
+
+
+def _uses(rules: Rules, listed: str, norm: str) -> bool:
+    """`norm` matches phrase list `listed`; for diagnosis and medication, only outside a clause
+    that declines to answer, so the model saying it cannot diagnose is not blocked."""
+    if listed not in REFUSABLE:
+        return _any(rules[listed], norm)
+    # ponytail: a refusal and a diagnosis in one clause ("I can't tell for sure if you have
+    # depression, it sounds like it") passes; split on more joiners if real drafts do this.
+    clauses = (c for s in _SENTENCE.findall(norm) for c in _CLAUSE.split(s))
+    return any(_any(rules[listed], c) and not _any(rules["refusals"], c) for c in clauses)
 
 
 def _echoes(words: frozenset[str], claims: tuple[frozenset[str], ...]) -> bool:

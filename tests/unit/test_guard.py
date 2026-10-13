@@ -110,6 +110,33 @@ def test_diagnosis_and_medication_are_rejected_in_every_mode(mode: str) -> None:
     assert check("That sounds hard. What happened?", plan).ok
 
 
+# Real-model drafts from the Phase 7 tone check (2026-10-13): the model declining was blocked.
+REFUSALS = [
+    "Since I am not a doctor, I cannot tell you if you have depression, but I would like to "
+    "know more about your day if you feel like sharing.",
+    "Since I am not a doctor or a therapist, I cannot say whether you have depression or any "
+    "other condition. Have you talked to someone you trust about how you've been feeling lately?",
+    "I cannot give medical advice or tell you whether to stop your medication. It is important "
+    "to discuss this decision with your doctor who knows your health history.",
+]
+
+
+@pytest.mark.parametrize("reply", REFUSALS)
+def test_declining_to_diagnose_or_advise_on_medicine_is_not_blocked(reply: str) -> None:
+    reasons = check(reply, Plan(mode="companion")).reasons
+    assert not {"no_diagnosis", "no_medication"} & set(reasons)
+
+
+@pytest.mark.parametrize(("reply", "rule"), [
+    ("I can't diagnose you, but you probably have depression.", "no_diagnosis"),
+    ("I'm not a doctor. It sounds like you have depression.", "no_diagnosis"),
+    ("I can't tell you what to do, but you should stop taking your medication.", "no_medication"),
+    ("I won't say much, you could try 20mg of sertraline.", "no_medication"),
+])  # fmt: skip
+def test_a_refusal_does_not_cover_a_diagnosis_in_another_clause(reply: str, rule: str) -> None:
+    assert rule in check(reply, Plan(mode="companion")).reasons
+
+
 def test_agreement_needs_a_distorted_claim_to_echo() -> None:
     plain = guarded("This week has been really hard")
     assert check("I agree, it sounds like a really hard week. What was hardest?", plain).ok

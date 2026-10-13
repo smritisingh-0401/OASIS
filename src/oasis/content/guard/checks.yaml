@@ -11,6 +11,8 @@
 #   self_label    calls the user a harsh global name (G-LABEL); every generated reply
 #   diagnosis     names a condition the user has (G-DX); every generated reply
 #   medication    drug names, doses, starting or stopping medicine (G-MED); every reply
+#   refusals      the reply declining to diagnose or advise; a diagnosis or medication phrase
+#                 in the same clause is allowed ("I can't tell you if you have depression")
 # Engineering start values (CR-16).
 schema: oasis.content/v1
 kind: guard_checks
@@ -45,3 +47,6 @@ patterns:
     - '\b\d+ ?(?:mg|milligrams?|mcg|micrograms?)\b'
     - '\b(?:stop|start|quit|skip|come off|increase|reduce|double|halve)(?:ping|ting|ing|s)? (?:taking (?:them|it)|a dose|(?:taking )?your (?:meds|medication|medicine|pills|tablets|dose|antidepressants?))\b'
     - '\b(?:take|taking|try|trying|start|starting|ask for|get) (?:taking )?(?:an? |some )?(?:antidepressants?|ssris?|snris?|sleeping (?:pills?|tablets?)|benzos?|benzodiazepines?|sedatives?|tranquill?i[sz]ers?|beta.blockers?|antipsychotics?)\b'
+  refusals:
+    - '\bi (?:cannot|cant|can not|am not able to|im not able to|am unable to|im unable to|wont|will not|am not going to|im not going to) (?:\w+ )?(?:tell|say|diagnose|advise|give|decide|recommend)\b'
+    - '\bnot (?:something|for me|my place) (?:i can |to )(?:say|tell|decide|diagnose|judge)\b'
