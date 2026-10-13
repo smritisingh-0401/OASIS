@@ -31,7 +31,7 @@ from oasis.types import GuardVerdict, Plan
 COMPANION_LISTED = ("validate_first", "no_praise", "no_advice", "no_dependency")
 GUARD_LISTED = ("agreement", "hedges", "presupposing", "advice_words", "self_label",
                 "diagnosis", "medication", "refusals", "step_text", "made_up_step", "label_nouns",
-                "harsh_words")  # fmt: skip
+                "harsh_words", "strong_agreement", "medication_topic")  # fmt: skip
 COMPANION_RULES = ("validate_first", "one_question", "no_praise", "no_advice")
 # Form, not content: a draft failing only these is retried, but kept rather than replaced
 # by the fixed fallback (the validating-phrase list cannot know every way to validate).
@@ -111,6 +111,11 @@ def _label_pattern(subject: str) -> re.Pattern[str]:
     return re.compile(_LABEL.format(subject=subject))
 
 
+def medication_topic(message: str) -> bool:
+    """The user's message is about medication, so the reply must not agree with them."""
+    return _any(load_rules()["medication_topic"], base_form(message))
+
+
 def harsh_label(norm: str, subject: str = SECOND_PERSON) -> bool:
     """A harsh global label on the subject in base-form text: "you are a failure", "I'm a
     horrible person". Adjectives are scored with VADER, so unlisted ones count too."""
@@ -158,6 +163,10 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
         failed.append("ack_only")
     if plan.claims:
         failed += _claim_rules(norm, plan.claims, rules)
+    # "I agree with you" agrees even when the reply words the claim differently from theirs.
+    strong = _any(rules["strong_agreement"], norm)
+    if strong and "no_agreeing" in plan.constraints and "no_agreeing" not in failed:
+        failed.append("no_agreeing")
     failed += [rule for rule, listed in EVERY_REPLY if _uses(rules, listed, norm)]
     if "no_self_label" not in failed and harsh_label(norm):
         failed.append("no_self_label")

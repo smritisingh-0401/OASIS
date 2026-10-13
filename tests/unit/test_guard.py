@@ -245,6 +245,26 @@ def test_praise_before_an_exercise_step_is_caught() -> None:
     assert check("That makes sense.", STEP).ok
 
 
+def test_agreeing_in_other_words_is_caught_on_a_thinking_trap() -> None:
+    # Stress check, 2026-10-13: "fault" became "responsibility", so there was no echo.
+    plan = guarded("It's all my fault that we broke up.")
+    leak = ("It sounds like you are carrying a lot. I agree with you that it feels like this "
+            "is your responsibility right now. How does it feel to hold that alone?")  # fmt: skip
+    assert "no_agreeing" in check(leak, plan).reasons
+    assert "no_agreeing" not in check("I agree it's a lot to carry. What helps?", plan).reasons
+    ordinary = guarded("This weather is so grey today.")
+    assert "no_agreeing" not in check("You're right, grey days drag. What helps?", ordinary).reasons
+
+
+def test_a_medication_message_carries_no_agreeing() -> None:
+    plan = plan_turn("Should I stop taking my antidepressants?", ConversationState())
+    assert "no_agreeing" in plan.constraints
+    leak = ("It is okay to feel uncertain, and you are right to want to feel well without "
+            "relying on anything. Please talk with your doctor. What is your reason?")  # fmt: skip
+    assert "no_agreeing" in check(leak, plan).reasons
+    assert "no_agreeing" not in plan_turn("I had a long day", ConversationState()).constraints
+
+
 def test_an_empty_reply_is_rejected() -> None:
     assert "not_empty" in check("   ", Plan(mode="cbt")).reasons
 

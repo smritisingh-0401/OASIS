@@ -15,7 +15,7 @@ from dataclasses import replace
 from oasis.assessment import flow, trigger
 from oasis.core.signals import claims, extract
 from oasis.core.templates import TEMPLATES
-from oasis.guard.checks import opener
+from oasis.guard.checks import medication_topic, opener
 from oasis.psychoed import selector as psychoed
 from oasis.router import exercise, router
 from oasis.router.weights import config as router_config
@@ -74,6 +74,10 @@ def plan_turn(message: str, state: ConversationState, action: Action | None = No
     if plan.templated or plan.snippet is not None:
         return plan
     plan = with_thinking_trap(plan, message)
+    if medication_topic(message) and "no_agreeing" not in plan.constraints:
+        # "Should I stop my antidepressants?" must not get "you are right to want..." (stress
+        # check, 2026-10-13).
+        plan = replace(plan, constraints=(*plan.constraints, "no_agreeing"))
     if plan.mode != "companion":
         return plan
     # So a conversation does not open every reply the same way (tone check, 2026-10-11).
