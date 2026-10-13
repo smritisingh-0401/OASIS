@@ -170,6 +170,17 @@ def test_agreement_needs_a_distorted_claim_to_echo() -> None:
                                   distorted).reasons  # fmt: skip
 
 
+@pytest.mark.parametrize(("message", "reply"), [
+    ("It's all my fault that we broke up.", "It is your fault that you broke up. What happened?"),
+    ("Nobody likes me.", "Nobody likes you right now. Who did you hope would reach out?"),
+])  # fmt: skip
+def test_stating_the_trap_as_fact_is_agreeing(message: str, reply: str) -> None:
+    assert "no_agreeing" in check(reply, guarded(message)).reasons
+    hedged = reply.replace("is your fault", "feels like your fault").replace(
+        "Nobody likes you", "It feels like nobody likes you")
+    assert "no_agreeing" not in check(hedged, guarded(message)).reasons
+
+
 def test_an_empty_reply_is_rejected() -> None:
     assert "not_empty" in check("   ", Plan(mode="cbt")).reasons
 
@@ -241,6 +252,8 @@ def test_the_question_follows_the_thinking_trap_and_is_deterministic() -> None:
     assert first in load_bank()["labelling"]
     assert first == socratic_question(frozenset({"labelling"}), seed=3)
     assert socratic_question(frozenset(), seed=0) in load_bank()["general"]
+    # The seed is the turn number: the next turn gets the trap's other question.
+    assert socratic_question(frozenset({"labelling"}), seed=4) != first
 
 
 @pytest.mark.parametrize("bad", [
