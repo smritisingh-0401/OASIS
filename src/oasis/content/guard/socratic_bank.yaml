@@ -1,0 +1,47 @@
+# Vetted Socratic fallback questions (design §8.3, FR-GRD-3), one list per thinking trap
+# (the categories of content/lexicons/distortions.yaml) plus `general`. Sent when a reply to
+# a thinking-trap message, or any CBT or DBT reply, fails the guard twice. Each entry
+# acknowledges the feeling first, then asks exactly one question, ending the reply.
+# Picked deterministically by turn. Clinician review pending (CR-15).
+schema: oasis.content/v1
+kind: socratic_bank
+version: "2026.10.0"
+review_status: needs_clinician_review
+questions:
+  all_or_nothing:
+    - "That sounds really painful. Is there a time, even a small one, when things went a bit differently?"
+    - "It sounds like everything feels all wrong right now. What might sit somewhere in between total success and total failure?"
+  overgeneralisation:
+    - "That sounds exhausting to carry. Is it really every time, or does it feel that way today?"
+    - "It sounds like this keeps coming up for you. Can you think of one time it went differently?"
+  mental_filter:
+    - "That sounds like it is taking up a lot of space. What else happened today, even something small?"
+    - "It sounds like one part is standing out the most. What might you be missing when you look at the whole day?"
+  disqualifying_positive:
+    - "It sounds hard to let the good parts count. What would it mean if that good moment did count?"
+    - "That sounds like a hard way to see it. If a friend did the same thing, would you say it did not count?"
+  mind_reading:
+    - "That sounds really uncomfortable. What has anyone actually said or done that shows what they think?"
+    - "It sounds like you are worried about what others think. What else might they be thinking?"
+  fortune_telling:
+    - "That sounds like a heavy worry. What makes you so sure it will turn out that way?"
+    - "It sounds like the future feels certain right now. What else could possibly happen?"
+  magnification:
+    - "That sounds really overwhelming. How might this look a month from now?"
+    - "It sounds like this feels huge right now. What would make it feel a little more manageable?"
+  emotional_reasoning:
+    - "That feeling sounds really strong. Does feeling something always make it true?"
+    - "It sounds like the feeling is very convincing. What would you notice if you looked only at the facts?"
+  should_statements:
+    - "That sounds like a lot of pressure. Where does that rule for yourself come from?"
+    - "It sounds like you are holding yourself to a high standard. What would be a kinder standard to hold?"
+  labelling:
+    - "That sounds really painful to feel. If a close friend said this about themselves, what would you want them to know?"
+    - "It sounds like you are being really hard on yourself. Is one moment enough to sum up a whole person?"
+  personalisation:
+    - "It sounds like you are carrying a lot of the blame. What else might have played a part in what happened?"
+    - "That sounds like a heavy thing to hold on your own. How much of this was really within your control?"
+  general:
+    - "That sounds really hard to sit with. What would you say to a close friend who felt this way?"
+    - "It sounds like this is weighing on you. What is one other way of looking at it?"
+    - "That sounds difficult. What do you think is the most important part of this for you?"

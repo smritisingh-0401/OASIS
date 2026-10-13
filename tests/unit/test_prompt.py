@@ -49,11 +49,21 @@ def test_each_mode_gets_its_goal_from_the_prompt_table() -> None:
         assert phrase in msgs[0].content
 
 
-def test_an_exercise_step_goes_in_as_the_script() -> None:
-    plan = Plan(mode="grounding", constraints=("follow_script",), snippet="Name five things.")
+def test_an_exercise_step_is_not_given_to_the_model_to_rephrase() -> None:
+    plan = Plan(mode="grounding", constraints=("ack_only",), snippet="Name five things.")
     system = build_messages(plan, [], "ok", history_turns=6)[0].content
-    assert "- script: Name five things." in system
-    assert "in your own words" in system
+    assert "Name five things." not in system
+    assert "one short sentence" in system
+    assert "no question and no exercise step" in system
+
+
+def test_earlier_step_letters_are_left_out_of_the_history() -> None:
+    # Manual testing, 2026-10-13: shown "T is for Take a step back." in the history, the model
+    # wrote "R is for Reconnect with what feels safe." in the next companion reply.
+    step = _turn(1, "assistant", "That makes sense. T is for Take a step back. Give yourself a "
+                 "little space.")  # fmt: skip
+    msgs = build_messages(PLAN, [step], "i think i can restart", history_turns=6)
+    assert msgs[1].content == "That makes sense. Give yourself a little space."
 
 
 def test_no_script_line_without_a_step() -> None:

@@ -11,6 +11,7 @@ import asyncio
 import datetime
 import json
 import logging
+import re
 import time
 import uuid
 from collections.abc import Awaitable, Callable, Sequence
@@ -22,6 +23,7 @@ from oasis.core.templates import TEMPLATES, fallback_template
 from oasis.core.trace import StageClock, trace_to_json
 from oasis.guard.checks import SOFT_RULES
 from oasis.guard.checks import check as check_reply
+from oasis.guard.socratic import socratic_question
 from oasis.llm.client import LLMClient, LLMFailure, clean_reply
 from oasis.llm.prompt import build_messages
 from oasis.router.router import dump_state, load_state
@@ -202,6 +204,8 @@ class ChatEngine:
             draft = _Draft(text, 0, (), None)
         else:
             draft = await self._generate(plan, history, message, deadline)
+            if plan.is_step and draft.fallback_reason is None:
+                draft.reply = f"{draft.reply} {plan.snippet}"  # the step itself, as written
         clock.mark("generate", draft.fallback_reason or "ok")
 
         # Stage 8 — record.
@@ -343,13 +347,14 @@ class ChatEngine:
         """One draft, one constrained retry on guard rejection, then the Socratic fallback."""
         outcomes: list[str] = []
         retry_reasons: tuple[str, ...] = ()
+        seed = len(history)  # deterministic per turn, and varies along a conversation
         # A draft whose only faults are style rules (a repeated opener) is retried, but kept
         # rather than replaced by the fixed fallback if the retry does no better.
         soft: _Draft | None = None
         for attempt in (1, 2):
             remaining = deadline - time.monotonic()
             if attempt == 2 and remaining < self.settings.guard_retry_min_budget_s:
-                return soft or self._fallback(plan, "guard.no_budget", attempt - 1, outcomes)
+                return soft or _fallback(plan, "guard.no_budget", attempt - 1, outcomes, seed)
             messages = build_messages(
                 plan,
                 history,
@@ -364,10 +369,14 @@ class ChatEngine:
                         messages, max_tokens=self.settings.llm_max_tokens, timeout_s=budget
                     )
                 text = clean_reply(raw)
+                if plan.is_step:
+                    # The model tends to run on into a step of its own ("N is for Notice…")
+                    # after a good first sentence: keep only that sentence.
+                    text = _FIRST_SENTENCE.match(text).group(0).strip()  # type: ignore[union-attr]
             except TimeoutError:
-                return self._fallback(plan, "llm.timeout", attempt, outcomes)
+                return soft or _fallback(plan, "llm.timeout", attempt, outcomes, seed)
             except LLMFailure as failure:
-                return self._fallback(plan, f"llm.{failure.reason}", attempt, outcomes)
+                return soft or _fallback(plan, f"llm.{failure.reason}", attempt, outcomes, seed)
 
             verdict = self.guard(text, plan)
             outcomes.append("pass" if verdict.ok else "reject")
@@ -376,16 +385,22 @@ class ChatEngine:
             if soft is None and set(verdict.reasons) <= SOFT_RULES:
                 soft = _Draft(text, attempt, tuple(outcomes), None)
             retry_reasons = verdict.reasons
-        return soft or self._fallback(plan, "guard.fallback", 2, outcomes)
+        return soft or _fallback(plan, "guard.fallback", 2, outcomes, seed)
 
-    @staticmethod
-    def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str]) -> _Draft:
-        # An exercise step falls back to its own vetted text, so the exercise carries on.
-        text = plan.snippet or TEMPLATES[fallback_template(reason, plan.mode)]
-        return _Draft(text, attempts, tuple(outcomes), reason)
+
+def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str], seed: int) -> _Draft:
+    if plan.snippet:  # an exercise step or item is its own vetted fallback, so it carries on
+        text = plan.snippet
+    elif reason.startswith("guard.") and (plan.distortion_types or plan.mode in ("cbt", "dbt")):
+        # Reroute (design §8.3): validate the feeling, then one vetted Socratic question.
+        text = socratic_question(plan.distortion_types, seed)
+    else:
+        text = TEMPLATES[fallback_template(reason)]
+    return _Draft(text, attempts, tuple(outcomes), reason)
 
 
 _NO_DRAFT = _Draft("", 0, (), None)
+_FIRST_SENTENCE = re.compile(r"\s*[^.!?]*[.!?]*")  # always matches, possibly empty
 
 
 def _trace(

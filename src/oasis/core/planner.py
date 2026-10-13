@@ -13,9 +13,9 @@ from collections.abc import Sequence
 from dataclasses import replace
 
 from oasis.assessment import flow, trigger
-from oasis.core.signals import extract
+from oasis.core.signals import claims, extract
 from oasis.core.templates import TEMPLATES
-from oasis.guard.checks import opener
+from oasis.guard.checks import medication_topic, opener
 from oasis.psychoed import selector as psychoed
 from oasis.router import exercise, router
 from oasis.router.weights import config as router_config
@@ -26,6 +26,7 @@ from oasis.types import (
     ConversationState,
     ExerciseAction,
     ExerciseCard,
+    Mode,
     Plan,
     RouteDecision,
     RouterState,
@@ -50,8 +51,11 @@ CONSTRAINTS: dict[str, tuple[str, ...]] = {
     "mindfulness": ("follow_script", "one_step"),
     "psychoed": ("no_diagnosis", "use_snippet_only"),
 }
-STEP_CONSTRAINTS = ("follow_script", "one_step")
+STEP_CONSTRAINTS = ("ack_only",)
+# Added to any generated reply to a thinking-trap message, in every mode (design §8.2).
+DISTORTION_RULES = ("validate_first", "one_question", "socratic", "no_agreeing")
 RECENT_OPENERS = 3  # companion replies whose openers the next one must not reuse
+SHORT_REPLY_WORDS = 2  # "okay", "yes sure": nothing to respond to before an exercise step
 MODERATE_PLUS = frozenset({"moderate", "moderately severe", "severe"})
 
 Action = AssessmentAction | ExerciseAction
@@ -63,7 +67,18 @@ def wants_to_continue(message: str) -> bool:
 
 def plan_turn(message: str, state: ConversationState, action: Action | None = None) -> Plan:
     plan = _plan(message, state, action)
-    if plan.mode != "companion" or plan.templated:
+    if plan.is_step and not plan.templated and len(message.split()) <= SHORT_REPLY_WORDS:
+        # The model only had "Okay." or "That is a good start." to add (tone check, 2026-10-13).
+        return replace(plan, templated=True, text=plan.snippet,
+                       reason_codes=(*plan.reason_codes, "exercise.short_reply"))  # fmt: skip
+    if plan.templated or plan.snippet is not None:
+        return plan
+    plan = with_thinking_trap(plan, message)
+    if medication_topic(message) and "no_agreeing" not in plan.constraints:
+        # "Should I stop my antidepressants?" must not get "you are right to want..." (stress
+        # check, 2026-10-13).
+        plan = replace(plan, constraints=(*plan.constraints, "no_agreeing"))
+    if plan.mode != "companion":
         return plan
     # So a conversation does not open every reply the same way (tone check, 2026-10-11).
     said = [t.content for t in state.history if t.role == "assistant" and t.mode == "companion"]
@@ -76,7 +91,7 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
         if not wants_to_continue(message):
             return Plan(mode="post_crisis", templated=True, template_id="post_crisis",
                         reason_codes=("post_crisis.hold",))  # fmt: skip
-        return Plan(mode="companion", constraints=_rules("companion", extract(message)),
+        return Plan(mode="companion", constraints=rules_for("companion", extract(message)),
                     reason_codes=("post_crisis.cleared",))  # fmt: skip
 
     now = state.now or datetime.datetime.now(datetime.UTC)
@@ -92,7 +107,7 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
 
     if open_rec is not None:  # typed instead of pressing a button
         step = flow.on_free_text(open_rec, now)
-        return Plan(mode="companion", constraints=_rules("companion", extract(message)),
+        return Plan(mode="companion", constraints=rules_for("companion", extract(message)),
                     assessment=step.record, card=step.card,
                     reason_codes=("planner.passthrough", "assessment.free_text"))  # fmt: skip
 
@@ -149,20 +164,22 @@ def _routed(
         rs = exercise.start(rs, exercise.technique_for("grounding").id)
 
     if rs.exercise is not None:
+        mode = rs.current
         text, rs, card = exercise.deliver(rs)
-        return _step_plan(decision, text, rs, card, codes, expired)
+        return _step_plan(mode, decision, text, rs, card, codes, expired)
     if decision.offer is not None:
         t = exercise.technique_for(decision.offer)
         return Plan(mode=decision.mode, templated=True, text=t.offer,
                     exercise_card=ExerciseCard("offer", decision.offer, t.name),
                     router_state=rs, route=decision, assessment=expired,
                     reason_codes=tuple(codes))  # fmt: skip
-    return Plan(mode=decision.mode, constraints=_rules(decision.mode, signals),
+    return Plan(mode=decision.mode, constraints=rules_for(decision.mode, signals),
                 router_state=rs, route=decision, assessment=expired,
                 reason_codes=tuple(codes))  # fmt: skip
 
 
 def _step_plan(
+    mode: Mode,
     decision: RouteDecision | None,
     text: str,
     rs: RouterState,
@@ -170,8 +187,8 @@ def _step_plan(
     codes: Sequence[str],
     expired: AssessmentRecord | None = None,
 ) -> Plan:
-    # The mode is the one the step belongs to, even when it was the last step (rs.current).
-    return Plan(mode=rs.current, constraints=STEP_CONSTRAINTS, snippet=text, exercise_card=card,
+    # The mode is the one the step belongs to, even on the last step (rs is companion again).
+    return Plan(mode=mode, constraints=STEP_CONSTRAINTS, snippet=text, exercise_card=card,
                 router_state=rs, route=decision, assessment=expired,
                 reason_codes=tuple(codes))  # fmt: skip
 
@@ -188,11 +205,24 @@ def _exercise_button(action: ExerciseAction, rs: RouterState) -> Plan:
                     router_state=after, reason_codes=(f"exercise.{action.kind}",))  # fmt: skip
     rs = router.accept(rs)
     rs = exercise.start(rs, exercise.technique_for(rs.current).id)
+    mode = rs.current
     text, rs, card = exercise.deliver(rs)
-    return _step_plan(None, text, rs, card, ("exercise.accepted",))
+    # They just pressed "Yes": nothing to respond to, so the first step is shown as written.
+    return replace(_step_plan(mode, None, text, rs, card, ("exercise.accepted",)),
+                   templated=True, text=text)  # fmt: skip
 
 
-def _rules(mode: str, signals: Signals) -> tuple[str, ...]:
+def with_thinking_trap(plan: Plan, message: str) -> Plan:
+    """A reply to a thinking trap validates the feeling, then asks one Socratic question, and
+    never agrees with the distortion; the guard gets the distorted claim (design §8)."""
+    found = extract(message).distortion_types
+    if not found:
+        return plan
+    rules = plan.constraints + tuple(r for r in DISTORTION_RULES if r not in plan.constraints)
+    return replace(plan, constraints=rules, distortion_types=found, claims=claims(message))
+
+
+def rules_for(mode: str, signals: Signals) -> tuple[str, ...]:
     rules = CONSTRAINTS.get(mode, ())
     if mode == "companion" and signals.asks_advice:  # advice was asked for (FR-CMP-2)
         rules = tuple("offer_ideas" if r == "no_advice" else r for r in rules)

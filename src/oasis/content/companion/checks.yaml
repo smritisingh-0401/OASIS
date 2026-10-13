@@ -39,8 +39,10 @@ patterns:
     - '\btakes (?:real |a lot of |so much )?courage\b'
     - '\bwhat an? (?:strong|brave|amazing|incredible|wonderful)\b'
     - '\b(?:thats|that is) (?:so )?(?:amazing|wonderful|fantastic|incredible|awesome|brilliant)\b'
+    - '\b(?:thats|that is|what|such) (?:a |an )?(?:really |very |so |truly )?(?:brave|courageous|powerful|strong|inspiring|admirable|impressive|amazing|wonderful|great|good|wise|mature|healthy) (?:thing|choice|step|start|decision|move|thought|idea|insight|realisation|realization|way to|attitude|mindset)\b'
+    - '\b(?:youre|you are) (?:doing|handling (?:it|this|that)) (?:so |really |very )?(?:well|great|amazing|brilliantly)\b'
   no_advice:
-    - '(?<!what )(?<!like )\byou (?:should|need to|must|ought to|have to)\b'
+    - '(?<!what )(?<!like )(?<!idea that )\byou (?:should|need to|must|ought to|have to)\b'
     - '\bhave you (?:ever )?(?:tried|thought about|considered)\b(?! (?:what|why|how|who|where|when|whether)\b)'
     - '\bwhy (?:dont|not) you\b'
     - '\bi (?:would )?(?:suggest|recommend|advise)\b'

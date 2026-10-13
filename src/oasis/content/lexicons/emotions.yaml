@@ -35,7 +35,7 @@ scorers:
       '\b(?:anxious|worried|nervous|stressed) about everything\b': 0.8
       '\b(?:mind|thoughts?) (?:wont stop |keeps? |is |are )?racing\b': 1.2
       '\boverthink\w*\b': 1.2
-      '\ball over the place\b': 1.5
+      '(?<!emotions are )(?<!emotions )\ball over the place\b': 1.5  # emotions: dysregulation
       '\b(?:cant|cannot) settle\b': 0.8
   anger:
     bias: 0.0
@@ -46,6 +46,7 @@ scorers:
       '\bmad (?:at|with)\b': 0.8
       '\bso mad\b': 1.0
       '\brag(?:e|ing)\b': 1.0
+      '\bboiling\b': 0.8
       '\bpissed\b': 1.0
       '\b(?:irritated|annoyed|frustrated)\b': 0.7
       '\bhate\b': 0.6

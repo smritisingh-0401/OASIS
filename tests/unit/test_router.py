@@ -47,7 +47,8 @@ SCENARIOS: list[tuple[str, Signals, dict[str, float], str]] = [
     ("moderate PHQ-9 alone", sig(), {"phq_moderate_plus": 1.0}, "companion"),
     ("strong dysregulation", sig(dysregulation=0.8), {}, "dbt"),
     ("dysregulation with anger", sig(dysregulation=0.6, anger=0.6), {}, "dbt"),
-    ("anger alone", sig(anger=0.9), {}, "companion"),
+    ("anger alone", sig(anger=0.9), {}, "dbt"),
+    ("mild anger", sig(anger=0.4), {}, "companion"),
     ("dysregulation over distortion", sig(dysregulation=0.8, distortion=0.4), {}, "dbt"),
     ("distortion over dysregulation", sig(distortion=0.8, dysregulation=0.4), {}, "cbt"),
     ("moderate overwhelm", sig(overwhelm=0.5), {}, "mindfulness"),
@@ -93,6 +94,13 @@ PHRASINGS = {
         "I'm so mad I could punch a wall",
         "I keep snapping at people",
         "my emotions are out of control",
+        "i am so mad",
+        "i am going to explode",
+        "I'm boiling with rage",
+        "I lose my temper over tiny things",
+        "I keep lashing out at people",
+        "I snapped at everyone today",
+        "my emotions are all over the place",
     ],
     "mindfulness": [
         "I feel overwhelmed and anxious about everything",
@@ -107,6 +115,15 @@ PHRASINGS = {
         "I'm so nervous I can't settle",
     ],
 }
+
+
+def test_anger_then_explode_offers_dbt_on_the_second_message() -> None:
+    # Manual testing, 2026-10-13: "so mad" alone used to lead companion and reset the streak.
+    rs = RouterState()
+    for message in ("I'm so angry, I want to scream, I can't control it", "i am so mad"):
+        decision = route(extract(message), rs)
+        rs = decision.state
+    assert decision.offer == "dbt"
 
 
 @pytest.mark.parametrize(("mode", "message"),
@@ -337,9 +354,17 @@ def test_decline_clears_the_offer_and_the_lead() -> None:
     assert rs.consented == frozenset()
 
 
-def test_stop_ends_the_exercise_but_keeps_the_mode() -> None:
-    rs = stop(RouterState(current="cbt", exercise="thought_check", step=2))
-    assert (rs.current, rs.exercise, rs.step) == ("cbt", None, 0)
+def test_stop_ends_the_exercise_and_goes_back_to_companion() -> None:
+    rs = stop(RouterState(current="cbt", exercise="thought_check", step=2,
+                          consented=frozenset({"cbt"})))  # fmt: skip
+    assert (rs.current, rs.exercise, rs.step) == ("companion", None, 0)
+    assert rs.consented == frozenset({"cbt"})
+
+
+def test_typing_stop_mid_exercise_goes_back_to_companion() -> None:
+    rs = RouterState(current="dbt", exercise="stop_skill", step=1, consented=frozenset({"dbt"}))
+    decision = route(sig(opt_out=True), rs)
+    assert (decision.state.current, decision.state.exercise) == ("companion", None)
 
 
 # --- persistence ---------------------------------------------------------------------------

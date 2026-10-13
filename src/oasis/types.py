@@ -191,6 +191,17 @@ class Plan:
     route: RouteDecision | None = None
     # How recent companion replies began (first three words, normalised): not to be reused.
     avoid_openers: tuple[str, ...] = ()
+    # Thinking-trap turns (Phase 7): the categories found and each distorted clause of the
+    # user's message as a set of content words, for the guard's echo checks. Derived from
+    # user text, so never stored or traced (rules P2).
+    distortion_types: frozenset[str] = frozenset()
+    claims: tuple[frozenset[str], ...] = ()
+
+    @property
+    def is_step(self) -> bool:
+        """An exercise step: the LLM writes only a short acknowledgement, and the engine
+        adds the step text after it word for word (psychoed snippets are explained instead)."""
+        return self.snippet is not None and self.mode != "psychoed"
 
 
 @dataclass(frozen=True)

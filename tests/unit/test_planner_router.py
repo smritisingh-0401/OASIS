@@ -77,7 +77,8 @@ def test_accepting_starts_the_exercise_with_its_first_step() -> None:
     assert (plan.exercise_card.step, plan.exercise_card.item) == ("active", 1)
     assert plan.router_state is not None
     assert "cbt" in plan.router_state.consented
-    assert set(plan.constraints) >= {"follow_script", "one_step"}
+    assert plan.templated  # they just pressed "Yes": the first step is shown as written
+    assert plan.text == t.steps[0]
 
 
 def test_declining_keeps_talking_and_clears_the_offer() -> None:
@@ -113,9 +114,23 @@ def test_each_message_moves_the_exercise_one_step_until_it_ends() -> None:
         rs = plan.router_state
         assert rs is not None
     assert plan.exercise_card is None
+    assert plan.mode == "cbt"  # the last step still belongs to the exercise
     assert rs.exercise is None
     after = plan_turn("thanks, that helped a bit", state(rs))
     assert after.snippet is None
+    # Manual testing, 2026-10-13: still in DBT after STOP ended, the model offered the skill
+    # again and repeated "T is for Take a step back".
+    assert after.mode == "companion"
+
+
+def test_a_short_reply_mid_exercise_gets_the_step_as_written() -> None:
+    # Tone check, 2026-10-13: after "okay" the model could only add "That is a good start."
+    rs = RouterState(current="dbt", exercise="stop_skill", step=1, consented=frozenset({"dbt"}))
+    plan = plan_turn("okay", state(rs))
+    assert plan.templated
+    assert plan.text == technique_for("dbt").steps[1]
+    assert "exercise.short_reply" in plan.reason_codes
+    assert not plan_turn("my chest is tight", state(rs)).templated
 
 
 def test_a_strong_other_cue_does_not_interrupt_the_exercise() -> None:
@@ -186,7 +201,8 @@ def test_mode_constraints_follow_the_prompt_table() -> None:
         "no_praise",
     }
     cbt = plan_turn(DISTORTED, state(RouterState(current="cbt", consented=frozenset({"cbt"}))))
-    assert set(cbt.constraints) == {"validate_first", "one_question", "socratic"}
+    # A thinking-trap message also adds no_agreeing (Phase 7 hypercompliance guard).
+    assert set(cbt.constraints) == {"validate_first", "one_question", "socratic", "no_agreeing"}
 
 
 # --- precedence ----------------------------------------------------------------------------
