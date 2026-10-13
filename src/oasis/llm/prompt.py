@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 
 from oasis.types import ChatMessage, Plan, TurnRecord
@@ -57,6 +58,7 @@ RULES = {
     "no_medication": "Do not mention medicines, doses, or starting or stopping medication.",
     "not_empty": "Write a short reply.",
     "use_snippet_only": "Use only what the script line says.",
+    "no_exercise_step": "Do not write exercise steps of your own.",
     "ack_only": "Write one short sentence responding to them, with no question and no exercise "
     "step.",
 }
@@ -73,6 +75,11 @@ STEP_GOAL = (
 
 # Known limit: characters approximate tokens (~3.5 chars/token for English). Switch to
 # llama-server's /tokenize endpoint when the full token budget lands with real prompts.
+# An exercise step's letter line ("T is for Take a step back.") in an earlier reply. Left in
+# the history, the model copies the pattern and invents steps ("R is for Reconnect..."), so
+# the prompt shows earlier replies without it; the chat itself is unchanged.
+_STEP_LETTER = re.compile(r"\s*\b[A-Za-z] is for\b[^.!?]*[.!?]*")
+
 HISTORY_CHAR_BUDGET = 2100
 MESSAGE_CHAR_BUDGET = 1050
 
@@ -108,7 +115,10 @@ def build_messages(
         used += len(turn.content)
         if used > HISTORY_CHAR_BUDGET:
             break
-        window.append(ChatMessage("user" if turn.role == "user" else "assistant", turn.content))
+        if turn.role == "user":
+            window.append(ChatMessage("user", turn.content))
+        else:
+            window.append(ChatMessage("assistant", _STEP_LETTER.sub("", turn.content).strip()))
     window.reverse()
 
     return [

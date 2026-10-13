@@ -151,7 +151,15 @@ STEP = Plan(mode="dbt", constraints=("ack_only",), snippet="T is for Take a step
     ("That sounds hard. What is the hardest part?", False),
 ])  # fmt: skip
 def test_an_exercise_step_reply_is_only_a_short_acknowledgement(draft: str, ok: bool) -> None:
-    assert ("ack_only" not in check(draft, STEP).reasons) is ok
+    assert (not {"ack_only", "no_exercise_step"} & set(check(draft, STEP).reasons)) is ok
+
+
+@pytest.mark.parametrize("mode", ALL_MODES)
+def test_a_made_up_exercise_step_is_rejected_in_every_mode(mode: str) -> None:
+    # Manual testing, 2026-10-13: back in companion after STOP, the model copied the pattern.
+    draft = "That is a powerful thought. R is for Reconnect with what feels safe. Who helps?"
+    assert "no_exercise_step" in check(draft, Plan(mode=mode)).reasons  # type: ignore[arg-type]
+    assert "no_exercise_step" not in check("This is for you. What helps?", Plan(mode=mode)).reasons
 
 
 def test_agreement_needs_a_distorted_claim_to_echo() -> None:
@@ -257,9 +265,13 @@ def test_an_invalid_bank_is_rejected(bad: dict[str, Any]) -> None:
 
 def test_vetted_texts_never_trip_the_hard_checks() -> None:
     texts = [*TEMPLATES.values(), *(i.text for i in load_psychoed())]
-    texts += [step for t in load_techniques().values() for step in t.steps]
     for text in texts:
         assert not set(check(text, Plan(mode="cbt")).reasons) & HARD_RULES, text
+    # Script steps are never checked (they follow the checked sentence); only their "X is for"
+    # wording may look like a made-up step.
+    for step in (s for t in load_techniques().values() for s in t.steps):
+        reasons = set(check(step, Plan(mode="cbt")).reasons) & HARD_RULES
+        assert reasons <= {"no_exercise_step"}, step
 
 
 # --- engine: retry, reroute, and the same guard on every path (FR-GRD-3, FR-GRD-4) ------------

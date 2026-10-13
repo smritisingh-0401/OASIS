@@ -57,5 +57,14 @@ def test_an_exercise_step_is_not_given_to_the_model_to_rephrase() -> None:
     assert "no question and no exercise step" in system
 
 
+def test_earlier_step_letters_are_left_out_of_the_history() -> None:
+    # Manual testing, 2026-10-13: shown "T is for Take a step back." in the history, the model
+    # wrote "R is for Reconnect with what feels safe." in the next companion reply.
+    step = _turn(1, "assistant", "That makes sense. T is for Take a step back. Give yourself a "
+                 "little space.")  # fmt: skip
+    msgs = build_messages(PLAN, [step], "i think i can restart", history_turns=6)
+    assert msgs[1].content == "That makes sense. Give yourself a little space."
+
+
 def test_no_script_line_without_a_step() -> None:
     assert "- script:" not in build_messages(PLAN, [], "hi", history_turns=6)[0].content

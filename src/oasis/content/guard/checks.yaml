@@ -11,8 +11,10 @@
 #   self_label    calls the user a harsh global name (G-LABEL); every generated reply
 #   diagnosis     names a condition the user has (G-DX); every generated reply
 #   medication    drug names, doses, starting or stopping medicine (G-MED); every reply
-#   step_text     an exercise step or instruction the model wrote itself; an exercise-step
-#                 reply is one acknowledging sentence, and the real step follows it (ack_only)
+#   made_up_step  an exercise step in the model's own words ("R is for Reconnect"); only the
+#                 vetted script gives steps (no_exercise_step); every generated reply
+#   step_text     an instruction the model wrote itself; an exercise-step reply is one
+#                 acknowledging sentence, and the real step follows it (ack_only)
 #   refusals      the reply declining to diagnose or advise; a diagnosis or medication phrase
 #                 in the same clause is allowed ("I can't tell you if you have depression")
 # Engineering start values (CR-16).
@@ -52,6 +54,7 @@ patterns:
   refusals:
     - '\bi (?:cannot|cant|can not|am not able to|im not able to|am unable to|im unable to|wont|will not|am not going to|im not going to) (?:\w+ )?(?:tell|say|diagnose|advise|give|decide|recommend)\b'
     - '\bnot (?:something|for me|my place) (?:i can |to )(?:say|tell|decide|diagnose|judge)\b'
-  step_text:
+  made_up_step:
     - '\b[a-z] is for\b'
+  step_text:
     - '^(?:(?:okay|ok|alright|now|so|just|lets|let us|gently|slowly),? )*(?:take|breathe|notice|try|close|focus|feel|imagine|pause|stop|sit|put|place|look|name|keep|count|relax|let|hold|rest|step)\b'
