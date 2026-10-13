@@ -27,7 +27,7 @@ modes:
     bias: 0.0
     weights:
       dysregulation: 0.9
-      anger: 0.35
+      anger: 0.85  # 0.35 until 2026-10-13: anger alone could never lead
   mindfulness:
     bias: 0.0
     weights:

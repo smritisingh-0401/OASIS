@@ -47,7 +47,8 @@ SCENARIOS: list[tuple[str, Signals, dict[str, float], str]] = [
     ("moderate PHQ-9 alone", sig(), {"phq_moderate_plus": 1.0}, "companion"),
     ("strong dysregulation", sig(dysregulation=0.8), {}, "dbt"),
     ("dysregulation with anger", sig(dysregulation=0.6, anger=0.6), {}, "dbt"),
-    ("anger alone", sig(anger=0.9), {}, "companion"),
+    ("anger alone", sig(anger=0.9), {}, "dbt"),
+    ("mild anger", sig(anger=0.4), {}, "companion"),
     ("dysregulation over distortion", sig(dysregulation=0.8, distortion=0.4), {}, "dbt"),
     ("distortion over dysregulation", sig(distortion=0.8, dysregulation=0.4), {}, "cbt"),
     ("moderate overwhelm", sig(overwhelm=0.5), {}, "mindfulness"),
@@ -93,6 +94,13 @@ PHRASINGS = {
         "I'm so mad I could punch a wall",
         "I keep snapping at people",
         "my emotions are out of control",
+        "i am so mad",
+        "i am going to explode",
+        "I'm boiling with rage",
+        "I lose my temper over tiny things",
+        "I keep lashing out at people",
+        "I snapped at everyone today",
+        "my emotions are all over the place",
     ],
     "mindfulness": [
         "I feel overwhelmed and anxious about everything",
@@ -107,6 +115,15 @@ PHRASINGS = {
         "I'm so nervous I can't settle",
     ],
 }
+
+
+def test_anger_then_explode_offers_dbt_on_the_second_message() -> None:
+    # Manual testing, 2026-10-13: "so mad" alone used to lead companion and reset the streak.
+    rs = RouterState()
+    for message in ("I'm so angry, I want to scream, I can't control it", "i am so mad"):
+        decision = route(extract(message), rs)
+        rs = decision.state
+    assert decision.offer == "dbt"
 
 
 @pytest.mark.parametrize(("mode", "message"),

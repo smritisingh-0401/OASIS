@@ -17,9 +17,12 @@ scorers:
       '\bout of control\b': 1.0
       '\burges?\b': 0.8
       '\bwant to (?:scream|smash|break|hit|punch|throw)\b': 1.2
-      '\b(?:explode|exploding|snap|snapping)\b': 1.0
+      '\b(?:explode|exploding|snap|snapped|snapping)\b': 1.0
       '\bcould (?:scream|smash|break|hit|punch|throw)\b': 1.2
-      '\blost my temper\b': 1.2
+      '\b(?:lose|losing|lost) my temper\b': 1.5
+      '\blash(?:ed|es|ing)? out\b': 1.0
+      '\bmood swings?\b': 1.0
+      '\bemotions? (?:are |is |feel |feels )?(?:all over the place|everywhere)\b': 1.5
       '\byell(?:ed|ing)? at\b': 0.8
       '\b(?:cant|cannot) calm down\b': 1.0
       '\bgoing to (?:explode|snap|lose it)\b': 1.0
