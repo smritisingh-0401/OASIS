@@ -11,7 +11,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import asdict, replace
 
-from oasis.router.exercise import load_all
+from oasis.router.exercise import finish, load_all
 from oasis.router.weights import RouterConfig, config, features, score_modes
 from oasis.types import ROUTER_MODES, RouteDecision, RouterMode, RouterState, Signals
 
@@ -40,9 +40,8 @@ def route(
                             psychoed_shown=rs.psychoed_shown)  # fmt: skip
         return decide("acute_override", fresh)
 
-    rs = replace(rs, exercise=None, step=0)  # opted out (or nothing was running)
-    if rs.current == "grounding":
-        rs = replace(rs, current="companion")  # grounding lasts as long as its script
+    if rs.exercise is not None or rs.current == "grounding":
+        rs = finish(rs)  # opted out; grounding lasts as long as its script
     if rs.offered is not None:
         # Typing instead of answering counts as "not now"; the lead must build up again.
         rs = replace(rs, offered=None, challenger=None, streak=0)
@@ -111,5 +110,5 @@ def decline(rs: RouterState) -> RouterState:
 
 
 def stop(rs: RouterState) -> RouterState:
-    """End the running exercise; the mode stays until the router moves on."""
-    return replace(rs, exercise=None, step=0)
+    """The Stop button: end the running exercise and go back to companion."""
+    return finish(rs)

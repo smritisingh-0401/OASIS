@@ -114,9 +114,13 @@ def test_each_message_moves_the_exercise_one_step_until_it_ends() -> None:
         rs = plan.router_state
         assert rs is not None
     assert plan.exercise_card is None
+    assert plan.mode == "cbt"  # the last step still belongs to the exercise
     assert rs.exercise is None
     after = plan_turn("thanks, that helped a bit", state(rs))
     assert after.snippet is None
+    # Manual testing, 2026-10-13: still in DBT after STOP ended, the model offered the skill
+    # again and repeated "T is for Take a step back".
+    assert after.mode == "companion"
 
 
 def test_a_strong_other_cue_does_not_interrupt_the_exercise() -> None:

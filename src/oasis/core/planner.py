@@ -26,6 +26,7 @@ from oasis.types import (
     ConversationState,
     ExerciseAction,
     ExerciseCard,
+    Mode,
     Plan,
     RouteDecision,
     RouterState,
@@ -154,8 +155,9 @@ def _routed(
         rs = exercise.start(rs, exercise.technique_for("grounding").id)
 
     if rs.exercise is not None:
+        mode = rs.current
         text, rs, card = exercise.deliver(rs)
-        return _step_plan(decision, text, rs, card, codes, expired)
+        return _step_plan(mode, decision, text, rs, card, codes, expired)
     if decision.offer is not None:
         t = exercise.technique_for(decision.offer)
         return Plan(mode=decision.mode, templated=True, text=t.offer,
@@ -168,6 +170,7 @@ def _routed(
 
 
 def _step_plan(
+    mode: Mode,
     decision: RouteDecision | None,
     text: str,
     rs: RouterState,
@@ -175,8 +178,8 @@ def _step_plan(
     codes: Sequence[str],
     expired: AssessmentRecord | None = None,
 ) -> Plan:
-    # The mode is the one the step belongs to, even when it was the last step (rs.current).
-    return Plan(mode=rs.current, constraints=STEP_CONSTRAINTS, snippet=text, exercise_card=card,
+    # The mode is the one the step belongs to, even on the last step (rs is companion again).
+    return Plan(mode=mode, constraints=STEP_CONSTRAINTS, snippet=text, exercise_card=card,
                 router_state=rs, route=decision, assessment=expired,
                 reason_codes=tuple(codes))  # fmt: skip
 
@@ -193,9 +196,10 @@ def _exercise_button(action: ExerciseAction, rs: RouterState) -> Plan:
                     router_state=after, reason_codes=(f"exercise.{action.kind}",))  # fmt: skip
     rs = router.accept(rs)
     rs = exercise.start(rs, exercise.technique_for(rs.current).id)
+    mode = rs.current
     text, rs, card = exercise.deliver(rs)
     # They just pressed "Yes": nothing to respond to, so the first step is shown as written.
-    return replace(_step_plan(None, text, rs, card, ("exercise.accepted",)),
+    return replace(_step_plan(mode, None, text, rs, card, ("exercise.accepted",)),
                    templated=True, text=text)  # fmt: skip
 
 

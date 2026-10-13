@@ -354,9 +354,17 @@ def test_decline_clears_the_offer_and_the_lead() -> None:
     assert rs.consented == frozenset()
 
 
-def test_stop_ends_the_exercise_but_keeps_the_mode() -> None:
-    rs = stop(RouterState(current="cbt", exercise="thought_check", step=2))
-    assert (rs.current, rs.exercise, rs.step) == ("cbt", None, 0)
+def test_stop_ends_the_exercise_and_goes_back_to_companion() -> None:
+    rs = stop(RouterState(current="cbt", exercise="thought_check", step=2,
+                          consented=frozenset({"cbt"})))  # fmt: skip
+    assert (rs.current, rs.exercise, rs.step) == ("companion", None, 0)
+    assert rs.consented == frozenset({"cbt"})
+
+
+def test_typing_stop_mid_exercise_goes_back_to_companion() -> None:
+    rs = RouterState(current="dbt", exercise="stop_skill", step=1, consented=frozenset({"dbt"}))
+    decision = route(sig(opt_out=True), rs)
+    assert (decision.state.current, decision.state.exercise) == ("companion", None)
 
 
 # --- persistence ---------------------------------------------------------------------------

@@ -66,6 +66,13 @@ def start(rs: RouterState, technique_id: str) -> RouterState:
     return replace(rs, exercise=technique_id, step=0)
 
 
+def finish(rs: RouterState) -> RouterState:
+    """An exercise is over (last step, Stop button or typed opt-out): back to companion, so
+    the next reply responds to them instead of offering the skill again (manual test,
+    2026-10-13). Consent is kept, so the mode can return without asking."""
+    return replace(rs, current="companion", exercise=None, step=0, challenger=None, streak=0)
+
+
 def deliver(rs: RouterState) -> tuple[str, RouterState, ExerciseCard | None]:
     """The next step's text, the state after it, and the card (None once the last step is out)."""
     if rs.exercise is None:
@@ -73,7 +80,7 @@ def deliver(rs: RouterState) -> tuple[str, RouterState, ExerciseCard | None]:
     t = load_all()[rs.exercise]
     text, nxt = t.steps[rs.step], rs.step + 1
     if nxt >= len(t.steps):
-        return text, replace(rs, exercise=None, step=0), None
+        return text, finish(rs), None
     card = ExerciseCard("active", rs.current, t.name, nxt, len(t.steps), text)
     return text, replace(rs, step=nxt), card
 

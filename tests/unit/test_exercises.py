@@ -77,7 +77,7 @@ def test_steps_are_delivered_in_order_and_the_exercise_then_ends() -> None:
             assert card is None
             assert (rs.exercise, rs.step) == (None, 0)
     assert seen == list(t.steps)
-    assert rs.current == "dbt"
+    assert rs.current == "companion"  # back to talking once the exercise is over
 
 
 def test_card_for_restores_an_offer_or_the_running_step() -> None:
