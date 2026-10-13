@@ -11,6 +11,7 @@ import asyncio
 import datetime
 import json
 import logging
+import re
 import time
 import uuid
 from collections.abc import Awaitable, Callable, Sequence
@@ -203,6 +204,8 @@ class ChatEngine:
             draft = _Draft(text, 0, (), None)
         else:
             draft = await self._generate(plan, history, message, deadline)
+            if plan.is_step and draft.fallback_reason is None:
+                draft.reply = f"{draft.reply} {plan.snippet}"  # the step itself, as written
         clock.mark("generate", draft.fallback_reason or "ok")
 
         # Stage 8 — record.
@@ -366,6 +369,10 @@ class ChatEngine:
                         messages, max_tokens=self.settings.llm_max_tokens, timeout_s=budget
                     )
                 text = clean_reply(raw)
+                if plan.is_step:
+                    # The model tends to run on into a step of its own ("N is for Notice…")
+                    # after a good first sentence: keep only that sentence.
+                    text = _FIRST_SENTENCE.match(text).group(0).strip()  # type: ignore[union-attr]
             except TimeoutError:
                 return _fallback(plan, "llm.timeout", attempt, outcomes, seed)
             except LLMFailure as failure:
@@ -393,6 +400,7 @@ def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str], seed:
 
 
 _NO_DRAFT = _Draft("", 0, (), None)
+_FIRST_SENTENCE = re.compile(r"\s*[^.!?]*[.!?]*")  # always matches, possibly empty
 
 
 def _trace(

@@ -57,11 +57,18 @@ RULES = {
     "no_medication": "Do not mention medicines, doses, or starting or stopping medication.",
     "not_empty": "Write a short reply.",
     "use_snippet_only": "Use only what the script line says.",
+    "ack_only": "Write one short sentence responding to them, with no question and no exercise "
+    "step.",
 }
 SCRIPT_MARK = "\n- script: "
+# An exercise step is added after the reply word for word (the 4B model, asked to rephrase
+# "T is for Take a step back", wrote "N is for Name what you are feeling"), so the step text
+# is not in the prompt and the model only responds to what they said.
 STEP_GOAL = (
-    "Guide them through the script step below, in your own words, keeping its meaning. "
-    "Do not add steps or advice."
+    "They are in the middle of a short exercise. Write one short sentence that responds to "
+    'what they just said, such as "That sounds really frustrating." or "Thank you for '
+    'staying with this." The next step of the exercise is added after your sentence, so '
+    "give no instructions, describe no step and ask no question."
 )
 
 # Known limit: characters approximate tokens (~3.5 chars/token for English). Switch to
@@ -78,15 +85,13 @@ def build_messages(
     history_turns: int,
     retry_reasons: Sequence[str] = (),
 ) -> list[ChatMessage]:
-    # A snippet is an exercise step, except in psychoed mode, where it is the item to explain.
-    step = plan.snippet and plan.mode != "psychoed"
-    goal = STEP_GOAL if step else GOALS.get(plan.mode, GOALS["companion"])
+    goal = STEP_GOAL if plan.is_step else GOALS.get(plan.mode, GOALS["companion"])
     system = SYSTEM_TEMPLATE.format(
         mode=plan.mode, goal=goal, constraints=_rule_text(plan.constraints) or "none"
     )
     if plan.avoid_openers:
         system += "\n- do not begin with: " + ", ".join(f'"{o}"' for o in plan.avoid_openers)
-    if plan.snippet:
+    if plan.snippet and not plan.is_step:  # the psychoed item to explain
         system += f"{SCRIPT_MARK}{plan.snippet}"
     if retry_reasons:
         system += (

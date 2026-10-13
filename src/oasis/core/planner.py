@@ -50,7 +50,7 @@ CONSTRAINTS: dict[str, tuple[str, ...]] = {
     "mindfulness": ("follow_script", "one_step"),
     "psychoed": ("no_diagnosis", "use_snippet_only"),
 }
-STEP_CONSTRAINTS = ("follow_script", "one_step")
+STEP_CONSTRAINTS = ("ack_only",)
 # Added to any generated reply to a thinking-trap message, in every mode (design §8.2).
 DISTORTION_RULES = ("validate_first", "one_question", "socratic", "no_agreeing")
 RECENT_OPENERS = 3  # companion replies whose openers the next one must not reuse
@@ -194,7 +194,9 @@ def _exercise_button(action: ExerciseAction, rs: RouterState) -> Plan:
     rs = router.accept(rs)
     rs = exercise.start(rs, exercise.technique_for(rs.current).id)
     text, rs, card = exercise.deliver(rs)
-    return _step_plan(None, text, rs, card, ("exercise.accepted",))
+    # They just pressed "Yes": nothing to respond to, so the first step is shown as written.
+    return replace(_step_plan(None, text, rs, card, ("exercise.accepted",)),
+                   templated=True, text=text)  # fmt: skip
 
 
 def with_thinking_trap(plan: Plan, message: str) -> Plan:

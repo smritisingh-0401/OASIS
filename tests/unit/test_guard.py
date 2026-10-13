@@ -137,6 +137,23 @@ def test_a_refusal_does_not_cover_a_diagnosis_in_another_clause(reply: str, rule
     assert rule in check(reply, Plan(mode="companion")).reasons
 
 
+STEP = Plan(mode="dbt", constraints=("ack_only",), snippet="T is for Take a step back.")
+
+
+@pytest.mark.parametrize(("draft", "ok"), [
+    ("That sounds really frustrating.", True),
+    ("Thank you for staying with this, you're doing it.", True),
+    ("N is for Name what you are feeling.", False),
+    ("Take a deep breath in through your nose and out through your mouth.", False),
+    ("Okay, just notice your feet on the floor.", False),
+    ("It makes sense that things feel frustrating when they don't go as planned.", True),
+    ("Okay, thank you for staying with me.", True),
+    ("That sounds hard. What is the hardest part?", False),
+])  # fmt: skip
+def test_an_exercise_step_reply_is_only_a_short_acknowledgement(draft: str, ok: bool) -> None:
+    assert ("ack_only" not in check(draft, STEP).reasons) is ok
+
+
 def test_agreement_needs_a_distorted_claim_to_echo() -> None:
     plain = guarded("This week has been really hard")
     assert check("I agree, it sounds like a really hard week. What was hardest?", plain).ok

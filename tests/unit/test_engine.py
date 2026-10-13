@@ -11,7 +11,7 @@ import pytest
 from oasis.core.engine import CRISIS_PLACEHOLDER, ChatEngine, InvalidSession
 from oasis.core.templates import TEMPLATES
 from oasis.llm.client import LLMFailure
-from oasis.llm.fake import FakeLLM
+from oasis.llm.fake import STEP_ACK, FakeLLM
 from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.router.exercise import technique_for
 from oasis.router.router import load_state
@@ -464,23 +464,49 @@ async def test_router_memory_carries_across_turns(settings: Settings) -> None:
 
 
 @pytest.mark.anyio
-async def test_an_exercise_step_reaches_the_prompt_as_a_script(settings: Settings) -> None:
-    llm = FakeLLM(replies=["Let's try noticing five things around you."])
+async def test_an_exercise_step_follows_the_models_sentence_word_for_word(
+    settings: Settings,
+) -> None:
+    llm = FakeLLM(replies=["That sounds like a lot right now."])
     engine = _engine(settings, llm=llm)
     await _session(engine)
     result = await engine.handle_turn("h", ACUTE)
     step = technique_for("grounding").steps[0]
     assert result.mode == "grounding"
-    assert f"- script: {step}" in llm.last_messages[0].content
+    assert result.reply == f"That sounds like a lot right now. {step}"
+    assert step not in llm.last_messages[0].content  # nothing for the model to rephrase
     assert result.exercise_card is not None
 
 
 @pytest.mark.anyio
-async def test_the_fake_model_says_the_script_step_itself(settings: Settings) -> None:
+async def test_only_the_first_sentence_is_kept_before_the_step(settings: Settings) -> None:
+    llm = FakeLLM(replies=["I hear how heavy that feels. N is for Notice. Just see it."])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    result = await engine.handle_turn("h", ACUTE)
+    assert result.reply == f"I hear how heavy that feels. {technique_for('grounding').steps[0]}"
+    assert llm.calls == 1
+
+
+@pytest.mark.anyio
+async def test_an_invented_step_is_replaced_by_the_real_one(settings: Settings) -> None:
+    # Manual testing, 2026-10-13: asked to rephrase "T is for Take a step back", the 4B model
+    # wrote "N is for Name what you are feeling".
+    llm = FakeLLM(replies=["N is for Name what you are feeling. What is the hardest part?"])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    result = await engine.handle_turn("h", ACUTE)
+    assert llm.calls == 2
+    assert result.reply == technique_for("grounding").steps[0]
+    assert result.fallback_reason == "guard.fallback"
+
+
+@pytest.mark.anyio
+async def test_the_fake_model_acknowledges_then_the_step_follows(settings: Settings) -> None:
     engine = _engine(settings)
     await _session(engine)
     result = await engine.handle_turn("h", ACUTE)
-    assert result.reply == technique_for("grounding").steps[0]
+    assert result.reply == f"{STEP_ACK} {technique_for('grounding').steps[0]}"
 
 
 @pytest.mark.anyio
@@ -518,7 +544,7 @@ async def test_storage_down_routes_statelessly(settings: Settings) -> None:
     engine = _engine(settings, repo=BrokenRepo("load"))
     result = await engine.handle_turn("h", ACUTE)
     assert result.mode == "grounding"
-    assert result.reply == technique_for("grounding").steps[0]
+    assert result.reply.endswith(technique_for("grounding").steps[0])
 
 
 @pytest.mark.anyio

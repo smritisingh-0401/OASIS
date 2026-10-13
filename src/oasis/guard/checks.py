@@ -6,6 +6,8 @@ name, so a retry can name it back in plain words.
   plan carries) and fresh_opener.
 - Replies to a thinking-trap message, in every mode: validate_first and one_question, plus
   no_agreeing and no_presupposing against the user's distorted claim (G-AGREE, G-PRESUP).
+- Exercise steps: ack_only (no question, no step or instruction of its own; the engine
+  keeps one sentence).
 - Every generated reply: no_self_label, no_diagnosis, no_medication, no_dependency, not_empty.
   A clause that declines ("I can't tell you if you have depression") does not fail
   no_diagnosis or no_medication.
@@ -25,7 +27,7 @@ from oasis.types import GuardVerdict, Plan
 
 COMPANION_LISTED = ("validate_first", "no_praise", "no_advice", "no_dependency")
 GUARD_LISTED = ("agreement", "hedges", "presupposing", "advice_words", "self_label",
-                "diagnosis", "medication", "refusals")  # fmt: skip
+                "diagnosis", "medication", "refusals", "step_text")  # fmt: skip
 COMPANION_RULES = ("validate_first", "one_question", "no_praise", "no_advice")
 # Form, not content: a draft failing only these is retried, but kept rather than replaced
 # by the fixed fallback (the validating-phrase list cannot know every way to validate).
@@ -33,7 +35,7 @@ SOFT_RULES = frozenset({"validate_first", "one_question", "fresh_opener"})
 # Content: a draft failing any of these twice is replaced by a vetted fallback.
 HARD_RULES = frozenset({"no_praise", "no_advice", "no_dependency", "no_agreeing",
                         "no_self_label", "no_presupposing", "no_diagnosis", "no_medication",
-                        "not_empty"})  # fmt: skip
+                        "not_empty", "ack_only"})  # fmt: skip
 # Checked on every generated reply: (rule, phrase list).
 EVERY_REPLY = (("no_self_label", "self_label"), ("no_diagnosis", "diagnosis"),
                ("no_medication", "medication"), ("no_dependency", "no_dependency"))  # fmt: skip
@@ -109,6 +111,8 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
         failed += [r for r in ("no_praise", "no_advice") if r in active and _any(rules[r], norm)]
         if opener(draft) in plan.avoid_openers:
             failed.append("fresh_opener")
+    if plan.is_step and ("?" in norm or _any(rules["step_text"], norm)):
+        failed.append("ack_only")
     if plan.claims:
         failed += _claim_rules(norm, plan.claims, rules)
     failed += [rule for rule, listed in EVERY_REPLY if _uses(rules, listed, norm)]

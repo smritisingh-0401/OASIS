@@ -197,6 +197,12 @@ class Plan:
     distortion_types: frozenset[str] = frozenset()
     claims: tuple[frozenset[str], ...] = ()
 
+    @property
+    def is_step(self) -> bool:
+        """An exercise step: the LLM writes only a short acknowledgement, and the engine
+        adds the step text after it word for word (psychoed snippets are explained instead)."""
+        return self.snippet is not None and self.mode != "psychoed"
+
 
 @dataclass(frozen=True)
 class GuardVerdict:

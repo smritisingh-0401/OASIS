@@ -49,11 +49,12 @@ def test_each_mode_gets_its_goal_from_the_prompt_table() -> None:
         assert phrase in msgs[0].content
 
 
-def test_an_exercise_step_goes_in_as_the_script() -> None:
-    plan = Plan(mode="grounding", constraints=("follow_script",), snippet="Name five things.")
+def test_an_exercise_step_is_not_given_to_the_model_to_rephrase() -> None:
+    plan = Plan(mode="grounding", constraints=("ack_only",), snippet="Name five things.")
     system = build_messages(plan, [], "ok", history_turns=6)[0].content
-    assert "- script: Name five things." in system
-    assert "in your own words" in system
+    assert "Name five things." not in system
+    assert "one short sentence" in system
+    assert "no question and no exercise step" in system
 
 
 def test_no_script_line_without_a_step() -> None:

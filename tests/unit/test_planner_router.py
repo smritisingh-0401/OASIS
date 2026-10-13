@@ -77,7 +77,8 @@ def test_accepting_starts_the_exercise_with_its_first_step() -> None:
     assert (plan.exercise_card.step, plan.exercise_card.item) == ("active", 1)
     assert plan.router_state is not None
     assert "cbt" in plan.router_state.consented
-    assert set(plan.constraints) >= {"follow_script", "one_step"}
+    assert plan.templated  # they just pressed "Yes": the first step is shown as written
+    assert plan.text == t.steps[0]
 
 
 def test_declining_keeps_talking_and_clears_the_offer() -> None:
