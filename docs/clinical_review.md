@@ -39,5 +39,5 @@ Reviewer: _not yet assigned (open item O3)._
 | 2026-10-11 | Phase 4: CR-11 and CR-12 updated to the implementation; CR-20 added (signal lexicons) | Smriti |
 | 2026-10-11 | Phase 5: CR-13 updated to the implementation | Smriti |
 | 2026-10-11 | Phase 6: CR-14 updated to the implementation | Smriti |
-| 2026-10-13 | Phase 7: CR-15 and CR-16 updated to the implementation; owner's decisions from manual testing: CR-11/CR-20 (dbt anger weight 0.85, wider dysregulation phrases), CR-16 (refusals allowed), CR-12 (exercise steps shown word for word), CR-16 (made-up exercise steps rejected) | Smriti |
+| 2026-10-13 | Phase 7: CR-15 and CR-16 updated to the implementation; owner's decisions from manual testing: CR-11/CR-20 (dbt anger weight 0.85, wider dysregulation phrases), CR-16 (refusals allowed), CR-12 (exercise steps shown word for word), CR-16 (made-up exercise steps rejected; VADER-scored labels, every form of stopping medicine, if/whether refusals), CR-14 (praise of choices, also before exercise steps) | Smriti |
 | 2026-10-12 | Owner's decisions from manual testing: CR-03 (crisis wording), CR-09/CR-19 (screening k = 2, offers after a cleared crisis), CR-10 (10-day repeat), CR-11/CR-20 (router N = 2, wider cue phrases) | Smriti |
