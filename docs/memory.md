@@ -207,6 +207,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-13 | 7 | Tone check (real model, 63 turns, before the manual-testing changes) | First drafts passing 40/63; fallbacks 1/63; thinking traps: 0/14 drafts agreed (1 went to crisis); both Phase 7 hits were refusals |
 | 2026-10-13 | 7 | Mutation spot-check | 13/15 at first (fact-statement agreement off; bank ignoring the turn); tests added; 16/16 |
 | 2026-10-13 | 7 | Tests / coverage | 1125 passed; 98.4% overall (guard 99%, router 100%, assessment 97.8%, safety 97.1%) |
+| 2026-10-13 | 7 | Tone check, final (real model, 70 turns, after closing the limits) | First drafts passing 46/70; fallbacks 2/70 (both model timeouts, 0 guard fallbacks); thinking traps 0/14 drafts agreed; STOP steps exact; repeated openers 2/18 |
+| 2026-10-13 | 7 | Guard stress check (model told to agree, 15 thinking traps) | Before the strong-agreement fix: 3 drafts caught, 2 leaks ("I agree with you that...", "you are right to want..."); after: both gone, 0 fallbacks; 2 replies agree with the feeling in other words |
+| 2026-10-13 | 7 | Tests / coverage (final) | 1157 passed; 98.5% overall (router 100%, assessment 97.8%, safety 97.1%) |
+| 2026-10-13 | 7 | llama-server memory | Default 8 GiB prompt cache: grew to ~12 GB on the 6 GB laptop and crashed; `--cache-ram 0`: 4.2 GB, 7.4-8.9 tokens/s steady |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
 | 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |
