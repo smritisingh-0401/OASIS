@@ -177,7 +177,8 @@ def test_agreement_needs_a_distorted_claim_to_echo() -> None:
 def test_stating_the_trap_as_fact_is_agreeing(message: str, reply: str) -> None:
     assert "no_agreeing" in check(reply, guarded(message)).reasons
     hedged = reply.replace("is your fault", "feels like your fault").replace(
-        "Nobody likes you", "It feels like nobody likes you")
+        "Nobody likes you", "It feels like nobody likes you"
+    )
     assert "no_agreeing" not in check(hedged, guarded(message)).reasons
 
 
