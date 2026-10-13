@@ -411,6 +411,19 @@ Exactly one retry; no other LLM calls. The same `guard.check` is used for therap
 - **Varied openers:** the planner puts the first three words (normalised) of the last 3 companion replies into `Plan.avoid_openers`; the prompt says "do not begin with: ..." and `fresh_opener` fails a draft that still does.
 - **Soft and hard rules:** `validate_first`, `one_question` and `fresh_opener` are soft (`SOFT_RULES`): a draft failing only these is retried, then kept rather than replaced (also when there is no time to retry). `no_praise`, `no_advice` and `no_dependency` are hard: two failures give the fallback, `companion_fallback` ("I hear you. What feels most important to talk about right now?") in companion mode and `guard_fallback` elsewhere. Phase 7 replaces `guard_fallback` with the Socratic bank.
 
+### 8.5 As built (Phase 7: hypercompliance guard)
+- **Input side (FR-GRD-1):** the Phase 4 distortion lexicon (`content/lexicons/distortions.yaml`, the eleven Burns categories) is the detector; no second detector. `core/signals.py` `claims(message)` returns each clause holding a distortion phrase as a set of content words (function words and pronouns dropped). `planner.with_thinking_trap` puts `distortion_types` and `claims` on every generated plan (not on templated, exercise-step or psychoeducation plans) and adds `validate_first`, `one_question`, `socratic` and `no_agreeing` to its rules. `Plan.claims` comes from user text, so it is never stored or traced; the trace takes named plan fields only.
+- **Output side (FR-GRD-2), `guard/checks.py`:** reason codes are rule names, as in Phase 6: G-AGREE → `no_agreeing`, G-LABEL → `no_self_label`, G-PRESUP → `no_presupposing`, G-DX → `no_diagnosis`, G-MED → `no_medication`, G-LEN → `not_empty`, G-SOCRATIC → `validate_first` + `one_question`.
+  - A sentence *echoes* a claim when it repeats at least 60% of the claim's content words. `no_agreeing` fails an echoing sentence with an agreement marker ("you're right", "that's true", "I agree", "exactly", a leading "yes", "it makes sense that you are"), or an echoing clause stated as fact: no hedge, reflection, modal or negation, not a question ("it is your fault").
+  - `no_presupposing`: an echoing sentence opening "since / because / as / given that" with an advice word.
+  - `no_self_label`, `no_diagnosis`, `no_medication` and `no_dependency` run on every generated reply; `validate_first` and `one_question` run on companion replies and on any reply to a thinking trap; `no_praise`, `no_advice` and `fresh_opener` stay companion only.
+  - `no_diagnosis` and `no_medication` skip a clause in which the reply declines ("I cannot tell you if you have depression"); the next clause is checked as usual.
+  - The token cap is enforced by `llm_max_tokens`, not checked again; `not_empty` rejects a blank draft.
+  - Phrase lists: `content/guard/checks.yaml` (CR-16).
+- **Reroute (FR-GRD-3):** unchanged flow (one retry naming the broken rules in plain words, `llm/prompt.py` `RULES`; no other LLM call). On a second hard failure, a reply to a thinking trap, or any CBT or DBT reply, gets a question from `content/guard/socratic_bank.yaml` (`guard/socratic.py`; CR-15): the first trap found alphabetically, entry `len(history) % n`, so the pick is deterministic per turn. Every entry validates first and ends in exactly one question; the loader enforces the question count. Companion turns without a trap keep `companion_fallback`; the `guard_fallback` template is gone.
+- **Same guard everywhere (FR-GRD-4):** the engine's one `check` covers companion, CBT, DBT, mindfulness and grounding steps and psychoeducation (tested with a spy).
+- **Evaluation:** `scripts/guard_eval.py` scores `tests/data/guard/` (curated sycophantic and benign sets, which tuned the lists, and a held-out set that never did) against the targets agreed with Smriti: at least 90% caught, at most 5% of benign replies blocked.
+
 ---
 
 ## 9. Sentiment and behaviour tracking
