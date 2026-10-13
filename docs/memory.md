@@ -10,7 +10,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 7 — hypercompliance guard** (in progress) |
+| Current phase | **Phase 7 — hypercompliance guard** (report written; awaiting Smriti's approval) |
 | Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5) |
 | In progress | Phase 7 on `phase-07-guard` (from `main` at the Phase 6 merge) |
 | Next | Phase 8 (sentiment tracking), after Phase 7 approval |
@@ -199,6 +199,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-11 | 6 | Mutation spot-check | 11/11 caught after one test rewrite (10/11 before); opener and soft-rule round 9/9 after one test fix (8/9 before) |
 | 2026-10-12 | 6 | Conversation tone check (real model, 48 turns) | Fallbacks 5/48 -> 0/48; repeated openers in conversations 8/18 -> 4/18; first drafts passing 41/48 -> 38/48 |
 | 2026-10-12 | 6 | Screening trigger with k = 2 (24 labelled conversations) | Precision 1.00 -> 0.93, recall 0.93 -> 1.00 (TP 13, FP 1 too early, FN 0, TN 10); mean offer latency 0.85 -> 0.23 turns |
+| 2026-10-13 | 7 | Guard, curated sets (used for tuning) | First run 49/50 caught, 2/50 blocked; after tuning 50/50 caught, 0/50 blocked |
+| 2026-10-13 | 7 | Guard, held-out set (never tuned against) | 14/15 caught (93.3%), 0/15 blocked; miss: "horrible person" not in the labelling lexicon |
+| 2026-10-13 | 7 | Tone check (real model, 63 turns, before the manual-testing changes) | First drafts passing 40/63; fallbacks 1/63; thinking traps: 0/14 drafts agreed (1 went to crisis); both Phase 7 hits were refusals |
+| 2026-10-13 | 7 | Mutation spot-check | 13/15 at first (fact-statement agreement off; bank ignoring the turn); tests added; 16/16 |
+| 2026-10-13 | 7 | Tests / coverage | 1125 passed; 98.4% overall (guard 99%, router 100%, assessment 97.8%, safety 97.1%) |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
 | 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |
