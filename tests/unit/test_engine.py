@@ -773,3 +773,14 @@ async def test_a_failed_feature_write_does_not_fail_the_turn(settings: Settings)
     assert result.persisted
     assert result.fallback_reason is None
     assert "storage.down" in result.degraded
+
+
+def test_reply_latency_counts_from_the_last_reply_not_the_last_turn() -> None:
+    from oasis.core.engine import _last_reply_at
+
+    history = [
+        TurnRecord("a", 1, "assistant", "Hi.", "companion", "2026-10-20T10:00:00.000Z"),
+        TurnRecord("u", 2, "user", "hello", None, "2026-10-20T10:05:00.000Z"),
+    ]
+    assert _last_reply_at(history) == datetime.datetime(2026, 10, 20, 10, 0, tzinfo=datetime.UTC)
+    assert _last_reply_at([]) is None
