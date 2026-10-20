@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mood trend · OASIS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="trends.js" defer></script>
+</head>
+<body>
+  <div class="orbs" aria-hidden="true"><i></i><i></i><i></i><i class="dots"></i><i class="dots"></i></div>
+
+  <header class="top">
+    <h1 class="brand">OASIS</h1>
+    <a class="pill" href="/">Back to chat</a>
+  </header>
+
+  <main class="chat trends">
+    <h2>Your mood trend</h2>
+    <!-- Always visible, never behind a toggle (FR-TRK-3). -->
+    <p class="trend-label">language-based mood trend, not a clinical measure</p>
+    <p class="trend-intro">It is worked out only from the words you type: how positive or negative
+      they are, and a few other patterns. It cannot know how you actually feel, and it is not a
+      diagnosis.</p>
+
+    <p id="trend-status" class="status" role="status" aria-live="polite">Loading…</p>
+
+    <section aria-labelledby="now-title">
+      <h3 id="now-title">This conversation</h3>
+      <div id="now-chart" class="chart"><svg aria-hidden="true"></svg></div>
+      <p id="now-note" class="trend-note"></p>
+    </section>
+
+    <section aria-labelledby="past-title">
+      <h3 id="past-title">Across conversations</h3>
+      <div id="past-chart" class="chart"><svg aria-hidden="true"></svg></div>
+      <p id="past-note" class="trend-note"></p>
+    </section>
+
+    <section aria-labelledby="basis-title">
+      <h3 id="basis-title">What it is based on</h3>
+      <ul id="basis" class="basis"></ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    OASIS is a support tool, not a diagnosis or an emergency service. It does not replace a
+    clinician.
+  </footer>
+</body>
+</html>

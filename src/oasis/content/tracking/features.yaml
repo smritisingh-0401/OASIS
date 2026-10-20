@@ -1,0 +1,61 @@
+# Language-based mood tracking (design §9, FR-TRK). Each per-turn feature carries a checked
+# source or is labelled exploratory (FR-TRK-4); the trend view shows both, and the label
+# below is shown wherever the trend is. Word lists match the lowercase words of a message,
+# with curly apostrophes made straight. Sources checked 2026-10-20 (CR-21).
+schema: oasis.content/v1
+kind: tracking_features
+version: "2026.10.0"
+review_status: needs_clinician_review
+label: "language-based mood trend, not a clinical measure"
+aggregation:
+  ewma_alpha: 0.3         # weight of the newest session in the exponentially weighted trend
+  baseline_sessions: 5    # earlier sessions needed before a change is flagged
+  change_z: 1.5           # flag a session mean further than this many baseline SDs away
+  latency_cap_s: 600      # reply latency above this counts as this (the user stepped away)
+# First-person singular: subjective, objective and reflexive forms, with contractions.
+# Possessive "my" / "mine" are left out: Tackman et al. (2019) found the link with depression
+# for every first-person singular form except the possessive. "id" and "ill" are words.
+first_person: [i, me, myself, "i'm", "i've", "i'd", "i'll", im, ive]
+# The 19-word absolutist dictionary of Al-Mosaiwi & Johnstone (2018). The paper confirms
+# 19 words and names several; the full list is in its supplementary Table S2, which was
+# not accessed: this list is as quoted from it by several secondary sources (check: CR-21).
+absolutist: [absolutely, all, always, complete, completely, constant, constantly, definitely,
+             entire, ever, every, everyone, everything, full, must, never, nothing, totally,
+             whole]
+# An absolutist word right after one of these is a negated or qualified use ("not
+# completely", "almost always"), which the paper subtracts as a false positive.
+not_before: [not, almost, nearly, hardly, barely, "isn't", "wasn't", "aren't", "weren't",
+             "don't", "doesn't", "didn't", "won't", "can't", isnt, wasnt, arent, dont, doesnt,
+             didnt, wont, cant]
+features:
+  valence:
+    source: >-
+      Hutto, C. J. & Gilbert, E. (2014). VADER: A Parsimonious Rule-Based Model for Sentiment
+      Analysis of Social Media Text. Proceedings of ICWSM, 8(1), 216-225.
+      doi:10.1609/icwsm.v8i1.14550
+    note: >-
+      Validated for the sentiment of short social-media texts, not for mood: a measure of how
+      positive or negative the words are.
+  fp_pronoun_rate:
+    source: >-
+      Tackman, A. M. et al. (2019). Depression, negative emotionality, and self-referential
+      language: A multi-lab, multi-measure, and multi-language-task research synthesis.
+      Journal of Personality and Social Psychology, 116, 817-834. doi:10.1037/pspp0000187
+    note: >-
+      A small effect across 4,754 people (r = .10), better read as a marker of general
+      distress proneness than of depression.
+  absolutist_rate:
+    source: >-
+      Al-Mosaiwi, M. & Johnstone, T. (2018). In an absolute state: Elevated use of absolutist
+      words is a marker specific to anxiety, depression, and suicidal ideation. Clinical
+      Psychological Science, 6(4), 529-542. doi:10.1177/2167702617747074
+    note: >-
+      Found by comparing whole online forums, not individual people, and observational.
+  sadness: {exploratory: true}
+  anxiety: {exploratory: true}
+  anger: {exploratory: true}
+  shame: {exploratory: true}
+  loneliness: {exploratory: true}
+  msg_length: {exploratory: true}
+  reply_latency_s: {exploratory: true}
+  hour_of_day: {exploratory: true}

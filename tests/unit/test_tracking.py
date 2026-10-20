@@ -7,10 +7,10 @@ from dataclasses import fields, replace
 from typing import Any
 
 import pytest
-
-from oasis.core.signals import EMOTIONS, extract
 from oasis.tracking.aggregate import change_flags, ewma, summarise, trend
 from oasis.tracking.features import load_config, parse, turn_features
+
+from oasis.core.signals import EMOTIONS, extract
 from oasis.types import SignalRecord, TurnFeatures
 
 UTC = datetime.UTC
@@ -56,7 +56,8 @@ def test_first_person_singular_counts_subject_object_and_reflexive(
 
 
 def test_curly_apostrophes_count_like_straight_ones() -> None:
-    assert features("I’m done").fp_pronoun_rate == features("I'm done").fp_pronoun_rate
+    curly = "I" + chr(0x2019) + "m done"  # a curly apostrophe
+    assert features(curly).fp_pronoun_rate == features("I'm done").fp_pronoun_rate
 
 
 def test_negated_and_qualified_absolutist_words_do_not_count() -> None:
@@ -101,6 +102,7 @@ def test_every_feature_has_a_source_or_is_exploratory() -> None:
 def _raw() -> dict[str, Any]:
     feats = {f.name: {"exploratory": True} for f in fields(TurnFeatures)}
     return {
+        "version": "1",
         "review_status": "needs_clinician_review",
         "label": "language-based mood trend, not a clinical measure",
         "aggregation": {"ewma_alpha": 0.3, "baseline_sessions": 5, "change_z": 1.5,
@@ -130,7 +132,7 @@ def test_a_valid_config_parses() -> None:
 def test_an_invalid_config_is_rejected(change: Any) -> None:
     raw = _raw()
     change(raw)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="tracking features"):
         parse(raw)
 
 

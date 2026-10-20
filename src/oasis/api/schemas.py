@@ -114,6 +114,35 @@ class HistoryResponse(BaseModel):
     exercise: ExerciseCardOut | None = None  # open exercise offer or running exercise, if any
 
 
+class FeatureInfoOut(BaseModel):
+    name: str
+    source: str | None  # a checked citation; None when exploratory (FR-TRK-4)
+    note: str | None
+    exploratory: bool
+
+
+class SessionTrendOut(BaseModel):
+    session: int
+    started_at: str
+    turns: int
+    mean: dict[str, float | None]
+    variance: dict[str, float | None]
+
+
+class TurnPointOut(BaseModel):
+    at: str
+    valence: float
+
+
+class TrendsResponse(BaseModel):
+    label: str  # "language-based mood trend, not a clinical measure" (FR-TRK-3)
+    features: list[FeatureInfoOut]
+    sessions: list[SessionTrendOut]
+    ewma: list[float]
+    change_flags: list[bool]
+    current: list[TurnPointOut]  # this session, turn by turn
+
+
 class HealthResponse(BaseModel):
     status: str
     llm: str

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import datetime
 import time
-from dataclasses import asdict
 from collections.abc import Sequence
+from dataclasses import asdict
 from typing import Any
 
 import pytest

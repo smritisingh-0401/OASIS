@@ -23,11 +23,15 @@ from oasis.api.schemas import (
     ExerciseCardOut,
     ExerciseConsentAction,
     ExerciseStopAction,
+    FeatureInfoOut,
     HealthResponse,
     HistoryResponse,
     HistoryTurn,
     SessionResponse,
+    SessionTrendOut,
     StepAction,
+    TrendsResponse,
+    TurnPointOut,
 )
 from oasis.assessment import flow
 from oasis.core.engine import ChatEngine, InvalidSession
@@ -35,6 +39,8 @@ from oasis.core.templates import TEMPLATES
 from oasis.router.exercise import card_for
 from oasis.router.router import load_state
 from oasis.storage.repository import StorageError
+from oasis.tracking.aggregate import trend
+from oasis.tracking.features import load_config as load_tracking
 from oasis.types import AssessmentAction, ExerciseAction, ExerciseCard
 
 log = logging.getLogger("oasis.api")
@@ -108,7 +114,9 @@ def build_router(engine: ChatEngine) -> APIRouter:
         session_hash = hash_token(session)
         try:
             async with asyncio.timeout(engine.settings.request_timeout_s):
-                result = await engine.handle_turn(session_hash, body.message, _action(body.action))
+                result = await engine.handle_turn(
+                    session_hash, body.message, _action(body.action), client_ts=body.client_ts
+                )
         except InvalidSession:
             raise INVALID_SESSION from None
         except Exception as exc:  # last line of defence: the user always gets a reply
@@ -168,6 +176,27 @@ def build_router(engine: ChatEngine) -> APIRouter:
                 )
                 for t in turns
             ],
+        )
+
+    @router.get("/trends")
+    async def trends(session: SessionHeader = None) -> TrendsResponse:
+        session_hash = hash_token(session)
+        try:
+            info = await repo.get_session(session_hash)
+            if info is None:
+                raise INVALID_SESSION
+            records = await repo.list_signals(info.user_id)
+        except StorageError:
+            raise STORAGE_DOWN from None
+        cfg = load_tracking()
+        t = trend(records, session_hash, cfg)
+        return TrendsResponse(
+            label=t.label,
+            features=[FeatureInfoOut(name=n, **asdict(i)) for n, i in cfg.features.items()],
+            sessions=[SessionTrendOut(**asdict(s)) for s in t.sessions],
+            ewma=t.ewma,
+            change_flags=t.change_flags,
+            current=[TurnPointOut(at=at, valence=v) for at, v in t.current],
         )
 
     return router

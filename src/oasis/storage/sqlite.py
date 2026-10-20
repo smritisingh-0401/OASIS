@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import sqlite3
 import threading
 import uuid
 from collections.abc import Callable
+from dataclasses import asdict
 from importlib import resources
 from pathlib import Path
 from typing import TypeVar
@@ -18,7 +20,7 @@ from oasis.storage.repository import (
     StorageUnavailable,
     utc_now,
 )
-from oasis.types import AssessmentRecord, Mode, Role, TurnRecord
+from oasis.types import AssessmentRecord, Mode, Role, SignalRecord, TurnFeatures, TurnRecord
 
 T = TypeVar("T")
 
@@ -247,6 +249,32 @@ class SQLiteRepository:
             conn.execute("COMMIT")
 
         await self._run(op)
+
+    async def append_signals(self, user_id: str, session_hash: str, features: TurnFeatures) -> None:
+        now = utc_now()
+
+        def op(conn: sqlite3.Connection) -> None:
+            cur = conn.execute(
+                "INSERT INTO turn_signals (user_id, session_id_hash, created_at, features)"
+                " SELECT ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM sessions"
+                " WHERE session_id_hash = ? AND user_id = ?)",
+                (user_id, session_hash, now, json.dumps(asdict(features)), session_hash, user_id),
+            )
+            if cur.rowcount != 1:
+                raise sqlite3.IntegrityError("session not found for user")
+
+        await self._run(op)
+
+    async def list_signals(self, user_id: str) -> list[SignalRecord]:
+        def op(conn: sqlite3.Connection) -> list[SignalRecord]:
+            rows = conn.execute(
+                "SELECT session_id_hash, created_at, features FROM turn_signals"
+                " WHERE user_id = ? ORDER BY created_at, signal_id",
+                (user_id,),
+            ).fetchall()
+            return [SignalRecord(s, at, TurnFeatures(**json.loads(f))) for s, at, f in rows]
+
+        return await self._run(op)
 
     async def list_assessments(self, user_id: str) -> list[AssessmentRecord]:
         def op(conn: sqlite3.Connection) -> list[AssessmentRecord]:
