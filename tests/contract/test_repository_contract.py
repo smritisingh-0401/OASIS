@@ -15,7 +15,7 @@ import pytest
 from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import Repository, StorageError
 from oasis.storage.sqlite import SQLiteRepository
-from oasis.types import AssessmentRecord
+from oasis.types import AssessmentRecord, TurnFeatures
 
 BACKENDS: dict[str, Callable[[Path], Repository]] = {
     "memory": lambda tmp: MemoryRepository(),
@@ -239,3 +239,37 @@ async def test_invalid_assessments_are_rejected(repo: Repository, bad: dict[str,
     with pytest.raises((StorageError, ValueError)):
         await repo.save_assessment(uid, _assessment(**bad))
     assert await repo.list_assessments(uid) == []
+
+
+# --- language features (Phase 8) ------------------------------------------------------------
+
+
+def _features(**kw: Any) -> TurnFeatures:
+    base = TurnFeatures(valence=0.1, sadness=0.0, anxiety=0.2, anger=0.0, shame=0.0,
+                        loneliness=0.0, fp_pronoun_rate=0.25, absolutist_rate=0.0,
+                        msg_length=4, reply_latency_s=None, hour_of_day=10)  # fmt: skip
+    return replace(base, **kw)
+
+
+@pytest.mark.anyio
+async def test_signals_round_trip_in_order_and_per_user(repo: Repository) -> None:
+    a = await repo.create_user_session("a")
+    b = await repo.create_user_session("b")
+    first, second = _features(valence=-0.4), _features(valence=0.3, reply_latency_s=12.5)
+    await repo.append_signals(a, "a", first)
+    await repo.append_signals(a, "a", second)
+    await repo.append_signals(b, "b", _features())
+    records = await repo.list_signals(a)
+    assert [r.features for r in records] == [first, second]
+    assert {r.session_hash for r in records} == {"a"}
+    assert records[0].created_at <= records[1].created_at
+    assert len(await repo.list_signals(b)) == 1
+
+
+@pytest.mark.anyio
+async def test_signals_for_another_users_session_are_rejected(repo: Repository) -> None:
+    a = await repo.create_user_session("a")
+    await repo.create_user_session("b")
+    with pytest.raises(StorageError):
+        await repo.append_signals(a, "b", _features())
+    assert await repo.list_signals(a) == []

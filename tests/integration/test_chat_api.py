@@ -472,3 +472,45 @@ def test_psychoeducation_over_http(settings: Settings) -> None:
     assert combined["mode"] == "assessment"
     assert combined["preface"]
     assert combined["assessment"]["step"] == "offer"
+
+
+# --- mood trend (Phase 8, FR-TRK-3) ----------------------------------------------------------
+
+LABEL = "language-based mood trend, not a clinical measure"
+
+
+def test_trends_over_http(client: TestClient) -> None:
+    token = _session(client)
+    _chat(client, token, "I always feel so tired")
+    _chat(client, token, "a bit better now")
+    body = client.get("/trends", headers={HEADER: token}).json()
+    assert body["label"] == LABEL
+    assert len(body["current"]) == 2
+    assert len(body["sessions"]) == len(body["ewma"]) == 1
+    assert body["change_flags"] == [False]
+    info = {f["name"]: f for f in body["features"]}
+    assert info["valence"]["source"]
+    assert info["fp_pronoun_rate"]["source"]
+    assert info["msg_length"]["exploratory"] is True
+
+
+def test_trends_need_a_session(client: TestClient) -> None:
+    assert client.get("/trends").status_code == 401
+    assert client.get("/trends", headers={HEADER: "not-a-session"}).status_code == 401
+
+
+def test_the_trend_page_always_shows_the_label(client: TestClient) -> None:
+    page = client.get("/trends.html")
+    assert page.status_code == 200
+    assert LABEL in page.text
+    assert 'src="trends.js"' in page.text
+    assert client.get("/trends.js").status_code == 200
+    assert 'href="trends.html"' in client.get("/").text
+
+
+def test_memory_storage_writes_nothing_to_disk(settings: Settings, tmp_path: Path) -> None:
+    with TestClient(create_app(settings, llm=FakeLLM())) as c:
+        token = _session(c)
+        _chat(c, token, "I always feel so tired")
+        assert c.get("/trends", headers={HEADER: token}).status_code == 200
+    assert list(tmp_path.iterdir()) == []
