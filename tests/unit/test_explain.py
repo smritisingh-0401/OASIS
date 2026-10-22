@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import re
 from typing import Any
 
 import numpy as np
@@ -12,7 +13,7 @@ import shap
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from oasis.core.detectors.lexicon import load
+from oasis.core.detectors.lexicon import Lexicon, load
 from oasis.core.engine import ChatEngine
 from oasis.core.planner import plan_turn
 from oasis.explain import builder
@@ -24,6 +25,7 @@ from oasis.safety.normalize import base_form
 from oasis.safety.rules import load_ruleset
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
+from oasis.storage.repository import StorageUnavailable
 from oasis.types import ConversationState, ExerciseAction, Plan, RouterState
 
 LEXICONS = ("emotions", "cues", "distortions")
@@ -99,6 +101,14 @@ def test_features_are_ranked_and_never_zero() -> None:
     assert e.features[0].phi > 0  # "always" and "nobody" pushed the score up
 
 
+def test_a_score_below_zero_is_marked_clipped() -> None:
+    """No scorer has a negative bias today; one could, and the router would see 0."""
+    lex = Lexicon("t", -0.5, 1.0, ((re.compile(r"\bzzz\b"), 1.0),), "1", "x")
+    e = explain_lexicon("test.t", lex, "hello there", 2)
+    assert e.output == pytest.approx(-0.5)
+    assert e.clipped
+
+
 def test_a_score_past_the_clip_is_marked_clipped() -> None:
     norm = base_form("never never never never always always")
     lex = load("distortions")["overgeneralisation"]
@@ -141,7 +151,12 @@ def test_router_breakdown_is_exact() -> None:
 
 @pytest.mark.parametrize("message", MESSAGES)
 def test_same_input_gives_byte_identical_json(message: str) -> None:
-    assert build(message, _plan(message)) == build(message, _plan(message))
+    text = build(message, _plan(message))
+    assert text == build(message, _plan(message))
+    # Canonical form (sorted keys, no spaces): the bytes do not depend on the order the code
+    # happens to build the record in.
+    assert text == json.dumps(json.loads(text), sort_keys=True, separators=(",", ":"),
+                              ensure_ascii=False)  # fmt: skip
 
 
 def test_no_user_text_in_the_record() -> None:
@@ -162,7 +177,7 @@ def test_harsh_label_rule_is_part_of_the_sum() -> None:
 
 
 def test_button_press_explains_the_plan_but_no_detectors() -> None:
-    r = _record("Yes", typed=False)
+    r = _record(MESSAGES[0], typed=False)  # words that would fire several scorers if typed
     assert r["detectors"] == []
     assert r["status"] == "ok"
 
@@ -345,6 +360,19 @@ async def test_templated_replies_are_explained_too(settings: Settings) -> None:
     stored = json.loads(await engine.repo.get_explanation(uid, result.turn_id) or "{}")
     assert stored["plan"]["templated"] is True
     assert stored["status"] == "ok"
+
+
+@pytest.mark.anyio
+async def test_an_unsaved_reply_has_no_explanation_id(settings: Settings) -> None:
+    class FailingWrites(MemoryRepository):
+        async def append_turn(self, *args: Any, **kwargs: Any) -> Any:
+            raise StorageUnavailable
+
+    engine = _engine(settings, repo=FailingWrites())
+    await engine.repo.create_user_session("h")
+    result = await engine.handle_turn("h", MESSAGES[0])
+    assert result.persisted is False
+    assert result.explanation_id is None
 
 
 @pytest.mark.anyio

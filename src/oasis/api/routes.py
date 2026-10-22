@@ -6,7 +6,6 @@ import asyncio
 import datetime
 import hashlib
 import logging
-import re
 import secrets
 import uuid
 from dataclasses import asdict
@@ -59,7 +58,6 @@ class ApiError(Exception):
 INVALID_SESSION = ApiError(401, "invalid_session", "Session not found. Start a new session.")
 STORAGE_DOWN = ApiError(503, "storage_unavailable", "Saved data is unavailable right now.")
 NO_EXPLANATION = ApiError(404, "not_found", "No explanation for this reply.")
-TURN_ID = re.compile(r"[0-9a-f]{32}")
 
 
 def hash_token(token: str | None) -> str:
@@ -212,8 +210,6 @@ def build_router(engine: ChatEngine) -> APIRouter:
             info = await repo.get_session(session_hash)
             if info is None:
                 raise INVALID_SESSION
-            if not TURN_ID.fullmatch(explanation_id):
-                raise NO_EXPLANATION
             body = await repo.get_explanation(info.user_id, explanation_id)
         except StorageError:
             raise STORAGE_DOWN from None
