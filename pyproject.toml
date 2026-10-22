@@ -30,6 +30,9 @@ dev = [
     "psutil>=6.0",
     "types-psutil>=6.0",
     "types-pyyaml>=6.0",
+    # Test oracle only: proves the closed-form SHAP values in oasis.explain match
+    # shap.LinearExplainer. Never imported by the app (heavy: numpy, scipy, pandas).
+    "shap>=0.54",
 ]
 
 [build-system]
