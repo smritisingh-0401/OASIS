@@ -10,7 +10,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 9 — explainability** |
+| Current phase | **Phase 9 — explainability** (report written; awaiting Smriti's approval) |
 | Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5). 2026-10-13: Phase 7 approved by Smriti, including the manual-testing changes (DBT anger, exact exercise steps, companion after an exercise) and the closed known limits; merged (PR #6). 2026-10-22: Phase 8 approved by Smriti; merged (PR #7) |
 | In progress | Phase 9 on `phase-09-explainability` (from `main` at the Phase 8 merge) |
 | Next | Phase 10 (privacy and autonomy), after Phase 9 approval |
@@ -169,6 +169,8 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Gate latency on dense 2 000-character input | 10–35 ms on battery, over the 10 ms target; realistic messages p99 0.55 ms; combined pre-filter is the upgrade path |
 | Crisis detection recall on unseen phrasing | 88.7% on the held-out set before tuning; needs a fresh external set |
 | English-only; no fine-tuning; WEIRD-data caveat | By design for v1 |
+| Explanations with real-model replies | Not verified here (browser check ran with llama-server down, so replies were fallbacks); the explanation does not read the reply text |
+| Which words drove VADER valence | Not explained; valence enters the router explanation as one exact contribution |
 
 ---
 
@@ -218,6 +220,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-20 | 8 | Tests / coverage | 1209 passed; 98.5% overall (tracking 100%, router 100%, assessment 97.8%, safety 97.1%) |
 | 2026-10-20 | 8 | Mutation spot-check | 11/12 at first (latency from any turn); test added; 12/12 |
 | 2026-10-20 | 8 | Feature and trend speed (dev machine) | Features p50 0.031 ms, p99 0.047 ms per message; trend over 1,000 stored messages p50 51 ms (page open only) |
+| 2026-10-22 | 9 | Tests / coverage | 1291 passed; 98.57% overall (explain/builder 100%, shap_values 95%, router 100%, assessment 97.8%, safety 97.1%) |
+| 2026-10-22 | 9 | Explanation exactness (615 test-data messages x 22 scorers) | Additivity error at most 2.2e-16 (limit 1e-6); 615/615 `ok`; largest difference from `shap.LinearExplainer` 0.0; 615/615 byte-identical on rebuild |
+| 2026-10-22 | 9 | Explanation speed (dev machine) | p50 1.1-1.4 ms, p99 2.3-2.6 ms per reply; 1,840-character message 14.6-15.5 ms (32 ms before counting matches once); record median 827 bytes |
+| 2026-10-22 | 9 | Mutation spot-check | 15/20 at first (negative score not clipped, button-turn test vacuous, unsorted keys, ID for an unsaved reply; one redundant ID check); four tests added, the check removed; 19/19 |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
 | 2026-10-08 | 2 | Coverage | 98.09% overall; `oasis.safety` 97.13% |
