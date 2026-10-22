@@ -26,7 +26,7 @@ class FeatureValue:
 @dataclass(frozen=True)
 class DetectorExplanation:
     detector: str  # "<lexicon file>.<scorer>", e.g. "distortions.overgeneralisation"
-    output: float  # the scorer's pre-clip value, from the model formula (not from the phis)
+    output: float  # the scorer's own pre-clip value (Lexicon.linear), not a sum of the phis
     base: float
     features: tuple[FeatureValue, ...]  # every non-zero phi, largest |phi| first
     clipped: bool  # the score the router used was clipped to [0, 1]
@@ -52,10 +52,13 @@ def background(lex: Lexicon) -> tuple[float, ...]:
 def explain_lexicon(detector: str, lex: Lexicon, norm: str, n: int) -> DetectorExplanation:
     coef = [lex.scale * w for _, w in lex.terms]
     mean = background(lex)
-    x = lex.rates(norm, n)
+    counts = lex.counts(norm)  # matched once; the regexes are the slow part
+    x = [k / max(1, n) for k in counts]
     phis = [c * (xi - m) for c, xi, m in zip(coef, x, mean, strict=True)]
     base = lex.bias + sum(c * m for c, m in zip(coef, mean, strict=True))
-    output = lex.bias + sum(c * xi for c, xi in zip(coef, x, strict=True))
+    # The output is the scorer's own code, the one the router's score() runs, so checking
+    # base + sum(phi) against it tests the SHAP arithmetic rather than repeating it.
+    output = lex.linear(norm, n, counts)
     features = sorted(
         (FeatureValue(p.pattern, v) for (p, _), v in zip(lex.terms, phis, strict=True) if v),
         key=lambda f: -abs(f.phi),

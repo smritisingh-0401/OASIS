@@ -42,11 +42,13 @@ class PlainLanguage:
     signals: Mapping[str, str]
     modes: Mapping[str, str]
     traps: Mapping[str, str]
+    reasons: Mapping[str, str]  # planner reason code, or "family.*", -> one bullet
 
 
 def parse(raw: Mapping[str, Any]) -> PlainLanguage:
     require_review(raw, "plain-language explanations")
-    cfg = PlainLanguage(*(dict(raw[k]) for k in ("phrases", "signals", "modes", "traps")))
+    sections = ("phrases", "signals", "modes", "traps", "reasons")
+    cfg = PlainLanguage(*(dict(raw[k]) for k in sections))
     router_signals = {s for m in router_config().modes.values() for s in m.weights}
     needed = {
         "phrases": (set(PHRASES), cfg.phrases),
@@ -63,6 +65,7 @@ def parse(raw: Mapping[str, Any]) -> PlainLanguage:
             cfg.modes,
         ),
         "traps": (set(load("distortions")), cfg.traps),
+        "reasons": (set(), cfg.reasons),
     }
     for what, (keys, given) in needed.items():
         if not keys <= set(given) or not all(isinstance(v, str) and v for v in given.values()):
@@ -129,10 +132,15 @@ def _detectors(message: str) -> tuple[list[DetectorExplanation], bool]:
     for file in LEXICONS:
         for name, lex in load(file).items():
             e = explain_lexicon(f"{file}.{name}", lex, norm, n)
+            linear = e.output  # Lexicon.linear: the scorer's own value, before any rule
             if file == "distortions" and name == "labelling":
-                e = _with_harsh_label(e, harsh_label_score(norm, n))
-            # `output` comes from the model formula, the sum from the SHAP values.
-            consistent &= abs(e.base + sum(f.phi for f in e.features) - e.output) < TOLERANCE
+                rule = harsh_label_score(norm, n)
+                e = _with_harsh_label(e, rule)
+                # The rule's share must give back the score signals.py uses: the larger one.
+                used = max(_clip(linear), rule)
+                consistent &= abs(_clip(e.output) - used) < TOLERANCE
+            shap_sum = e.base + sum(f.phi for f in e.features if f.feature != HARSH_LABEL)
+            consistent &= abs(shap_sum - linear) < TOLERANCE
             if e.output > 0:
                 out.append(e)
     return out, consistent
@@ -141,11 +149,15 @@ def _detectors(message: str) -> tuple[list[DetectorExplanation], bool]:
 def _with_harsh_label(e: DetectorExplanation, rule: float) -> DetectorExplanation:
     """The harsh-label rule can raise the labelling score above the lexicon's (signals.py
     takes the larger); that share is one more additive feature, so the sum stays exact."""
-    bump = rule - min(1.0, max(0.0, e.output))
+    bump = rule - _clip(e.output)
     if bump <= 0:
         return e
     features = sorted((*e.features, FeatureValue(HARSH_LABEL, bump)), key=lambda f: -abs(f.phi))
     return replace(e, output=e.output + bump, features=tuple(features))
+
+
+def _clip(value: float) -> float:
+    return min(1.0, max(0.0, value))
 
 
 def _router_additive(route: RouteDecision | None) -> bool:
@@ -194,10 +206,26 @@ def _plain(plan: Plan, fallback_reason: str | None) -> list[str]:
     if plan.distortion_types:
         traps = ", ".join(cfg.traps[t] for t in sorted(plan.distortion_types))
         bullets.append(p["trap"].format(traps=traps))
-    bullets.append(_what_the_reply_does(plan, route, cfg))
+    # Without a route the planner chose the reply by precedence; its reason codes say why.
+    reasons = [] if route is not None else [cfg.reasons[k] for k in _reason_keys(plan, cfg)]
+    bullets.extend(reasons or [_what_the_reply_does(plan, route, cfg)])
     if fallback_reason is not None:
         bullets.append(p["fallback"])
     return bullets
+
+
+def _reason_keys(plan: Plan, cfg: PlainLanguage) -> list[str]:
+    """The `reasons` entries for this plan's codes, in order, each once."""
+    keys: list[str] = []
+    for code in plan.reason_codes:
+        if code == "assessment.offer" and plan.assessment is not None:
+            why = json.loads(plan.assessment.offer_reason).get("reason", "")
+            code = f"{code}.{why}"
+        family = code.split(".")[0] + ".*"
+        key = code if code in cfg.reasons else family if family in cfg.reasons else None
+        if key is not None and key not in keys:
+            keys.append(key)
+    return keys
 
 
 def _what_the_reply_does(plan: Plan, route: RouteDecision | None, cfg: PlainLanguage) -> str:

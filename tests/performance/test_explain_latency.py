@@ -5,9 +5,8 @@ from __future__ import annotations
 import datetime
 import time
 
-from oasis.explain.builder import build
-
 from oasis.core.planner import plan_turn
+from oasis.explain.builder import build
 from oasis.types import ConversationState
 
 NOW = datetime.datetime(2026, 10, 22, 12, tzinfo=datetime.UTC)

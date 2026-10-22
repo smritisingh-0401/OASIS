@@ -11,20 +11,20 @@ import pytest
 import shap
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from oasis.explain import builder
-from oasis.explain.builder import SCOPE_NOTE, build, unavailable
-from oasis.explain.shap_values import explain_lexicon, neutral_corpus
 
 from oasis.core.detectors.lexicon import load
 from oasis.core.engine import ChatEngine
 from oasis.core.planner import plan_turn
+from oasis.explain import builder
+from oasis.explain.builder import SCOPE_NOTE, build, unavailable
+from oasis.explain.shap_values import explain_lexicon, neutral_corpus
 from oasis.llm.fake import FakeLLM
 from oasis.safety.gate import RuleBasedSafetyGate
 from oasis.safety.normalize import base_form
 from oasis.safety.rules import load_ruleset
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
-from oasis.types import ConversationState, Plan
+from oasis.types import ConversationState, ExerciseAction, Plan, RouterState
 
 LEXICONS = ("emotions", "cues", "distortions")
 NOW = datetime.datetime(2026, 10, 22, 12, tzinfo=datetime.UTC)
@@ -178,6 +178,34 @@ def test_a_broken_sum_marks_the_record_inconsistent(monkeypatch: pytest.MonkeyPa
     assert _record(MESSAGES[0])["status"] == "inconsistent"
 
 
+def test_a_wrong_shap_value_marks_the_record_inconsistent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The check compares the SHAP sum with the scorer's own value, so a wrong phi shows."""
+    real = builder.explain_lexicon
+
+    def wrong_phi(*args: Any) -> Any:
+        e = real(*args)
+        if not e.features:
+            return e
+        first = type(e.features[0])(e.features[0].feature, e.features[0].phi + 0.5)
+        return type(e)(e.detector, e.output, e.base, (first, *e.features[1:]), e.clipped)
+
+    monkeypatch.setattr(builder, "explain_lexicon", wrong_phi)
+    assert _record(MESSAGES[0])["status"] == "inconsistent"
+
+
+def test_a_wrong_harsh_label_share_marks_the_record_inconsistent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Long enough that the rule's share (4.5 / 12 words) stays below the clip when doubled.
+    message = "honestly most days I think I'm a horrible person and that is that"
+    assert _record(message)["status"] == "ok"
+    real = builder._with_harsh_label
+    monkeypatch.setattr(builder, "_with_harsh_label", lambda e, rule: real(e, rule * 2))
+    assert _record(message)["status"] == "inconsistent"
+
+
 def test_unavailable_record_says_why() -> None:
     r = json.loads(unavailable("explain.error"))
     assert (r["status"], r["reason"], r["scope_note"]) == ("unavailable", "explain.error",
@@ -204,6 +232,58 @@ def test_a_fallback_reply_says_it_was_prewritten() -> None:
                 fallback_reason="guard.fallback")  # fmt: skip
     assert r["guard"]["fallback"] == "guard.fallback"
     assert any("pre-written" in b for b in r["plain_language"])
+
+
+# Every planner reason code that decides a reply without the router (planner.py).
+UNROUTED_CODES = [
+    "assessment.accept", "assessment.answer", "assessment.decline", "assessment.pause",
+    "assessment.resume", "assessment.abort", "assessment.none_open", "assessment.free_text",
+    "assessment.not_saved", "psychoed.low_mood", "exercise.decline", "exercise.stop",
+    "exercise.none_open", "post_crisis.cleared",
+]  # fmt: skip
+
+
+@pytest.mark.parametrize("code", UNROUTED_CODES)
+def test_every_unrouted_reason_has_a_bullet(code: str) -> None:
+    plan = Plan(mode="companion", templated=True, reason_codes=("planner.passthrough", code))
+    bullets = json.loads(build("hello", plan, typed=False))["plain_language"]
+    assert bullets == [builder.config().reasons[builder._reason_keys(plan, builder.config())[0]]]
+
+
+def test_a_psychoeducation_reply_says_what_prompted_it() -> None:
+    plan = _plan(MESSAGES[6])
+    assert plan.mode == "psychoed"
+    bullets = _record(MESSAGES[6])["plain_language"]
+    assert builder.config().reasons["psychoed.*"] in bullets
+    assert builder.config().modes["psychoed"] not in bullets  # one bullet, not two
+
+
+@pytest.mark.parametrize(("message", "key"), [
+    ("can I take the PHQ-9", "assessment.offer.explicit_request"),
+])  # fmt: skip
+def test_a_screening_offer_says_why_it_was_offered(message: str, key: str) -> None:
+    assert _record(message)["plain_language"][0] == builder.config().reasons[key]
+
+
+def test_an_offer_and_an_explanation_together_get_both_bullets() -> None:
+    plan = Plan(mode="assessment", templated=True,
+                reason_codes=("assessment.offer", "psychoed.low_mood"),
+                assessment=_plan("can I take the PHQ-9").assessment)  # fmt: skip
+    bullets = json.loads(build("x", plan))["plain_language"]
+    reasons = builder.config().reasons
+    assert bullets == [reasons["assessment.offer.explicit_request"], reasons["psychoed.*"]]
+
+
+def test_a_declined_exercise_says_so() -> None:
+    state = ConversationState(now=NOW, router=RouterState(offered="cbt"))
+    plan = plan_turn("Not now", state, ExerciseAction("decline"))
+    bullets = json.loads(build("Not now", plan, typed=False))["plain_language"]
+    assert bullets == [builder.config().reasons["exercise.decline"]]
+
+
+def test_routed_replies_use_signals_not_reason_bullets() -> None:
+    bullets = _record(MESSAGES[2])["plain_language"]
+    assert not set(bullets) & set(builder.config().reasons.values())
 
 
 def test_config_covers_every_mode_signal_and_trap() -> None:
