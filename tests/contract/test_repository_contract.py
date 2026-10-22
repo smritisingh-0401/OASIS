@@ -273,3 +273,33 @@ async def test_signals_for_another_users_session_are_rejected(repo: Repository) 
     with pytest.raises(StorageError):
         await repo.append_signals(a, "b", _features())
     assert await repo.list_signals(a) == []
+
+
+# --- explanations (Phase 9) -----------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_explanation_round_trip_and_scoping(repo: Repository) -> None:
+    a = await repo.create_user_session("a")
+    b = await repo.create_user_session("b")
+    body = '{"status":"ok"}'
+    await repo.append_turn(a, "a", turn_id="u1", role="user", content="hi", mode=None,
+                           trace_json=None)  # fmt: skip
+    await repo.append_turn(a, "a", turn_id="r1", role="assistant", content="hello",
+                           mode="companion", trace_json=None, explanation_json=body)  # fmt: skip
+    assert await repo.get_explanation(a, "r1") == body
+    assert await repo.get_explanation(b, "r1") is None
+    assert await repo.get_explanation(a, "u1") is None
+    assert await repo.get_explanation(a, "missing") is None
+    turns = await repo.recent_turns(a, "a", 10)
+    assert [t.has_explanation for t in turns] == [False, True]
+
+
+@pytest.mark.anyio
+async def test_explanation_must_be_json(repo: Repository) -> None:
+    a = await repo.create_user_session("a")
+    with pytest.raises(StorageError):
+        await repo.append_turn(a, "a", turn_id="r1", role="assistant", content="hello",
+                               mode="companion", trace_json=None,
+                               explanation_json="not json")  # fmt: skip
+    assert await repo.recent_turns(a, "a", 10) == []

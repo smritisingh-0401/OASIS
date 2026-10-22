@@ -514,3 +514,53 @@ def test_memory_storage_writes_nothing_to_disk(settings: Settings, tmp_path: Pat
         _chat(c, token, "I always feel so tired")
         assert c.get("/trends", headers={HEADER: token}).status_code == 200
     assert list(tmp_path.iterdir()) == []
+
+
+# --- explanations (Phase 9) -----------------------------------------------------------------
+
+
+def test_every_reply_links_to_its_explanation(client: TestClient) -> None:
+    token = _session(client)
+    reply = _chat(client, token, "I always mess everything up").json()
+    assert reply["explanation_id"] == reply["turn_id"]
+    resp = client.get(f"/explanations/{reply['explanation_id']}", headers={HEADER: token})
+    assert resp.status_code == 200
+    assert resp.headers["cache-control"] == "no-store"
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert "exact wording" in body["scope_note"]
+    assert body["plain_language"]
+
+
+def test_history_marks_explained_replies(client: TestClient) -> None:
+    token = _session(client)
+    reply = _chat(client, token, "hello").json()
+    turns = client.get("/history", headers={HEADER: token}).json()["turns"]
+    assert [(t["role"], t["explanation_id"]) for t in turns] == [
+        ("user", None),
+        ("assistant", reply["turn_id"]),
+    ]
+
+
+def test_explanations_are_scoped_to_the_session_user(client: TestClient) -> None:
+    owner, other = _session(client), _session(client)
+    eid = _chat(client, owner, "hello").json()["explanation_id"]
+    assert client.get(f"/explanations/{eid}", headers={HEADER: other}).status_code == 404
+    assert client.get(f"/explanations/{eid}").status_code == 401
+    assert client.get("/explanations/" + "0" * 32, headers={HEADER: owner}).status_code == 404
+    assert client.get("/explanations/not-an-id", headers={HEADER: owner}).status_code == 404
+
+
+def test_crisis_reply_carries_no_explanation(client: TestClient) -> None:
+    token = _session(client)
+    body = _chat(client, token, "I want to kill myself").json()
+    assert body["mode"] == "crisis"
+    assert body["explanation_id"] is None
+
+
+def test_the_why_panel_is_fetched_on_demand() -> None:
+    js = (Path(oasis.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
+    assert "/explanations/" in js
+    assert "Why this reply?" in js
+    assert "See details" in js
+    assert "Explanation unavailable for this reply." in js
