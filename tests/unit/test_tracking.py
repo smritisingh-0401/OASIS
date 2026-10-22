@@ -7,10 +7,10 @@ from dataclasses import fields, replace
 from typing import Any
 
 import pytest
-from oasis.tracking.aggregate import change_flags, ewma, summarise, trend
-from oasis.tracking.features import load_config, parse, turn_features
 
 from oasis.core.signals import EMOTIONS, extract
+from oasis.tracking.aggregate import change_flags, ewma, summarise, trend
+from oasis.tracking.features import load_config, parse, turn_features
 from oasis.types import SignalRecord, TurnFeatures
 
 UTC = datetime.UTC
@@ -122,13 +122,15 @@ def test_a_valid_config_parses() -> None:
     lambda r: r.update(review_status="approved"),
     lambda r: r["features"].pop("valence"),
     lambda r: r["features"].update(extra={"exploratory": True}),
-    lambda r: r["features"]["valence"].update(source="Someone (2020)"),  # both
-    lambda r: r["features"].update(valence={}),                          # neither
+    lambda r: r["features"]["valence"].update(source="Someone (2020)"),
+    lambda r: r["features"].update(valence={}),
     lambda r: r.update(label="mood score"),
     lambda r: r["aggregation"].update(ewma_alpha=1.5),
     lambda r: r["aggregation"].update(baseline_sessions=1),
     lambda r: r.update(absolutist=[]),
-])  # fmt: skip
+], ids=["approved_status", "missing_feature", "extra_feature", "source_and_exploratory",
+        "neither_source_nor_exploratory", "other_label", "alpha_out_of_range",
+        "baseline_too_small", "empty_word_list"])  # fmt: skip
 def test_an_invalid_config_is_rejected(change: Any) -> None:
     raw = _raw()
     change(raw)
