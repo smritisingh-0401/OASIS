@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import datetime
 import time
 from collections.abc import Sequence
+from dataclasses import asdict
 from typing import Any
 
 import pytest
@@ -724,3 +726,61 @@ async def test_a_soft_draft_is_kept_when_there_is_no_time_to_retry(settings: Set
     result = await engine.handle_turn("h", "and the bus was late")
     assert result.reply == SAID
     assert llm.calls == 2  # one per turn: no retry
+
+
+# --- language features (Phase 8, FR-TRK-1) --------------------------------------------------
+
+
+class SignalsFail(MemoryRepository):
+    async def append_signals(self, *args: Any, **kwargs: Any) -> None:
+        raise StorageUnavailable()
+
+
+@pytest.mark.anyio
+async def test_a_turn_records_its_language_features(settings: Settings) -> None:
+    engine = _engine(settings)
+    uid = await _session(engine)
+    local = datetime.datetime.fromisoformat("2026-10-20T22:15:00+05:30")
+    await engine.handle_turn("h", "I always feel tired", client_ts=local)
+    (rec,) = await engine.repo.list_signals(uid)
+    assert rec.session_hash == "h"
+    assert (rec.features.msg_length, rec.features.hour_of_day) == (4, 22)
+    assert rec.features.reply_latency_s is None  # nothing to reply to yet
+    assert all(v is None or isinstance(v, int | float) for v in asdict(rec.features).values())
+    await engine.handle_turn("h", "still tired")
+    second = (await engine.repo.list_signals(uid))[1]
+    assert second.features.reply_latency_s is not None
+    assert second.features.reply_latency_s >= 0
+
+
+@pytest.mark.anyio
+async def test_crisis_and_button_turns_record_no_features(settings: Settings) -> None:
+    engine = _engine(settings)
+    uid = await _session(engine)
+    crisis = await engine.handle_turn("h", "I want to kill myself")
+    assert crisis.mode == "crisis"
+    other = await _session(engine, "h2")
+    await engine.handle_turn("h2", "Yes, let's try", ExerciseAction("accept"))
+    assert await engine.repo.list_signals(uid) == []
+    assert await engine.repo.list_signals(other) == []
+
+
+@pytest.mark.anyio
+async def test_a_failed_feature_write_does_not_fail_the_turn(settings: Settings) -> None:
+    engine = _engine(settings, repo=SignalsFail())
+    await _session(engine)
+    result = await engine.handle_turn("h", "hello there")
+    assert result.persisted
+    assert result.fallback_reason is None
+    assert "storage.down" in result.degraded
+
+
+def test_reply_latency_counts_from_the_last_reply_not_the_last_turn() -> None:
+    from oasis.core.engine import _last_reply_at
+
+    history = [
+        TurnRecord("a", 1, "assistant", "Hi.", "companion", "2026-10-20T10:00:00.000Z"),
+        TurnRecord("u", 2, "user", "hello", None, "2026-10-20T10:05:00.000Z"),
+    ]
+    assert _last_reply_at(history) == datetime.datetime(2026, 10, 20, 10, 0, tzinfo=datetime.UTC)
+    assert _last_reply_at([]) is None

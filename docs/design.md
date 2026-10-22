@@ -451,6 +451,16 @@ Latency uses **server** timestamps (client clocks are untrusted); client time is
 - **Trend:** EWMA over session means, `α = 0.3`.
 - **Change flag:** once the user has ≥ `K = 5` prior sessions, flag a session whose mean valence is more than `z = 1.5` baseline SDs from the baseline mean (baseline = all prior sessions). Label: "language-based mood trend, not a clinical measure."
 
+### 9.3 As built (Phase 8)
+- **Features** (`tracking/features.py`): computed by the engine at stage 8 for every typed user message, from the message and the `Signals` already extracted. Not for button presses (their label is not the user's words) and never for crisis messages (nothing after the safety gate runs). Stored as numbers only in `turn_signals` (migration `0004`, JSON of `TurnFeatures`; deleted with the user).
+  - `fp_pronoun_rate` counts I, me, myself and their contractions, **not** possessive my / mine: Tackman et al. (2019) found the depression link for every first-person singular form except the possessive.
+  - `absolutist_rate` uses the 19-word dictionary of Al-Mosaiwi & Johnstone (2018); a word right after a negation or qualifier ("not completely", "almost always") is left out, as the paper subtracts these false positives.
+  - `reply_latency_s` runs from OASIS's last stored reply in the session (server time), capped at 600 s; `hour_of_day` is the client's local hour (the browser now sends its local time with its offset).
+- **Citations** (`content/tracking/features.yaml`, CR-21): valence, first-person pronouns and absolutist words carry a checked source and a note on what it does not show; the rest are labelled exploratory. The loader rejects a feature with both or neither, and any other label.
+- **Aggregation** (`tracking/aggregate.py`): per-session mean and sample variance (`statistics`), EWMA over session mean valence (α = 0.3), and the change flag (K = 5, z = 1.5, sample SD; a baseline with no spread flags nothing). Recomputed from the stored features on each request, so no running state is kept; this replaces the Welford update the design named.
+- **Trend view:** `GET /trends` (label, per-feature sources, sessions with means and variances, EWMA, change flags, this session's valence per turn) and `web/trends.html` / `trends.js`, linked from the chat header. The label is always visible; flagged sessions are described as "noticeably different words … about word choice only".
+- **Known gap:** every browser session is a new pseudonymous user (Smriti, 2026-10-20: build the cross-session parts now, prove them on synthetic timelines), so the cross-session line and the change flag fill in only once returning users exist (Phase 10 / 13).
+
 ---
 
 ## 10. Explanation format

@@ -219,6 +219,30 @@ class ChatMessage:
 
 
 @dataclass(frozen=True)
+class TurnFeatures:
+    """Language features of one user message (design §9.1). Numbers only, never text."""
+
+    valence: float  # VADER compound, -1..1
+    sadness: float  # emotion lexicon scores, 0..1
+    anxiety: float
+    anger: float
+    shame: float
+    loneliness: float
+    fp_pronoun_rate: float  # I, me, myself per word
+    absolutist_rate: float  # absolutist words per word, negated uses left out
+    msg_length: int  # words
+    reply_latency_s: float | None  # since the previous reply in the session, capped
+    hour_of_day: int | None  # the user's local hour, from the client clock
+
+
+@dataclass(frozen=True)
+class SignalRecord:
+    session_hash: str
+    created_at: str
+    features: TurnFeatures
+
+
+@dataclass(frozen=True)
 class TurnRecord:
     turn_id: str
     seq: int

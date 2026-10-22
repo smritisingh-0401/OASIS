@@ -19,6 +19,7 @@ from dataclasses import dataclass, replace
 
 from oasis.assessment.flow import ITEM9, active
 from oasis.core.planner import plan_turn
+from oasis.core.signals import extract
 from oasis.core.templates import TEMPLATES, fallback_template
 from oasis.core.trace import StageClock, trace_to_json
 from oasis.guard.checks import SOFT_RULES
@@ -35,6 +36,7 @@ from oasis.storage.repository import (
     StorageBusy,
     StorageError,
 )
+from oasis.tracking.features import turn_features
 from oasis.types import (
     AssessmentAction,
     AssessmentCard,
@@ -124,8 +126,14 @@ class ChatEngine:
         self._post_crisis: set[str] = set()
 
     async def handle_turn(
-        self, session_hash: str, message: str, action: Action | None = None
+        self,
+        session_hash: str,
+        message: str,
+        action: Action | None = None,
+        *,
+        client_ts: datetime.datetime | None = None,
     ) -> TurnResult:
+        received_at = datetime.datetime.now(datetime.UTC)
         timeout = self.settings.request_timeout_s
         # Reserve a tenth of the budget for recording, so generation never eats it all.
         deadline = time.monotonic() + timeout * 0.9
@@ -244,6 +252,19 @@ class ChatEngine:
                 persisted = True
             except StorageError as exc:
                 degraded.add(_storage_code(exc))
+        if persisted and action is None:
+            # Language features of what they typed (design §9.1); a button press is not
+            # their words. Numbers only; a failed write never fails the turn.
+            features = turn_features(
+                message,
+                extract(message),
+                received_at=received_at,
+                last_reply_at=_last_reply_at(history),
+                client_ts=client_ts,
+            )
+            await self._best_effort(
+                user_id, degraded, lambda uid: self.repo.append_signals(uid, session_hash, features)
+            )
         clock.mark("record", "ok" if persisted else "skipped")
 
         turn_log.info(trace_to_json(_trace(turn_id, clock, verdict, plan, draft, degraded)))
@@ -423,6 +444,12 @@ def _trace(
         plan.reason_codes,
         plan.route,
     )
+
+
+def _last_reply_at(history: Sequence[TurnRecord]) -> datetime.datetime | None:
+    """When OASIS last replied in this session (server time), for the reply latency."""
+    last = next((t for t in reversed(history) if t.role == "assistant"), None)
+    return datetime.datetime.fromisoformat(last.created_at) if last else None
 
 
 def _item9_positive(action: Action | None) -> bool:

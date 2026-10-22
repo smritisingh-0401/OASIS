@@ -11,6 +11,7 @@ import pytest
 import oasis.storage
 from oasis.storage.repository import StorageBusy, StorageUnavailable
 from oasis.storage.sqlite import SQLiteRepository
+from oasis.types import TurnFeatures
 
 
 @pytest.mark.anyio
@@ -114,3 +115,17 @@ async def test_closed_database_raises_storage_unavailable(tmp_path: Path) -> Non
     with pytest.raises(StorageUnavailable):
         await repo.get_session("h")
     assert await repo.ping() is False
+
+
+@pytest.mark.anyio
+async def test_signals_are_deleted_with_their_user(tmp_path: Path) -> None:
+    path = tmp_path / "s.db"
+    repo = SQLiteRepository(path)
+    uid = await repo.create_user_session("h")
+    await repo.append_signals(uid, "h", TurnFeatures(0.1, 0, 0, 0, 0, 0, 0.2, 0.0, 5, None, 9))
+    await repo.close()
+    with closing(sqlite3.connect(path)) as conn:
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.execute("DELETE FROM users WHERE user_id = ?", (uid,))
+        conn.commit()
+        assert conn.execute("SELECT COUNT(*) FROM turn_signals").fetchone() == (0,)

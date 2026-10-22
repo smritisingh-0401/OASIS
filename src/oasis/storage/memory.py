@@ -11,7 +11,7 @@ from oasis.storage.repository import (
     StorageUnavailable,
     utc_now,
 )
-from oasis.types import AssessmentRecord, Mode, Role, TurnRecord
+from oasis.types import AssessmentRecord, Mode, Role, SignalRecord, TurnFeatures, TurnRecord
 
 _MAX_TOTAL = {"PHQ9": 27, "GAD7": 21}
 
@@ -26,6 +26,7 @@ class MemoryRepository:
         self._router: dict[str, str] = {}  # session_hash -> router state JSON
         self._audit: dict[str, list[AuditRecord]] = {}  # user_id -> records
         self._assessments: dict[str, list[AssessmentRecord]] = {}  # user_id -> records
+        self._signals: dict[str, list[SignalRecord]] = {}  # user_id -> records
 
     async def create_user_session(self, session_hash: str) -> str:
         user_id = uuid.uuid4().hex
@@ -104,6 +105,15 @@ class MemoryRepository:
 
     async def list_assessments(self, user_id: str) -> list[AssessmentRecord]:
         return list(self._assessments.get(user_id, []))
+
+    async def append_signals(self, user_id: str, session_hash: str, features: TurnFeatures) -> None:
+        if self._sessions.get(session_hash) != user_id:
+            raise StorageUnavailable("session not found for user")
+        record = SignalRecord(session_hash, utc_now(), features)
+        self._signals.setdefault(user_id, []).append(record)
+
+    async def list_signals(self, user_id: str) -> list[SignalRecord]:
+        return list(self._signals.get(user_id, []))
 
     async def ping(self) -> bool:
         return True

@@ -230,10 +230,19 @@ async function sendText(text, action) {
   }
 }
 
+// Local time with its UTC offset, so the server can read the user's local hour for the
+// mood trend (design §9.1); toISOString() would give UTC.
+function localTimestamp(d = new Date()) {
+  const off = -d.getTimezoneOffset();
+  const pad = (n) => String(Math.floor(Math.abs(n))).padStart(2, "0");
+  const local = new Date(d.getTime() + off * 60000).toISOString().slice(0, 19);
+  return `${local}${off >= 0 ? "+" : "-"}${pad(off / 60)}:${pad(off % 60)}`;
+}
+
 async function send(text, action) {
   const payload = JSON.stringify({
     message: text,
-    client_ts: new Date().toISOString(),
+    client_ts: localTimestamp(),
     action: action || null,
   });
   const request = () =>

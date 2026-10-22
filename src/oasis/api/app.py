@@ -32,6 +32,7 @@ from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import Repository
 from oasis.storage.sqlite import SQLiteRepository
+from oasis.tracking.features import load_config as load_tracking
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
@@ -78,6 +79,7 @@ def create_app(
     load_techniques()
     load_psychoed()
     load_reply_checks()
+    load_tracking()
     index_html = render_index(
         (WEB_DIR / "index.html").read_text(encoding="utf-8"),
         crisis_resources or load_resources(),

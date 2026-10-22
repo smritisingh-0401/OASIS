@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol
 
-from oasis.types import AssessmentRecord, Mode, Role, TurnRecord
+from oasis.types import AssessmentRecord, Mode, Role, SignalRecord, TurnFeatures, TurnRecord
 
 
 class StorageError(Exception):
@@ -79,6 +79,14 @@ class Repository(Protocol):
 
     async def list_assessments(self, user_id: str) -> list[AssessmentRecord]:
         """This user's assessments, oldest first."""
+        ...
+
+    async def append_signals(
+        self, user_id: str, session_hash: str, features: TurnFeatures
+    ) -> None: ...
+
+    async def list_signals(self, user_id: str) -> list[SignalRecord]:
+        """This user's per-turn features across all their sessions, oldest first."""
         ...
 
     async def ping(self) -> bool: ...
