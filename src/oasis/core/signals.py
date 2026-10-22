@@ -39,14 +39,17 @@ def claims(message: str) -> tuple[frozenset[str], ...]:
     return tuple(found)
 
 
+def harsh_label_score(norm: str, n: int) -> float:
+    """An unlisted harsh label ("I'm a horrible person") scores like one labelling term."""
+    return min(1.0, LABEL_TERM / max(n, 1)) if harsh_label(norm, FIRST_PERSON) else 0.0
+
+
 def extract(message: str) -> Signals:
     norm = base_form(message)
     n = len(norm.split())
     emotions, cues, distortions = load("emotions"), load("cues"), load("distortions")
     by_type = {name: lex.score(norm, n) for name, lex in distortions.items()}
-    if harsh_label(norm, FIRST_PERSON):
-        # An unlisted harsh label ("I'm a horrible person") scores like one labelling term.
-        by_type["labelling"] = max(by_type["labelling"], min(1.0, LABEL_TERM / max(n, 1)))
+    by_type["labelling"] = max(by_type["labelling"], harsh_label_score(norm, n))
     return Signals(
         valence=valence(message),
         emotions={e: emotions[e].score(norm, n) for e in EMOTIONS},

@@ -54,7 +54,7 @@ async function api(path, options = {}) {
   return fetch(path, { ...options, headers });
 }
 
-function addMessage(role, text, note) {
+function addMessage(role, text, note, explanationId) {
   const item = document.createElement("li");
   item.className = "msg " + ({ user: "user", placeholder: "system" }[role] || "bot");
   const body = document.createElement("p");
@@ -66,9 +66,42 @@ function addMessage(role, text, note) {
     small.textContent = note;
     item.appendChild(small);
   }
+  if (explanationId) item.appendChild(whyPanel(explanationId));
   messages.appendChild(item);
   item.scrollIntoView({ block: "end" });
   return item;
+}
+
+// "Why this reply?" (design §10, FR-XAI-3): fetched the first time it is opened. The
+// plain-language bullets come first; "See details" shows the raw record (the debug view).
+function whyPanel(explanationId) {
+  const panel = document.createElement("details");
+  panel.className = "why";
+  const summary = document.createElement("summary");
+  summary.textContent = "Why this reply?";
+  panel.appendChild(summary);
+  panel.addEventListener("toggle", async () => {
+    if (!panel.open || panel.dataset.loaded) return;
+    panel.dataset.loaded = "1";
+    let body = null;
+    try {
+      const resp = await api("/explanations/" + encodeURIComponent(explanationId));
+      if (resp.ok) body = await resp.json();
+    } catch {
+      // Shown as unavailable below; the reply itself is unaffected.
+    }
+    if (!body || body.status === "unavailable") {
+      panel.appendChild(line("p", "Explanation unavailable for this reply.", "why-note"));
+      return;
+    }
+    const list = document.createElement("ul");
+    for (const text of body.plain_language) list.appendChild(line("li", text));
+    const details = document.createElement("details");
+    details.className = "why-details";
+    details.append(line("summary", "See details"), line("pre", JSON.stringify(body, null, 2)));
+    panel.append(list, line("p", body.scope_note, "why-note"), details);
+  });
+  return panel;
 }
 
 function setBusy(busy) {
@@ -87,7 +120,7 @@ async function loadHistory() {
     }
     if (!resp.ok) return;
     const body = await resp.json();
-    for (const turn of body.turns) addMessage(turn.role, turn.content);
+    for (const turn of body.turns) addMessage(turn.role, turn.content, "", turn.explanation_id);
     // An open questionnaire picks up where it was: its buttons come back with the history.
     showCard(body);
     // Post-crisis mode outlives a reload, so the way out must too.
@@ -209,7 +242,7 @@ async function sendText(text, action) {
     // A crisis turn is never stored by design, so the not-saved note would only alarm.
     const note = body.persisted || body.mode === "crisis" ? "" : "This message may not have been saved.";
     if (body.preface) addMessage("assistant", body.preface);
-    addMessage("assistant", body.reply, note);
+    addMessage("assistant", body.reply, note, body.explanation_id);
     status.textContent = "";
     showCard(body);
     if (body.mode === "crisis" || body.mode === "post_crisis") {

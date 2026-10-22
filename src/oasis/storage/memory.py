@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 
 from oasis.storage.repository import (
@@ -27,6 +28,7 @@ class MemoryRepository:
         self._audit: dict[str, list[AuditRecord]] = {}  # user_id -> records
         self._assessments: dict[str, list[AssessmentRecord]] = {}  # user_id -> records
         self._signals: dict[str, list[SignalRecord]] = {}  # user_id -> records
+        self._explanations: dict[tuple[str, str], str] = {}  # (user_id, turn_id) -> JSON
 
     async def create_user_session(self, session_hash: str) -> str:
         user_id = uuid.uuid4().hex
@@ -52,13 +54,24 @@ class MemoryRepository:
         content: str,
         mode: Mode | None,
         trace_json: str | None,
+        explanation_json: str | None = None,
     ) -> TurnRecord:
         if self._sessions.get(session_hash) != user_id:
             raise StorageUnavailable("session not found for user")
+        if explanation_json is not None:
+            try:  # mirrors the SQLite json_valid CHECK
+                json.loads(explanation_json)
+            except ValueError:
+                raise StorageUnavailable("invalid explanation") from None
+            self._explanations[(user_id, turn_id)] = explanation_json
         turns = self._turns[session_hash]
-        record = TurnRecord(turn_id, len(turns) + 1, role, content, mode, utc_now())
+        record = TurnRecord(turn_id, len(turns) + 1, role, content, mode, utc_now(),
+                            explanation_json is not None)  # fmt: skip
         turns.append(record)
         return record
+
+    async def get_explanation(self, user_id: str, turn_id: str) -> str | None:
+        return self._explanations.get((user_id, turn_id))
 
     async def recent_turns(self, user_id: str, session_hash: str, limit: int) -> list[TurnRecord]:
         if self._sessions.get(session_hash) != user_id or limit <= 0:

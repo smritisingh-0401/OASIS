@@ -31,9 +31,17 @@ class Lexicon:
     version: str
     review_status: str
 
-    def score(self, norm: str, n_tokens: int) -> float:
+    def linear(self, norm: str, n_tokens: int) -> float:
+        """The pre-clip value: the linear model the explanation decomposes (design §10.1)."""
         rate = sum(w * len(p.findall(norm)) for p, w in self.terms) / max(1, n_tokens)
-        return min(1.0, max(0.0, self.bias + self.scale * rate))
+        return self.bias + self.scale * rate
+
+    def score(self, norm: str, n_tokens: int) -> float:
+        return min(1.0, max(0.0, self.linear(norm, n_tokens)))
+
+    def rates(self, norm: str, n_tokens: int) -> tuple[float, ...]:
+        """The feature vector x: each term's count per token, in file order."""
+        return tuple(len(p.findall(norm)) / max(1, n_tokens) for p, _ in self.terms)
 
 
 def parse(raw: Mapping[str, Any]) -> dict[str, Lexicon]:

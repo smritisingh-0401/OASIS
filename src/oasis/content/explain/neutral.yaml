@@ -1,0 +1,39 @@
+# Background data for the SHAP values of the lexicon scorers (design §10.1): E[x_i] is each
+# term's mean rate over these sentences, so a word that is common in ordinary talk ("always",
+# "everyone") explains less than one that is not. Synthetic everyday messages, written for
+# this file; never user data.
+schema: oasis.content/v1
+kind: background_corpus
+version: "2026.10.0"
+review_status: needs_clinician_review
+sentences:
+  - "I had a long day at work today."
+  - "The bus was late again this morning."
+  - "We are going to my aunt's place for dinner on Sunday."
+  - "I made pasta tonight and it turned out fine."
+  - "My exams start next week, so I'm revising."
+  - "I always have tea before I go to bed."
+  - "Everyone in my class has to give a short talk."
+  - "I watched a film with my brother last night."
+  - "It's been raining all week here."
+  - "I never remember to water the plants."
+  - "Work was busy but it was okay."
+  - "I went for a walk in the park after lunch."
+  - "My friend is visiting next month."
+  - "I'm trying to read more books this year."
+  - "The new phone is taking some getting used to."
+  - "Nobody was at the gym this morning, which was nice."
+  - "I cooked for the whole family on Friday."
+  - "We have a team meeting every Monday."
+  - "I need to buy groceries after work."
+  - "My sister started a new job last week."
+  - "I'm thinking about learning to play the guitar."
+  - "The train was quiet on the way home."
+  - "I finished the report I was working on."
+  - "I'm going to the market tomorrow."
+  - "I spent the evening tidying my room."
+  - "Every time I visit my grandparents they make too much food."
+  - "I'm not sure what to have for breakfast."
+  - "I talked to my mum on the phone for an hour."
+  - "The weather is supposed to be better at the weekend."
+  - "I got a haircut today."

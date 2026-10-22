@@ -22,6 +22,8 @@ from oasis.core.planner import plan_turn
 from oasis.core.signals import extract
 from oasis.core.templates import TEMPLATES, fallback_template
 from oasis.core.trace import StageClock, trace_to_json
+from oasis.explain.builder import build as build_explanation
+from oasis.explain.builder import unavailable
 from oasis.guard.checks import SOFT_RULES
 from oasis.guard.checks import check as check_reply
 from oasis.guard.socratic import socratic_question
@@ -69,6 +71,7 @@ ITEM9_VERDICT = SafetyVerdict(
 Action = AssessmentAction | ExerciseAction
 Planner = Callable[[str, ConversationState, Action | None], Plan]
 Guard = Callable[[str, Plan], GuardVerdict]
+Explainer = Callable[..., str]  # (message, plan, *, typed, attempts, ...) -> explanation JSON
 
 
 class InvalidSession(Exception):
@@ -93,6 +96,7 @@ class TurnResult:
     # Assessment escalated by a PHQ-9 item-9 answer, saved after the handoff is sent.
     escalated: AssessmentRecord | None = None
     preface: str | None = None  # shown as its own message before `reply`
+    explanation_id: str | None = None  # the reply's turn ID, once its explanation is stored
 
 
 @dataclass
@@ -113,6 +117,7 @@ class ChatEngine:
         settings: Settings,
         planner: Planner = plan_turn,
         guard: Guard = check_reply,
+        explainer: Explainer = build_explanation,
     ) -> None:
         self.safety = safety
         self.llm = llm
@@ -120,6 +125,7 @@ class ChatEngine:
         self.settings = settings
         self.planner = planner
         self.guard = guard
+        self.explainer = explainer
         # Sessions in post-crisis mode, held in memory so the policy holds even when
         # storage is down (design §2.4). Known limit: grows with crisis sessions only and is
         # lost on restart; the persisted flag covers restarts when storage works.
@@ -216,7 +222,21 @@ class ChatEngine:
                 draft.reply = f"{draft.reply} {plan.snippet}"  # the step itself, as written
         clock.mark("generate", draft.fallback_reason or "ok")
 
-        # Stage 8 — record.
+        # Stage 8 — explain, now that every decision is final, then record.
+        try:
+            explanation = self.explainer(
+                message,
+                plan,
+                typed=action is None,
+                attempts=draft.attempts,
+                guard_outcomes=draft.guard_outcomes,
+                fallback_reason=draft.fallback_reason,
+            )
+        except Exception:  # fail-soft boundary (FR-XAI-1): the reply never depends on it
+            log.error("explanation error")
+            explanation = unavailable("explain.error")
+            degraded.add("explain.error")
+        clock.mark("explain", "error" if "explain.error" in degraded else "ok")
         trace = _trace(turn_id, clock, verdict, plan, draft, degraded)
         persisted = False
         if user_id is not None:
@@ -248,6 +268,7 @@ class ChatEngine:
                     content=draft.reply,
                     mode=plan.mode,
                     trace_json=trace_to_json(trace),
+                    explanation_json=explanation,
                 )
                 persisted = True
             except StorageError as exc:
@@ -279,6 +300,7 @@ class ChatEngine:
             card=plan.card,
             exercise_card=plan.exercise_card,
             preface=plan.preface,
+            explanation_id=turn_id if persisted else None,
         )
 
     def _crisis(

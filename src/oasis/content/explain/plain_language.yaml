@@ -1,0 +1,54 @@
+# Plain-language "why this reply" text (design §10, FR-XAI-3). Each bullet is built from
+# these phrases and the decision plane's own numbers; the user's words are never quoted.
+# The explanation covers the response strategy, never the language model's wording.
+schema: oasis.content/v1
+kind: plain_language
+version: "2026.10.0"
+review_status: needs_clinician_review
+phrases:
+  noticed: "Your message showed {signals}."
+  nothing: "Nothing in your message pointed strongly to a particular approach."
+  trap: "Your message had what can be a thinking trap ({traps}), so the reply does not simply agree with it."
+  hold: "One message is not enough to change approach, so the reply stays with the current one for now."
+  offer: "So OASIS asks whether you would like to try a short {mode} exercise. You can say no."
+  step: "You are part-way through an exercise, so the reply gives its next step."
+  fallback: "The reply is a pre-written message, because a written reply was not available in time or did not pass OASIS's checks."
+  templated: "The reply is a fixed, pre-written message."
+# What each router input means in everyday words.
+signals:
+  valence_neg: "negative feelings"
+  sadness: "sadness"
+  anxiety: "worry or anxiety"
+  anger: "anger"
+  shame: "shame"
+  loneliness: "loneliness"
+  dysregulation: "feelings that are hard to control"
+  distortion: "a thinking trap"
+  overwhelm: "feeling overwhelmed"
+  wants_to_talk: "wanting to talk"
+  phq_moderate_plus: "a recent PHQ-9 result"
+  gad_moderate_plus: "a recent GAD-7 result"
+# One sentence per mode: what the reply does.
+modes:
+  companion: "So the reply listens, reflects what you said and asks one gentle question."
+  cbt: "So the reply gently looks at the thought from another angle (a CBT approach)."
+  dbt: "So the reply focuses on a skill for strong feelings (a DBT approach)."
+  mindfulness: "So the reply offers a calm moment of noticing the present (a mindfulness approach)."
+  grounding: "So the reply starts a short grounding exercise straight away, to help you feel steadier."
+  psychoed: "So the reply shares a short, checked explanation of what you asked about."
+  assessment: "So the reply is part of a standard questionnaire you agreed to (PHQ-9 or GAD-7)."
+  post_crisis: "Earlier in this conversation you were given crisis support, so the reply stays short and supportive until you say you want to keep talking."
+  fallback: "The reply is a pre-written message."
+# Burns's thinking-trap categories (distortions.yaml) in everyday words.
+traps:
+  all_or_nothing: "all-or-nothing thinking"
+  overgeneralisation: "overgeneralising, as with always or never"
+  mental_filter: "focusing only on the bad part"
+  disqualifying_positive: "discounting the good"
+  mind_reading: "guessing what others think"
+  fortune_telling: "predicting the worst"
+  magnification: "blowing things up"
+  emotional_reasoning: "feeling it so it must be true"
+  should_statements: "should statements"
+  labelling: "a harsh label"
+  personalisation: "blaming yourself for everything"
