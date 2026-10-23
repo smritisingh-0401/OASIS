@@ -131,3 +131,81 @@ async def test_signals_are_deleted_with_their_user(tmp_path: Path) -> None:
         conn.execute("DELETE FROM users WHERE user_id = ?", (uid,))
         conn.commit()
         assert conn.execute("SELECT COUNT(*) FROM turn_signals").fetchone() == (0,)
+
+
+# --- verifiable erasure (Phase 10, rules P9) --------------------------------------------------
+
+MARKER = "zqx-erasure-marker lantern"
+
+
+async def _user_with_marker(repo: SQLiteRepository, session: str) -> str:
+    uid = await repo.create_user_session(session)
+    await repo.set_consent(uid, "1")
+    for i in range(20):  # enough rows to spread over several pages
+        await repo.append_turn(uid, session, turn_id=f"{session}{i}", role="user",
+                               content=f"{MARKER} {i}", mode=None, trace_json=None)  # fmt: skip
+    await repo.append_audit(uid, "crisis_handoff", '{"tiers":["passive"]}')
+    await repo.append_signals(uid, session, TurnFeatures(0.1, 0, 0, 0, 0, 0, 0.2, 0.0, 5, None, 9))
+    return uid
+
+
+def _user_tables(path: Path) -> list[str]:
+    with closing(sqlite3.connect(path)) as conn:
+        names = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")]
+        columns = {n: {c[1] for c in conn.execute(f"PRAGMA table_info({n})")} for n in names}
+        return [n for n in names if "user_id" in columns[n]]
+
+
+@pytest.mark.anyio
+async def test_delete_leaves_zero_rows_in_every_table(tmp_path: Path) -> None:
+    """Schema crawl: every table with a user_id column, found from the schema itself."""
+    path = tmp_path / "d.db"
+    repo = SQLiteRepository(path)
+    uid = await _user_with_marker(repo, "h")
+    await repo.delete_user(uid)
+    await repo.close()
+    tables = _user_tables(path)
+    assert len(tables) >= 8  # the crawl found the schema, not nothing
+    with closing(sqlite3.connect(path)) as conn:
+        for table in tables:
+            (n,) = conn.execute(
+                # Table names come from the schema itself, not from input.
+                f"SELECT COUNT(*) FROM {table} WHERE user_id = ?",  # noqa: S608
+                (uid,),
+            ).fetchone()
+            assert n == 0, table
+
+
+@pytest.mark.anyio
+async def test_deleted_text_is_gone_from_the_database_and_wal_files(tmp_path: Path) -> None:
+    path = tmp_path / "m.db"
+    repo = SQLiteRepository(path)
+    keep = await _user_with_marker(repo, "keep")  # another user's rows stay
+    gone = await _user_with_marker(repo, "gone")
+    files = [path, path.with_name(path.name + "-wal")]
+    assert any(MARKER.encode() in f.read_bytes() for f in files if f.exists())  # sanity
+
+    await repo.delete_user(gone)
+    for f in files:  # while the connection is still open
+        if f.exists():
+            assert f.read_bytes().count(MARKER.encode()) <= 20, f.name  # only "keep" remains
+    assert len(await repo.recent_turns(keep, "keep", 50)) == 20
+    await repo.delete_user(keep)
+    for f in files:
+        if f.exists():
+            assert MARKER.encode() not in f.read_bytes(), f.name
+    await repo.close()
+    for f in files:
+        if f.exists():
+            assert MARKER.encode() not in f.read_bytes(), f.name
+
+
+@pytest.mark.anyio
+async def test_delete_truncates_the_wal(tmp_path: Path) -> None:
+    path = tmp_path / "w.db"
+    repo = SQLiteRepository(path)
+    uid = await _user_with_marker(repo, "h")
+    await repo.delete_user(uid)
+    wal = path.with_name(path.name + "-wal")
+    assert not wal.exists() or wal.stat().st_size == 0
+    await repo.close()

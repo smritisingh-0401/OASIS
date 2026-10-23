@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 
 import oasis
 from oasis.api.app import create_app
+from oasis.api.pages import load_disclosure
 from oasis.llm.fake import FakeLLM
 from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.router.exercise import technique_for
@@ -35,11 +36,15 @@ def client(settings: Settings) -> Iterator[TestClient]:
 
 
 def _session(client: TestClient) -> str:
+    """A saved session that has accepted the data notice (Phase 10 consent gate)."""
     resp = client.post("/session")
     assert resp.status_code == 201
     token = resp.json()["session_id"]
     assert isinstance(token, str)
     assert len(token) >= 40
+    version = load_disclosure().version
+    consent = client.post("/consent", json={"disclosure_version": version}, headers={HEADER: token})
+    assert consent.status_code == 204
     return token
 
 

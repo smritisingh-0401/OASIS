@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -38,18 +39,22 @@ def _post(c: TestClient, token: str = "unknown-session") -> Any:  # noqa: S107
 
 
 @pytest.mark.parametrize("fail", ["down", "timeout", "http_error", "empty", "busy"])
-def test_llm_failures_answer_with_template(settings: Settings, fail: str) -> None:
+def test_llm_failures_answer_with_template(
+    settings: Settings, fail: str, start_session: Callable[..., str]
+) -> None:
     with TestClient(create_app(settings, llm=FakeLLM(fail=fail))) as c:
-        token = c.post("/session").json()["session_id"]
+        token = start_session(c)
         resp = _post(c, token)
     assert resp.status_code == 200
     assert resp.json()["templated"] is True
 
 
-def test_hung_llm_answers_within_request_timeout(settings: Settings) -> None:
+def test_hung_llm_answers_within_request_timeout(
+    settings: Settings, start_session: Callable[..., str]
+) -> None:
     fast = settings.model_copy(update={"request_timeout_s": 1.0, "llm_generate_timeout_s": 30})
     with TestClient(create_app(fast, llm=FakeLLM(delay_s=60))) as c:
-        token = c.post("/session").json()["session_id"]
+        token = start_session(c)
         start = time.monotonic()
         resp = _post(c, token)
         elapsed = time.monotonic() - start

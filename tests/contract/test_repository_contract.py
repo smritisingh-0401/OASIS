@@ -5,6 +5,7 @@ A new backend is added to BACKENDS and must pass unchanged.
 
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator, Callable
 from dataclasses import replace
 from pathlib import Path
@@ -303,3 +304,93 @@ async def test_explanation_must_be_json(repo: Repository) -> None:
                                mode="companion", trace_json=None,
                                explanation_json="not json")  # fmt: skip
     assert await repo.recent_turns(a, "a", 10) == []
+
+
+# --- consent, export and delete (Phase 10) --------------------------------------------------
+
+MARKER = "zqx-marker lantern"
+
+
+async def _full_user(repo: Repository, session: str = "a") -> str:
+    """A user with a row in every kind of record OASIS stores."""
+    uid = await repo.create_user_session(session)
+    await repo.set_consent(uid, "1")
+    await _append(repo, uid, session, "t1", MARKER)
+    await repo.append_turn(uid, session, turn_id="t2", role="assistant", content="reply",
+                           mode="companion", trace_json='{"x":1}',
+                           explanation_json='{"status":"ok"}')  # fmt: skip
+    await repo.set_router_state(uid, session, '{"current":"cbt"}')
+    await repo.set_post_crisis(uid, session, True)
+    await repo.append_audit(uid, "crisis_handoff", '{"tiers":["passive"]}')
+    await repo.save_assessment(uid, _assessment("a-" + session, answers=(1, 2)))
+    await repo.append_signals(uid, session, _features(valence=-0.5))
+    return uid
+
+
+@pytest.mark.anyio
+async def test_consent_round_trip_and_replace(repo: Repository) -> None:
+    a = await repo.create_user_session("a")
+    b = await repo.create_user_session("b")
+    assert (await repo.get_session("a")).consent_version is None  # type: ignore[union-attr]
+    await repo.set_consent(a, "1")
+    await repo.set_consent(a, "2")  # a newer notice replaces the older consent
+    assert (await repo.get_session("a")).consent_version == "2"  # type: ignore[union-attr]
+    assert (await repo.get_session("b")).consent_version is None  # type: ignore[union-attr]
+    assert b != a
+
+
+EXPECTED_TABLES = {"users", "sessions", "turns", "audit_log", "assessments",
+                   "assessment_answers", "turn_signals", "consent"}  # fmt: skip
+
+
+@pytest.mark.anyio
+async def test_export_holds_every_record_of_the_user_and_nothing_else(repo: Repository) -> None:
+    uid = await _full_user(repo, "a")
+    await _full_user(repo, "b")
+    tables = await repo.export_user(uid)
+    assert set(tables) == EXPECTED_TABLES
+    assert all(r["user_id"] == uid for rows in tables.values() for r in rows)
+    assert [(t["turn_id"], t["role"], t["content"]) for t in tables["turns"]] == [
+        ("t1", "user", MARKER), ("t2", "assistant", "reply")]  # fmt: skip
+    assert tables["turns"][1]["explanation"] == '{"status":"ok"}'
+    assert tables["turns"][1]["trace"] == '{"x":1}'
+    session = tables["sessions"][0]
+    assert (session["post_crisis"], session["router_state"]) == (1, '{"current":"cbt"}')
+    assert [a["detail"] for a in tables["audit_log"]] == ['{"tiers":["passive"]}']
+    assert [a["value"] for a in tables["assessment_answers"]] == [1, 2]
+    assert json.loads(tables["turn_signals"][0]["features"])["valence"] == -0.5
+    assert [c["disclosure_version"] for c in tables["consent"]] == ["1"]
+    json.dumps(tables)  # plain JSON, ready to download
+
+
+@pytest.mark.anyio
+async def test_both_backends_export_the_same_shape(tmp_path: Path) -> None:
+    shapes = []
+    for make in BACKENDS.values():
+        r = make(tmp_path)
+        uid = await _full_user(r)
+        tables = await r.export_user(uid)
+        shapes.append({t: (len(rows), sorted(rows[0])) for t, rows in tables.items()})
+        await r.close()
+    assert shapes[0] == shapes[1]
+
+
+@pytest.mark.anyio
+async def test_delete_removes_every_record_of_the_user_only(repo: Repository) -> None:
+    uid = await _full_user(repo, "a")
+    other = await _full_user(repo, "b")
+    await repo.delete_user(uid)
+    assert await repo.get_session("a") is None
+    assert all(rows == [] for rows in (await repo.export_user(uid)).values())
+    assert await repo.recent_turns(uid, "a", 10) == []
+    assert await repo.get_explanation(uid, "t2") is None
+    kept = await repo.export_user(other)
+    assert len(kept["turns"]) == 2
+    assert (await repo.get_session("b")) is not None
+
+
+@pytest.mark.anyio
+async def test_deleting_an_unknown_user_is_a_no_op(repo: Repository) -> None:
+    await repo.create_user_session("a")
+    await repo.delete_user("nobody")
+    assert await repo.get_session("a") is not None
