@@ -87,6 +87,8 @@ body {
 }
 
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* `hidden` must win over the display values set below (onboarding hides the composer). */
+[hidden] { display: none !important; }
 
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -344,6 +346,44 @@ body {
 .basis li { margin: 8px 0; }
 .basis strong { display: block; }
 .basis span { display: block; color: var(--muted); font-size: 15px; }
+
+/* First-use data notice (FR-PRV-1) and the settings page. */
+.onboarding { padding: 8px 0 4px; }
+.notice {
+  max-height: 60vh;
+  overflow: auto;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  background: var(--glass-strong);
+}
+.notice h2 { margin: 0 0 6px; font-size: 22px; }
+.notice h3 { margin: 16px 0 4px; font-size: 17px; }
+.notice p { margin: 4px 0; max-width: 70ch; }
+.onboarding-actions { margin-top: 14px; }
+.settings { padding: 18px 22px 24px; }
+.settings h2 { margin: 4px 0 10px; font-size: 22px; }
+.settings h3 { margin: 22px 0 6px; font-size: 18px; }
+.settings p { max-width: 65ch; }
+.settings-mode {
+  padding: 8px 12px;
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  background: var(--glass-strong);
+}
+.settings .card-options button,
+.onboarding .card-options button { font: inherit; }
+.settings button:disabled { opacity: 0.6; cursor: not-allowed; }
+.delete-confirm { margin-top: 12px; }
+.delete-confirm label { display: block; margin-bottom: 6px; font-weight: 600; }
+.delete-confirm input {
+  font: inherit;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--muted);
+  border-radius: 10px;
+}
+.settings .danger { color: #fff; background: #a3262a; }
+.settings .danger:hover { background: #8a1f23; }
 
 @media (max-width: 520px) {
   .top { flex-wrap: wrap; }

@@ -14,6 +14,7 @@ const status = document.getElementById("status");
 const help = document.getElementById("help");
 const continueButton = document.getElementById("continue");
 const card = document.getElementById("card");
+const onboarding = document.getElementById("onboarding");
 const CONTINUE_TEXT = "I'd like to keep talking.";
 
 // After a crisis reply, open the help card and move focus to it so crisis lines are one
@@ -40,18 +41,71 @@ function saveToken(token) {
   }
 }
 
-async function newSession() {
-  const resp = await fetch("/session", { method: "POST" });
-  if (!resp.ok) throw new Error("session");
-  const body = await resp.json();
-  saveToken(body.session_id);
-  return body.session_id;
+async function api(path, options = {}) {
+  const headers = { "X-OASIS-Session": readToken() || "", ...(options.headers || {}) };
+  return fetch(path, { ...options, headers });
 }
 
-async function api(path, options = {}) {
-  const token = readToken() || (await newSession());
-  const headers = { "X-OASIS-Session": token, ...(options.headers || {}) };
-  return fetch(path, { ...options, headers });
+const JSON_HEADERS = { "Content-Type": "application/json" };
+const OFFLINE = "I couldn't reach the server. \"Need help now?\" still works.";
+
+// The data notice replaces the conversation until a session has accepted it (FR-PRV-1).
+function showOnboarding(note) {
+  onboarding.hidden = false;
+  messages.hidden = true;
+  form.hidden = true;
+  card.hidden = true;
+  status.textContent = note || "";
+  if (!help.contains(document.activeElement)) onboarding.querySelector("button").focus();
+}
+
+function showChat() {
+  onboarding.hidden = true;
+  messages.hidden = false;
+  form.hidden = false;
+}
+
+// Choosing how to start creates the session and records consent to the notice shown.
+async function start(ephemeral) {
+  const version = onboarding.querySelector(".notice").dataset.version;
+  try {
+    const resp = await fetch("/session", {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ ephemeral }),
+    });
+    if (!resp.ok) throw new Error("session");
+    const token = (await resp.json()).session_id;
+    const consent = await fetch("/consent", {
+      method: "POST",
+      headers: { ...JSON_HEADERS, "X-OASIS-Session": token },
+      body: JSON.stringify({ disclosure_version: version }),
+    });
+    if (!consent.ok) throw new Error("consent");
+    saveToken(token);
+    status.textContent = "";
+    showChat();
+    input.focus();
+  } catch {
+    status.textContent = OFFLINE;
+  }
+}
+
+async function init() {
+  if (!readToken()) return showOnboarding();
+  try {
+    const resp = await api("/session");
+    if (resp.status === 401) {
+      saveToken("");
+      return showOnboarding();
+    }
+    // Storage down: the chat may still answer, so let them try.
+    if (resp.ok && !(await resp.json()).consented) return showOnboarding();
+    showChat();
+    await loadHistory();
+  } catch {
+    showOnboarding(OFFLINE);
+  }
 }
 
 function addMessage(role, text, note, explanationId) {
@@ -237,6 +291,18 @@ async function sendText(text, action) {
 
   try {
     const resp = await send(text, action);
+    if (resp.status === 401 || resp.status === 403) {
+      // Session gone (deleted, or an unsaved one forgotten) or not consented: back to the
+      // notice. The words go back in the box for after they start again.
+      const body = await resp.json().catch(() => ({}));
+      pending.remove();
+      if (resp.status === 401) saveToken("");
+      const code = body.error && body.error.code;
+      showOnboarding(code === "consent_required"
+        ? "Please read and accept the data notice first. Your message wasn't sent."
+        : "Please choose how to start again. Your message wasn't sent.");
+      return false;
+    }
     if (!resp.ok) throw new Error("status " + resp.status);
     const body = await resp.json();
     // A crisis turn is never stored by design, so the not-saved note would only alarm.
@@ -278,14 +344,7 @@ async function send(text, action) {
     client_ts: localTimestamp(),
     action: action || null,
   });
-  const request = () =>
-    api("/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
-  let resp = await request();
-  if (resp.status === 401) {
-    await newSession();
-    resp = await request();
-  }
-  return resp;
+  return api("/chat", { method: "POST", headers: JSON_HEADERS, body: payload });
 }
 
 form.addEventListener("submit", async (event) => {
@@ -299,6 +358,8 @@ form.addEventListener("submit", async (event) => {
 });
 
 continueButton.addEventListener("click", () => sendText(CONTINUE_TEXT));
+document.getElementById("start-saved").addEventListener("click", () => start(false));
+document.getElementById("start-ephemeral").addEventListener("click", () => start(true));
 
 input.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey) {
@@ -307,4 +368,4 @@ input.addEventListener("keydown", (event) => {
   }
 });
 
-loadHistory();
+init();

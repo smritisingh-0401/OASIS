@@ -1,18 +1,65 @@
-"""Server-rendered help card (rules S12, F2).
+"""Server-rendered help card (rules S12, F2) and first-use data notice (FR-PRV-1).
 
 The crisis resources are rendered into index.html once at startup as plain HTML with
 nested <details> elements. Opening the card needs no JavaScript and no network request,
-so it keeps working if the backend goes down after the page has loaded. All text is
-HTML-escaped; links are user-initiated navigation, not page loads (rules F1).
+so it keeps working if the backend goes down after the page has loaded. The data notice is
+rendered the same way. All text is HTML-escaped; links are user-initiated navigation, not
+page loads (rules F1).
 """
 
 from __future__ import annotations
 
+import functools
+from collections.abc import Mapping
+from dataclasses import dataclass
 from html import escape
+from typing import Any
 
+from oasis.content import load_yaml, require_review
 from oasis.safety.resources import Country, CrisisLine, Resources, dial_string
 
 MARKER = "<!-- CRISIS_RESOURCES -->"
+NOTICE_MARKER = "<!-- DATA_NOTICE -->"
+
+
+@dataclass(frozen=True)
+class Section:
+    heading: str
+    paragraphs: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Disclosure:
+    version: str
+    title: str
+    sections: tuple[Section, ...]
+
+
+def parse_disclosure(raw: Mapping[str, Any]) -> Disclosure:
+    require_review(raw, "data notice")
+    sections = tuple(
+        Section(str(s["heading"]), tuple(str(p) for p in s["paragraphs"]))
+        for s in raw.get("sections") or ()
+    )
+    if not sections or not all(s.heading and s.paragraphs and all(s.paragraphs) for s in sections):
+        raise ValueError("data notice needs sections, each with a heading and paragraphs")
+    return Disclosure(str(raw["version"]), str(raw["title"]), sections)
+
+
+@functools.cache
+def load_disclosure() -> Disclosure:
+    return parse_disclosure(load_yaml("privacy", "disclosure.yaml"))
+
+
+def render_onboarding(d: Disclosure) -> str:
+    body = "".join(
+        f"<h3>{escape(s.heading)}</h3>" + "".join(f"<p>{escape(p)}</p>" for p in s.paragraphs)
+        for s in d.sections
+    )
+    return (
+        f'<div class="notice" data-version="{escape(d.version)}">'
+        f'<h2 id="notice-title">{escape(d.title)}</h2>{body}</div>'
+    )
 
 
 def _tel(number: str) -> str:
@@ -60,7 +107,9 @@ def render_help(resources: Resources) -> str:
     )
 
 
-def render_index(template: str, resources: Resources) -> str:
-    if MARKER not in template:
-        raise ValueError("index.html is missing the crisis resources marker")
-    return template.replace(MARKER, render_help(resources))
+def render_index(template: str, resources: Resources, disclosure: Disclosure) -> str:
+    if MARKER not in template or NOTICE_MARKER not in template:
+        raise ValueError("index.html is missing the crisis resources or data notice marker")
+    return template.replace(MARKER, render_help(resources)).replace(
+        NOTICE_MARKER, render_onboarding(disclosure)
+    )

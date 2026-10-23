@@ -315,8 +315,8 @@ async def _full_user(repo: Repository, session: str = "a") -> str:
     """A user with a row in every kind of record OASIS stores."""
     uid = await repo.create_user_session(session)
     await repo.set_consent(uid, "1")
-    await _append(repo, uid, session, "t1", MARKER)
-    await repo.append_turn(uid, session, turn_id="t2", role="assistant", content="reply",
+    await _append(repo, uid, session, f"{session}1", MARKER)
+    await repo.append_turn(uid, session, turn_id=f"{session}2", role="assistant", content="reply",
                            mode="companion", trace_json='{"x":1}',
                            explanation_json='{"status":"ok"}')  # fmt: skip
     await repo.set_router_state(uid, session, '{"current":"cbt"}')
@@ -351,7 +351,7 @@ async def test_export_holds_every_record_of_the_user_and_nothing_else(repo: Repo
     assert set(tables) == EXPECTED_TABLES
     assert all(r["user_id"] == uid for rows in tables.values() for r in rows)
     assert [(t["turn_id"], t["role"], t["content"]) for t in tables["turns"]] == [
-        ("t1", "user", MARKER), ("t2", "assistant", "reply")]  # fmt: skip
+        ("a1", "user", MARKER), ("a2", "assistant", "reply")]  # fmt: skip
     assert tables["turns"][1]["explanation"] == '{"status":"ok"}'
     assert tables["turns"][1]["trace"] == '{"x":1}'
     session = tables["sessions"][0]
@@ -383,7 +383,7 @@ async def test_delete_removes_every_record_of_the_user_only(repo: Repository) ->
     assert await repo.get_session("a") is None
     assert all(rows == [] for rows in (await repo.export_user(uid)).values())
     assert await repo.recent_turns(uid, "a", 10) == []
-    assert await repo.get_explanation(uid, "t2") is None
+    assert await repo.get_explanation(uid, "a2") is None
     kept = await repo.export_user(other)
     assert len(kept["turns"]) == 2
     assert (await repo.get_session("b")) is not None

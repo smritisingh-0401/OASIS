@@ -14,6 +14,7 @@
     <h1 class="brand">OASIS</h1>
     <div class="top-actions">
     <a class="pill" href="trends.html">Mood trend</a>
+    <a class="pill" href="settings.html">Settings</a>
     <!-- Native <details>: opens with no script and no server, so help works even when the
          backend is down (rules S12, F2). -->
     <details class="help" id="help">
@@ -29,7 +30,17 @@
   </header>
 
   <main class="chat">
-    <ol id="messages" class="messages" aria-live="polite" aria-label="Conversation">
+    <!-- First-use data notice (FR-PRV-1): shown until the session has accepted the current
+         version; choosing how to start is the consent. "Need help now?" stays above it. -->
+    <section id="onboarding" class="onboarding" aria-labelledby="notice-title" hidden>
+      <!-- DATA_NOTICE -->
+      <div class="card-options onboarding-actions">
+        <button type="button" id="start-saved">Save on this computer</button>
+        <button type="button" id="start-ephemeral">Start without saving</button>
+      </div>
+    </section>
+
+    <ol id="messages" class="messages" aria-live="polite" aria-label="Conversation" hidden>
       <li class="msg bot empty-state">
         Hi. This is a quiet place to talk about how you're feeling. What's on your mind?
       </li>
@@ -42,7 +53,7 @@
     <!-- Assessment card: buttons for the current questionnaire step (design §15.1). -->
     <div id="card" class="card" role="group" aria-label="Questionnaire" hidden></div>
 
-    <form id="composer" class="composer">
+    <form id="composer" class="composer" hidden>
       <label for="input" class="visually-hidden">Your message</label>
       <textarea id="input" rows="2" maxlength="2000" required
                 placeholder="Type how you're feeling&hellip;"></textarea>

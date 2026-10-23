@@ -275,8 +275,7 @@ def test_crisis_writes_audit_and_holds_post_crisis_mode(settings: Settings) -> N
     assert turns[0]["mode"] == "crisis"
 
     user_id = next(iter(repo._sessions.values()))
-    [audit] = repo._audit[user_id]
-    assert audit.event == "crisis_handoff"
+    [audit] = [r for _, r in repo._audit[user_id] if r.event == "crisis_handoff"]
     detail = json.loads(audit.detail)
     assert detail["tiers"] == ["explicit"]
     assert detail["source"] == "text"
@@ -376,7 +375,7 @@ def test_item9_over_http_hands_off_and_audits_the_source(settings: Settings) -> 
     assert crisis["assessment"] is None
     assert held["mode"] == "post_crisis"
     user_id = next(iter(repo._sessions.values()))
-    [audit] = repo._audit[user_id]
+    [audit] = [r for _, r in repo._audit[user_id] if r.event == "crisis_handoff"]
     assert json.loads(audit.detail)["source"] == "item9"
     [rec] = repo._assessments[user_id]
     assert (rec.status, rec.total) == ("escalated", None)

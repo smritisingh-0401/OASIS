@@ -30,6 +30,20 @@ class DeadRepo(MemoryRepository):
         return False
 
 
+class FailingRepo(MemoryRepository):
+    """Works until `down` is set: a session consents, then storage fails."""
+
+    down = False
+
+    async def get_session(self, session_hash: str) -> Any:
+        if self.down:
+            raise StorageUnavailable
+        return await super().get_session(session_hash)
+
+    async def ping(self) -> bool:
+        return not self.down
+
+
 def _post(c: TestClient, token: str = "unknown-session") -> Any:  # noqa: S107
     return c.post(
         "/chat",
@@ -63,9 +77,14 @@ def test_hung_llm_answers_within_request_timeout(
     assert elapsed < 3.0  # far below the 60 s hang; slack absorbs a loaded test machine
 
 
-def test_storage_down_still_answers_chat(settings: Settings) -> None:
-    with TestClient(create_app(settings, repo=DeadRepo())) as c:
-        resp = _post(c)
+def test_storage_down_still_answers_chat(
+    settings: Settings, start_session: Callable[..., str]
+) -> None:
+    repo = FailingRepo()
+    with TestClient(create_app(settings, repo=repo)) as c:
+        token = start_session(c)
+        repo.down = True  # consent is remembered in memory (architecture §3.3)
+        resp = _post(c, token)
         assert c.get("/health").json()["storage"] == "down"
     assert resp.status_code == 200
     assert resp.json()["reply"]
@@ -121,8 +140,27 @@ def test_item9_answer_hands_off_even_when_storage_is_down(settings: Settings, va
     assert resp.json()["reply"] == HANDOFF_REPLY
 
 
-def test_assessment_action_with_storage_down_gets_a_fixed_reply(settings: Settings) -> None:
-    with TestClient(create_app(settings, llm=UntouchableLLM(), repo=DeadRepo())) as c:
+def test_unknown_consent_with_storage_down_is_refused_but_crisis_answered(
+    settings: Settings,
+) -> None:
+    """Architecture §3.3: with no way to check consent, only a crisis gets a reply."""
+    with TestClient(create_app(settings, repo=DeadRepo())) as c:
+        refused = _post(c)
+        crisis = c.post("/chat", json={"message": "I want to kill myself",
+                                       "client_ts": "2026-10-07T10:00:00Z"},
+                        headers={HEADER: "unknown-session"})  # fmt: skip
+    assert refused.status_code == 403
+    assert refused.json()["error"]["code"] == "consent_required"
+    assert crisis.json()["reply"] == HANDOFF_REPLY
+
+
+def test_assessment_action_with_storage_down_gets_a_fixed_reply(
+    settings: Settings, start_session: Callable[..., str]
+) -> None:
+    repo = FailingRepo()
+    with TestClient(create_app(settings, llm=UntouchableLLM(), repo=repo)) as c:
+        token = start_session(c)
+        repo.down = True
         resp = c.post(
             "/chat",
             json={
@@ -135,7 +173,7 @@ def test_assessment_action_with_storage_down_gets_a_fixed_reply(settings: Settin
                     "item": 2,
                 },
             },
-            headers={HEADER: "unknown-session"},
+            headers={HEADER: token},
         )
     assert resp.status_code == 200
     assert resp.json()["templated"] is True

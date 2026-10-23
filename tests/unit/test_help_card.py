@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from oasis.api.pages import MARKER, render_index
+from oasis.api.pages import MARKER, NOTICE_MARKER, load_disclosure, render_index
 from oasis.safety.resources import load_resources
 
 HOSTILE = """
@@ -24,7 +24,8 @@ countries:
 
 
 def test_every_text_field_is_escaped_and_numbers_are_dialable() -> None:
-    html = render_index(f"<body>{MARKER}</body>", load_resources(HOSTILE))
+    template = f"<body>{MARKER}{NOTICE_MARKER}</body>"
+    html = render_index(template, load_resources(HOSTILE), load_disclosure())
     for raw in ("<script>", "<img>", "<b>", "<t>", "<h>", "<r>"):
         assert raw not in html
         assert raw.replace("<", "&lt;").replace(">", "&gt;") in html
@@ -33,6 +34,7 @@ def test_every_text_field_is_escaped_and_numbers_are_dialable() -> None:
     assert 'href="tel:999"' in html
 
 
-def test_template_without_marker_is_rejected() -> None:
+@pytest.mark.parametrize("body", ["", MARKER, NOTICE_MARKER])
+def test_template_without_both_markers_is_rejected(body: str) -> None:
     with pytest.raises(ValueError, match="marker"):
-        render_index("<body></body>", load_resources(HOSTILE))
+        render_index(f"<body>{body}</body>", load_resources(HOSTILE), load_disclosure())
