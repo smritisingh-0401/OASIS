@@ -57,10 +57,17 @@ class Repository(Protocol):
         content: str,
         mode: Mode | None,
         trace_json: str | None,
-    ) -> TurnRecord: ...
+        explanation_json: str | None = None,
+    ) -> TurnRecord:
+        """Append one turn; invalid explanation JSON is rejected."""
+        ...
 
     async def recent_turns(self, user_id: str, session_hash: str, limit: int) -> list[TurnRecord]:
         """The last `limit` turns of the session, oldest first."""
+        ...
+
+    async def get_explanation(self, user_id: str, turn_id: str) -> str | None:
+        """The stored explanation JSON of one of this user's turns, if it has one."""
         ...
 
     async def set_post_crisis(self, user_id: str, session_hash: str, value: bool) -> None: ...

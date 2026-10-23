@@ -31,9 +31,23 @@ class Lexicon:
     version: str
     review_status: str
 
+    def counts(self, norm: str) -> tuple[int, ...]:
+        """Each term's number of matches, in file order."""
+        return tuple(len(p.findall(norm)) for p, _ in self.terms)
+
+    def linear(self, norm: str, n_tokens: int, counts: tuple[int, ...] | None = None) -> float:
+        """The pre-clip value: the linear model the explanation decomposes (design §10.1).
+        `counts` skips the matching when the caller already has them."""
+        found = self.counts(norm) if counts is None else counts
+        rate = sum(w * k for (_, w), k in zip(self.terms, found, strict=True)) / max(1, n_tokens)
+        return self.bias + self.scale * rate
+
     def score(self, norm: str, n_tokens: int) -> float:
-        rate = sum(w * len(p.findall(norm)) for p, w in self.terms) / max(1, n_tokens)
-        return min(1.0, max(0.0, self.bias + self.scale * rate))
+        return min(1.0, max(0.0, self.linear(norm, n_tokens)))
+
+    def rates(self, norm: str, n_tokens: int) -> tuple[float, ...]:
+        """The feature vector x: each term's count per token, in file order."""
+        return tuple(k / max(1, n_tokens) for k in self.counts(norm))
 
 
 def parse(raw: Mapping[str, Any]) -> dict[str, Lexicon]:

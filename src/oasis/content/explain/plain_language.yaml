@@ -1,0 +1,75 @@
+# Plain-language "why this reply" text (design §10, FR-XAI-3). Each bullet is built from
+# these phrases and the decision plane's own numbers; the user's words are never quoted.
+# The explanation covers the response strategy, never the language model's wording.
+schema: oasis.content/v1
+kind: plain_language
+version: "2026.10.0"
+review_status: needs_clinician_review
+phrases:
+  noticed: "Your message showed {signals}."
+  nothing: "Nothing in your message pointed strongly to a particular approach."
+  trap: "Your message had what can be a thinking trap ({traps}), so the reply does not simply agree with it."
+  hold: "One message is not enough to change approach, so the reply stays with the current one for now."
+  offer: "So OASIS asks whether you would like to try a short {mode} exercise. You can say no."
+  step: "You are part-way through an exercise, so the reply gives its next step."
+  fallback: "The reply is a pre-written message, because a written reply was not available in time or did not pass OASIS's checks."
+  templated: "The reply is a fixed, pre-written message."
+# What each router input means in everyday words.
+signals:
+  valence_neg: "negative feelings"
+  sadness: "sadness"
+  anxiety: "worry or anxiety"
+  anger: "anger"
+  shame: "shame"
+  loneliness: "loneliness"
+  dysregulation: "feelings that are hard to control"
+  distortion: "a thinking trap"
+  overwhelm: "feeling overwhelmed"
+  wants_to_talk: "wanting to talk"
+  phq_moderate_plus: "a recent PHQ-9 result"
+  gad_moderate_plus: "a recent GAD-7 result"
+# One sentence per mode: what the reply does.
+modes:
+  companion: "So the reply listens, reflects what you said and asks one gentle question."
+  cbt: "So the reply gently looks at the thought from another angle (a CBT approach)."
+  dbt: "So the reply focuses on a skill for strong feelings (a DBT approach)."
+  mindfulness: "So the reply offers a calm moment of noticing the present (a mindfulness approach)."
+  grounding: "So the reply starts a short grounding exercise straight away, to help you feel steadier."
+  psychoed: "So the reply shares a short, checked explanation of what you asked about."
+  assessment: "So the reply is part of a standard questionnaire you agreed to (PHQ-9 or GAD-7)."
+  post_crisis: "Earlier in this conversation you were given crisis support, so the reply stays short and supportive until you say you want to keep talking."
+  fallback: "The reply is a pre-written message."
+# Burns's thinking-trap categories (distortions.yaml) in everyday words.
+traps:
+  all_or_nothing: "all-or-nothing thinking"
+  overgeneralisation: "overgeneralising, as with always or never"
+  mental_filter: "focusing only on the bad part"
+  disqualifying_positive: "discounting the good"
+  mind_reading: "guessing what others think"
+  fortune_telling: "predicting the worst"
+  magnification: "blowing things up"
+  emotional_reasoning: "feeling it so it must be true"
+  should_statements: "should statements"
+  labelling: "a harsh label"
+  personalisation: "blaming yourself for everything"
+# Plans the router did not choose (design §3.3 precedence): one self-contained bullet per
+# planner reason code, saying why and what. "family.*" covers every code in a family; a
+# screening offer is keyed by its stored reason. Codes without an entry fall back to the
+# mode sentence above.
+reasons:
+  assessment.offer.explicit_request: "You asked for a questionnaire, so OASIS offers one. You can say no."
+  assessment.offer.sustained_readiness: "Several recent messages mentioned low mood or worry, so OASIS offers a short, standard questionnaire. You can say no."
+  assessment.accept: "You agreed to the questionnaire, so the reply asks its questions exactly as written."
+  assessment.answer: "You answered a questionnaire item, so the reply shows the next question, or at the end your score and what it means. It is a screening tool, not a diagnosis."
+  assessment.decline: "You chose not to do the questionnaire now, so the reply carries on the conversation."
+  assessment.pause: "You paused the questionnaire, so it waits until you choose to pick it up again."
+  assessment.resume: "You chose to carry on with the questionnaire, so the reply asks the next question."
+  assessment.abort: "You stopped the questionnaire, so its answers were discarded and not scored."
+  assessment.none_open: "There was no open questionnaire for that button, so the reply says so."
+  assessment.free_text: "You wrote a message during the questionnaire, so it is paused and the reply responds to what you wrote."
+  assessment.not_saved: "The questionnaire step could not be saved, so the reply says so instead of going on."
+  psychoed.*: "Your message asked what might be going on, or whether a feeling is normal, so the reply shares a short, checked explanation."
+  exercise.decline: "You chose not to try the exercise now, so the reply goes back to talking."
+  exercise.stop: "You stopped the exercise, so the reply goes back to talking."
+  exercise.none_open: "There was no open exercise for that button, so the reply says so."
+  post_crisis.cleared: "You said you would like to keep talking, so the reply listens again and asks one gentle question."

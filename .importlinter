@@ -33,6 +33,16 @@ forbidden_modules =
     oasis.storage
     oasis.api
 
+[importlinter:contract:explain-downstream]
+name = C3 Explainability is downstream (no LLM, storage or API)
+type = forbidden
+source_modules =
+    oasis.explain
+forbidden_modules =
+    oasis.llm
+    oasis.storage
+    oasis.api
+
 [importlinter:contract:storage-leaf]
 name = C4 Storage is a leaf
 type = forbidden

@@ -134,6 +134,7 @@ class SQLiteRepository:
         content: str,
         mode: Mode | None,
         trace_json: str | None,
+        explanation_json: str | None = None,
     ) -> TurnRecord:
         now = utc_now()
 
@@ -150,26 +151,39 @@ class SQLiteRepository:
             ).fetchone()
             conn.execute(
                 "INSERT INTO turns (turn_id, user_id, session_id_hash, seq, role, content, mode,"
-                " created_at, trace) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (turn_id, user_id, session_hash, seq, role, content, mode, now, trace_json),
-            )
+                " created_at, trace, explanation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (turn_id, user_id, session_hash, seq, role, content, mode, now, trace_json,
+                 explanation_json),
+            )  # fmt: skip
             conn.execute(
                 "UPDATE sessions SET last_seen_at = ? WHERE session_id_hash = ?",
                 (now, session_hash),
             )
             conn.execute("COMMIT")
-            return TurnRecord(turn_id, seq, role, content, mode, now)
+            return TurnRecord(turn_id, seq, role, content, mode, now, explanation_json is not None)
 
         return await self._run(op)
 
     async def recent_turns(self, user_id: str, session_hash: str, limit: int) -> list[TurnRecord]:
         def op(conn: sqlite3.Connection) -> list[TurnRecord]:
             rows = conn.execute(
-                "SELECT turn_id, seq, role, content, mode, created_at FROM turns"
-                " WHERE user_id = ? AND session_id_hash = ? ORDER BY seq DESC LIMIT ?",
+                "SELECT turn_id, seq, role, content, mode, created_at, explanation IS NOT NULL"
+                " FROM turns WHERE user_id = ? AND session_id_hash = ? ORDER BY seq DESC LIMIT ?",
                 (user_id, session_hash, max(limit, 0)),
             ).fetchall()
-            return [TurnRecord(*row) for row in reversed(rows)]
+            return [
+                TurnRecord(t, s, r, c, m, at, bool(e)) for t, s, r, c, m, at, e in reversed(rows)
+            ]
+
+        return await self._run(op)
+
+    async def get_explanation(self, user_id: str, turn_id: str) -> str | None:
+        def op(conn: sqlite3.Connection) -> str | None:
+            row = conn.execute(
+                "SELECT explanation FROM turns WHERE user_id = ? AND turn_id = ?",
+                (user_id, turn_id),
+            ).fetchone()
+            return row[0] if row else None
 
         return await self._run(op)
 

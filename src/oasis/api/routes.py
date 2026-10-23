@@ -1,4 +1,4 @@
-"""HTTP endpoints: /health, /session, /chat, /history."""
+"""HTTP endpoints: /health, /session, /chat, /history, /trends, /explanations."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import uuid
 from dataclasses import asdict
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Header, Query
+from fastapi import APIRouter, BackgroundTasks, Header, Query, Response
 
 import oasis
 from oasis.api.schemas import (
@@ -57,6 +57,7 @@ class ApiError(Exception):
 
 INVALID_SESSION = ApiError(401, "invalid_session", "Session not found. Start a new session.")
 STORAGE_DOWN = ApiError(503, "storage_unavailable", "Saved data is unavailable right now.")
+NO_EXPLANATION = ApiError(404, "not_found", "No explanation for this reply.")
 
 
 def hash_token(token: str | None) -> str:
@@ -146,6 +147,7 @@ def build_router(engine: ChatEngine) -> APIRouter:
             degraded=sorted(result.degraded),
             assessment=AssessmentCardOut(**asdict(result.card)) if result.card else None,
             exercise=_exercise_out(result.exercise_card),
+            explanation_id=result.explanation_id,
         )
 
     @router.get("/history")
@@ -173,6 +175,7 @@ def build_router(engine: ChatEngine) -> APIRouter:
                     content=t.content,
                     mode=t.mode,
                     created_at=t.created_at,
+                    explanation_id=t.turn_id if t.has_explanation else None,
                 )
                 for t in turns
             ],
@@ -198,5 +201,20 @@ def build_router(engine: ChatEngine) -> APIRouter:
             change_flags=t.change_flags,
             current=[TurnPointOut(at=at, valence=v) for at, v in t.current],
         )
+
+    @router.get("/explanations/{explanation_id}")
+    async def explanation(explanation_id: str, session: SessionHeader = None) -> Response:
+        """The stored record, byte for byte, so identical turns give identical bodies."""
+        session_hash = hash_token(session)
+        try:
+            info = await repo.get_session(session_hash)
+            if info is None:
+                raise INVALID_SESSION
+            body = await repo.get_explanation(info.user_id, explanation_id)
+        except StorageError:
+            raise STORAGE_DOWN from None
+        if body is None:
+            raise NO_EXPLANATION
+        return Response(body, media_type="application/json")
 
     return router

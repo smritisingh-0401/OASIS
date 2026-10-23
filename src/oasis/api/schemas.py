@@ -94,6 +94,8 @@ class ChatResponse(BaseModel):
     degraded: list[str]
     assessment: AssessmentCardOut | None = None
     exercise: ExerciseCardOut | None = None
+    # GET /explanations/{explanation_id}; None for a crisis reply or an unsaved turn.
+    explanation_id: str | None = None
 
 
 class SessionResponse(BaseModel):
@@ -106,6 +108,7 @@ class HistoryTurn(BaseModel):
     content: str
     mode: Mode | None
     created_at: datetime
+    explanation_id: str | None = None
 
 
 class HistoryResponse(BaseModel):

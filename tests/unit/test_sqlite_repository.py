@@ -66,11 +66,13 @@ async def test_schema_constraints_are_enforced(tmp_path: Path) -> None:
     )
     bad_rows = [
         # role outside the CHECK list
-        "INSERT INTO turns VALUES ('t1','u','h',1,'system','x',NULL,'x',NULL)",
+        "INSERT INTO turns VALUES ('t1','u','h',1,'system','x',NULL,'x',NULL,NULL)",
         # STRICT: seq must be an integer
-        "INSERT INTO turns VALUES ('t2','u','h','one','user','x',NULL,'x',NULL)",
+        "INSERT INTO turns VALUES ('t2','u','h','one','user','x',NULL,'x',NULL,NULL)",
         # foreign key: unknown user
-        "INSERT INTO turns VALUES ('t3','ghost','h',1,'user','x',NULL,'x',NULL)",
+        "INSERT INTO turns VALUES ('t3','ghost','h',1,'user','x',NULL,'x',NULL,NULL)",
+        # an explanation must be JSON
+        "INSERT INTO turns VALUES ('t4','u','h',1,'assistant','x',NULL,'x',NULL,'not json')",
         # assessment answers are 0-3 at the database level, not only in code
         "INSERT INTO assessment_answers VALUES ('a','u',1,4,'x')",
         "INSERT INTO assessment_answers VALUES ('a','u',10,1,'x')",

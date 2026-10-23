@@ -250,6 +250,7 @@ class TurnRecord:
     content: str
     mode: Mode | None
     created_at: str
+    has_explanation: bool = False  # the explanation itself is fetched on demand
 
 
 @dataclass(frozen=True)
