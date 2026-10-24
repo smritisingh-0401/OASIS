@@ -14,9 +14,10 @@ A review of 97 studies (16,620 participants) on mental health chatbots identifie
 
 ## Key properties
 
-- **Safety first** — pure-Python crisis detection runs before anything else; crisis handoff makes zero model calls. "Need help now?" works with no script and no server, and opens the country of the computer's time zone first.
+- **Safety first** — pure-Python crisis detection runs before anything else; crisis handoff makes zero model calls. "Need help now?" works with no script and no server, and opens the country chosen in Settings, or else the computer's time zone, first.
 - **Explainable** — every reply has a "Why this reply?" panel: the signals that drove its strategy, with exact SHAP values and the router's weighted sum.
 - **Private** — nothing leaves the computer. A data notice comes first; each conversation is either saved in a local file or kept in memory only, and Settings exports or deletes everything (deleted text is overwritten on disk). No name, email or phone number.
+- **Your style** — Settings sets how direct and how formal replies are; it changes the wording only, never what OASIS does, and is never guessed from how you write.
 - **Free to run** — quantised open model on a CPU laptop; no paid API.
 
 ## Quick start (development)

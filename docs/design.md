@@ -316,6 +316,15 @@ post-crisis → exercise button → assessment button → open assessment
 - The plan is mode `psychoed`, constraints `no_diagnosis, use_snippet_only`, with the item text as the snippet (`- script:` line). If the LLM fails the reply is the item text itself. A psychoeducation turn lapses an open exercise offer, as typing over it does.
 - Items are checked at startup: provenance fields, `needs_clinician_review`, compilable cues, exactly one general item listed last, and `reading_level` equal to the Flesch-Kincaid grade computed from the text and at most 8.
 
+### 6b. As built (Phase 11: style profile)
+
+- **The planner never sees the style.** `plan_turn(message, state, action)` is unchanged; the engine attaches the user's `StyleProfile` to the plan *after* planning (`replace(plan, style=...)`), so no decision can depend on it. Only `llm/prompt.py` reads `plan.style`. A Hypothesis property test runs generated conversations (crisis, screening, psychoeducation, thinking-trap, anger, overwhelm, continue, hedged and small-talk messages) under all nine styles and requires identical replies, modes, crisis verdicts, questionnaire and exercise cards, plans, explanations and prompts apart from the style line.
+- **Framing** (`content/style/framing.yaml`, CR-25): one sentence per non-default value, joined into one `Style:` line placed just before `PLAN:`. The defaults (balanced, neutral) add nothing, so a user who never opens Settings gets the prompt every earlier phase was tested with. Longest line 183 characters (~52 tokens), inside the §13.3 budget. It reaches every generated reply, exercise acknowledgements included; templated replies (crisis, post-crisis, assessment, offers) are fixed text and do not change.
+- **Settings** (migration `0007_settings.sql`, one row per user, no row = defaults): `directness`, `formality`, `country`. `StyleProfile` lives in `oasis.types` (the plan carries it), `UserSettings(style, country)` in the repository; there is no `style/profile.py`. The engine reads settings with the rest of the state; if that read fails the turn uses the default style and is marked `storage.down`. Nothing outside `PUT /settings` writes them (source test).
+- **Country** (design §6 help card, moved here from Phase 10): chosen from the help card's own countries on the settings page (server-rendered `<select>`), validated against `resources.yaml`. The chat page fetches it once on load; "Need help now?" opens it first as "Your chosen country:", else the time-zone country (CR-24). The card itself still makes no request (S12). The country never reaches the prompt.
+- **Suggestion** (FR-CUL-2, `style/suggest.py`): a phrase list of hedges ("maybe", "I guess", "I'm not sure", …), matched on whole words with apostrophes removed. When the current typed message and at least 2 of the last 3 typed messages are hedged, the directness is not already indirect, and the reply is generated (not templated, not a button), `ChatResponse.style_suggestion` is true; the page shows "You can ask OASIS to word things more gently in Settings." once per tab. The profile is never changed for the user.
+- **No demographic inference** (PRD L3c): no type or column holds ethnicity, nationality, language, dialect or similar (tests); the country is a help-card choice the user makes, never used for style; the time-zone suggestion stays in the browser.
+
 ---
 
 ## 7. Therapy router
@@ -673,7 +682,7 @@ All endpoints: JSON; `X-OASIS-Session: <token>` header (except `POST /session` a
 | `GET /history?limit=50&before=<turn_id>` | — | `200 {"turns": [{"turn_id","role","content","mode","created_at"}], "next": str\|null, "assessment": card\|null}`; `assessment` is the open questionnaire's current card, so a reload restores its buttons | 401 |
 | `GET /explanations/{explanation_id}` | — | `200 Explanation (§10.2)` | 401, 404 |
 | `GET /trends` | — | `200 {"label": "language-based mood trend, not a clinical measure", "sessions": [...], "ewma": [...], "change_flags": [...]}` | 401 |
-| `GET /settings` / `PUT /settings` | `{"directness","formality"}` | `200 Settings` | 401, 422 |
+| `GET /settings` / `PUT /settings` | `{"directness","formality","country"}` (`country`: ISO code on the help card, or null) | `200 Settings` | 401, 403 `consent_required` (PUT), 422, 503 |
 | `GET /export` | — | `200 UserExport` (all tables for the user, JSON, `Content-Disposition: attachment`) | 401 |
 | `DELETE /account` | `{"confirm": "DELETE"}` | `204` | 401, 422 |
 | `GET /debug/turns/{turn_id}` | — | `200 {"trace": TurnTrace, "plan": Plan, "explanation": …}` — own user only; disabled unless `OASIS_DEBUG_VIEW=1` | 401, 404 |
@@ -699,7 +708,8 @@ All endpoints: JSON; `X-OASIS-Session: <token>` header (except `POST /session` a
   "assessment": null,
   "crisis": null,
   "persisted": true,
-  "degraded": []
+  "degraded": [],
+  "style_suggestion": false
 }
 ```
 - `assessment` (when in an assessment): `{"instrument","item_index","item_count","item_text","options":[{"value":0,"label":"…"}…],"result":{"total","band","text"}|null}`.
@@ -794,7 +804,7 @@ All files are validated against Pydantic schemas at startup; invalid content ref
 4. **Score explanation** — total, band in words, plain-language meaning, non-diagnostic statement, "talk to a professional" text when the band text says so.
 5. **"Why this reply" panel** — expandable under each bot message; plain-language bullets only. The scope note (§10.2) and the raw record stay in the stored record, not the page (2026-10-24).
 6. **Mood-trend view** — simple line of session means with the non-clinical label always visible.
-7. **Settings** — style profile (two segmented controls with examples), ephemeral status, Export, Delete (two-step confirm).
+7. **Settings** — style profile (two segmented controls with examples), the help card's country, ephemeral status, Export, Delete (two-step confirm).
 8. **Crisis card** — replaces the input area focus: calm heading, resources as large tappable links (`tel:`), "Continue talking" button.
 9. **Debug view** — trace, plan, scores, contributions (own data only).
 
