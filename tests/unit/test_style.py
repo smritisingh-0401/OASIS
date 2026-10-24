@@ -255,7 +255,8 @@ POOL = [
 
 
 async def _run(messages: Sequence[str], style: StyleProfile, settings: Settings) -> list[Any]:
-    llm, repo, seen = RecordingLLM(), MemoryRepository(), []
+    llm, repo = RecordingLLM(), MemoryRepository()
+    seen: list[Any] = []
     engine = _engine(settings, llm, repo, seen)
     uid = await repo.create_user_session("h")
     await repo.set_settings(uid, UserSettings(style))
