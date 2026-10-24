@@ -10,7 +10,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 10 — privacy and autonomy** |
+| Current phase | **Phase 10 — privacy and autonomy** (report written; awaiting Smriti's approval) |
 | Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5). 2026-10-13: Phase 7 approved by Smriti, including the manual-testing changes (DBT anger, exact exercise steps, companion after an exercise) and the closed known limits; merged (PR #6). 2026-10-22: Phase 8 approved by Smriti; merged (PR #7). 2026-10-23: Phase 9 approved by Smriti; merged (PR #8) |
 | In progress | Phase 10 on `phase-10-privacy` (from `main` at the Phase 9 merge) |
 | Next | Phase 11 (cultural adaptation), after Phase 10 approval |
@@ -128,6 +128,9 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-22 | Phase 9: SHAP values for the lexicon scorers are computed in closed form, `φ_i = w_i (x_i − E[x_i])`, `base = b + Σ w_i E[x_i]`; the `shap` package is a dev-only dependency used as a test oracle (Smriti) | Every detector is linear (no scikit-learn model was built, no black-box part in v1), so SHAP values are exact in closed form; a runtime `shap` would add numpy, scipy, pandas and scikit-learn to a low-RAM local app for one formula. Spike: shap 0.54.1 installs on Windows, Python 3.12.15 | `shap.LinearExplainer` at runtime (design §10.1 as written); LIME (no black-box part) |
 | 2026-10-23 | The chosen-country setting for the help card (design §6, deferred to "the settings work in Phase 10") moves to Phase 11, with the style profile in the same `settings` table (Smriti) | Keeps Phase 10 to privacy; Phase 11 creates the settings table and page anyway | Building it in Phase 10 |
 | 2026-10-24 | The help card opens the country of the computer's time zone first, with the full list folded under a "Not right? Choose another country" dropdown, open when there is no suggestion (Smriti); the card's "pick your country below" was dropped. Read in the browser, never sent or stored; map built from the IANA time zone database by `scripts/time_zones.py` (CR-24) | One tap fewer at a crisis moment, with no permission prompt and nothing leaving the computer. Supersedes "country chosen by the user, never inferred" (2026-10-07) for the suggestion only; the user still chooses | Browser geolocation (blocked by rules P6; desktop browsers ask an online location service; a prompt at a crisis moment); remembering the chosen country (still planned for Phase 11) |
+| 2026-10-23 | Phase 10: saved or unsaved chosen per session at onboarding (`storage/split.py` routes each call); consent gate in the engine after the safety gate, remembered in memory for storage outages; notice versioned in YAML and rendered on the server | Ephemeral end to end (P4) without a second app; a crisis is always answered (architecture §3.3) | One app-wide storage setting; a gate in API middleware before the safety check |
+| 2026-10-24 | Crisis bookkeeping (audit, post-crisis flag, placeholder) still runs for a session that has not consented (Smriti) | Safety record with no message text, deleted with the account; the UI cannot send a message before consent | Skipping it until consent |
+| 2026-10-24 | Delete reports `503 erasure_pending` when another program blocks the overwrite, and the store retries without waiting after every later call and at startup; idle unsaved sessions expire on every request (Smriti) | SQLite reports a blocked checkpoint as busy, not as an error, and the old text stayed on disk (measured); expiry only on unsaved requests let idle data outlive 2 h | A check before deleting (misses a reader that started on an empty WAL); a timer task |
 | 2026-10-13 | A companion reply to a thinking-trap message that fails twice gets the Socratic bank question for that trap, not the companion fallback (Smriti) | The design's reroute: validate the feeling, then one Socratic question | Companion fallback in every companion turn |
 | 2026-10-11 | Psychoeducation cue is a `psychoed` scorer in `cues.yaml` (no `psychoed/cues.py`); reading level is a stdlib Flesch-Kincaid check at startup (no `scripts/readability.py`) | Reuses the Phase 4 scorer; bad content fails at boot | Separate cue module; a printing script |
 | 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
@@ -140,6 +143,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 8. **Browser check of crisis lines** that could not be fetched here, to promote them to Tier 1: Philippines NCMH 1553, Chile *4141, Colombia 192 option 4, Pakistan Umang, and Sweden's Mind line hours.
 9. **Confirm the `self_harm` tier** (CR-01).
 10. **A fresh external held-out phrase set**: the Phase 2 held-out set was used for tuning and is now consumed.
+11. **Saved conversations after the tab closes** (Phase 10): the session key lives in `sessionStorage`, so closing the tab leaves a saved conversation on disk that the app can no longer open, export or delete. Options: say so in the notice and settings now; keep the key in `localStorage` (rules F5 change); or wait for Phase 13 session continuity.
 2. **Python 3.12 and uv** need installing on the development machine.
 3. **Repository licence** (e.g. MIT, Apache-2.0).
 4. **Clinician reviewer** for `clinical_review.md`.
@@ -173,6 +177,8 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | English-only; no fine-tuning; WEIRD-data caveat | By design for v1 |
 | Explanations with real-model replies | Not verified here (browser check ran with llama-server down, so replies were fallbacks); the explanation does not read the reply text |
 | Which words drove VADER valence | Not explained; valence enters the router explanation as one exact contribution |
+| Saved conversation after the tab closes | Unreachable from the app (session key in sessionStorage); open item 11, Phase 13 |
+| Erasure beyond SQLite | OS swap, SSD wear levelling and backups are outside OASIS; disk encryption recommended in the notice |
 
 ---
 
@@ -225,6 +231,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-22 | 9 | Tests / coverage | 1291 passed; 98.57% overall (explain/builder 100%, shap_values 95%, router 100%, assessment 97.8%, safety 97.1%) |
 | 2026-10-22 | 9 | Explanation exactness (615 test-data messages x 22 scorers) | Additivity error at most 2.2e-16 (limit 1e-6); 615/615 `ok`; largest difference from `shap.LinearExplainer` 0.0; 615/615 byte-identical on rebuild |
 | 2026-10-22 | 9 | Explanation speed (dev machine) | p50 1.1-1.4 ms, p99 2.3-2.6 ms per reply; 1,840-character message 14.6-15.5 ms (32 ms before counting matches once); record median 827 bytes |
+| 2026-10-24 | 10 | Tests / coverage | 1371 passed; 98% overall (storage 97-99%, router 100%, assessment 97.8%, safety 97.1%) |
+| 2026-10-24 | 10 | Export / delete (dev machine, SQLite) | Export 2.4 ms / 100 turns, 10.9 ms / 1,000 turns (533 KB); delete with checkpoint 10.2 ms / 22.3 ms; expiry check 2 us (10 unsaved sessions) to 108 us (1,000) per request |
+| 2026-10-24 | 10 | Erasure | Schema crawl 0 rows; marker absent from .db and -wal; WAL 0 bytes; a reader mid-read blocked the checkpoint silently (busy, no error) until the fix |
+| 2026-10-24 | 10 | Mutation spot-check | 23/25 at first (expiry check hid by the test's own lookup; startup overwrite masked by SQLite's last-connection checkpoint); two tests tightened; 25/25 |
 | 2026-10-22 | 9 | Mutation spot-check | 15/20 at first (negative score not clipped, button-turn test vacuous, unsorted keys, ID for an unsaved reply; one redundant ID check); four tests added, the check removed; 19/19 |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
