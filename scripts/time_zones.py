@@ -68,7 +68,8 @@ def main() -> None:
         "# Do not edit by hand: rerun the script after a tzdata upgrade.\n"
     )
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(header + yaml.safe_dump(body, sort_keys=False), encoding="utf-8")
+    text = header + yaml.safe_dump(body, sort_keys=False)
+    OUT.write_text(text, encoding="utf-8", newline="\n")  # same bytes on every platform
     print(f"{len(body['zones'])} zones -> {OUT}")
 
 
