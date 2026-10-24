@@ -207,11 +207,15 @@ async def test_a_suggestion_never_changes_the_profile(settings: Settings) -> Non
 async def test_no_suggestion_on_a_button_press(settings: Settings) -> None:
     from oasis.types import ExerciseAction
 
+    # A button label is not their own words, even when the reply to it is generated.
     engine = _engine(settings, FakeLLM(), MemoryRepository(), [])
+    engine.planner = lambda message, state, action: Plan(mode="companion")
     await engine.repo.create_user_session("h")
     await engine.handle_turn("h", "I guess work was long")
-    result = await engine.handle_turn("h", "maybe", ExerciseAction("stop"))
-    assert result.style_suggestion is False
+    pressed = await engine.handle_turn("h", "maybe", ExerciseAction("stop"))
+    typed = await engine.handle_turn("h", "maybe")
+    assert (pressed.templated, pressed.style_suggestion) == (False, False)
+    assert typed.style_suggestion is True
 
 
 @pytest.mark.anyio
