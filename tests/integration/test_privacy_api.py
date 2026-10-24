@@ -255,6 +255,12 @@ def test_settings_page_offers_export_and_delete(client: TestClient) -> None:
     assert '"DELETE"' in js
 
 
+def test_settings_page_says_a_saved_conversation_lives_in_this_tab(client: TestClient) -> None:
+    js = client.get("/settings.js").text
+    assert "Keep this tab open" in js
+    assert "cannot open, export or delete" in js
+
+
 def test_chat_page_script_handles_consent() -> None:
     import oasis
 
