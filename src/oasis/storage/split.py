@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from oasis.storage.memory import MemoryRepository
-from oasis.storage.repository import AuditRecord, Repository, SessionInfo
+from oasis.storage.repository import AuditRecord, Repository, SessionInfo, UserSettings
 from oasis.types import AssessmentRecord, Mode, Role, SignalRecord, TurnFeatures, TurnRecord
 
 
@@ -73,6 +73,12 @@ class SplitRepository:
 
     async def set_consent(self, user_id: str, disclosure_version: str) -> None:
         await self._by_user(user_id).set_consent(user_id, disclosure_version)
+
+    async def get_settings(self, user_id: str) -> UserSettings:
+        return await self._by_user(user_id).get_settings(user_id)
+
+    async def set_settings(self, user_id: str, value: UserSettings) -> None:
+        await self._by_user(user_id).set_settings(user_id, value)
 
     async def append_audit(self, user_id: str, event: str, detail_json: str) -> None:
         await self._by_user(user_id).append_audit(user_id, event, detail_json)

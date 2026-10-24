@@ -28,6 +28,7 @@ source_modules =
     oasis.psychoed
     oasis.guard
     oasis.tracking
+    oasis.style
 forbidden_modules =
     oasis.llm
     oasis.storage
@@ -73,5 +74,6 @@ layers =
     oasis.core
     oasis.assessment | oasis.router | oasis.psychoed | oasis.guard | oasis.tracking
     oasis.llm | oasis.storage | oasis.safety
+    oasis.style
     oasis.settings
     oasis.types

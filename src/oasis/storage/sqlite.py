@@ -19,9 +19,18 @@ from oasis.storage.repository import (
     SessionInfo,
     StorageBusy,
     StorageUnavailable,
+    UserSettings,
     utc_now,
 )
-from oasis.types import AssessmentRecord, Mode, Role, SignalRecord, TurnFeatures, TurnRecord
+from oasis.types import (
+    AssessmentRecord,
+    Mode,
+    Role,
+    SignalRecord,
+    StyleProfile,
+    TurnFeatures,
+    TurnRecord,
+)
 
 T = TypeVar("T")
 
@@ -248,6 +257,29 @@ class SQLiteRepository:
                 " excluded.disclosure_version, given_at = excluded.given_at",
                 (user_id, disclosure_version, utc_now()),
             )
+
+        await self._run(op)
+
+    async def get_settings(self, user_id: str) -> UserSettings:
+        def op(conn: sqlite3.Connection) -> UserSettings:
+            row = conn.execute(
+                "SELECT directness, formality, country FROM settings WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()
+            return UserSettings(StyleProfile(row[0], row[1]), row[2]) if row else UserSettings()
+
+        return await self._run(op)
+
+    async def set_settings(self, user_id: str, value: UserSettings) -> None:
+        def op(conn: sqlite3.Connection) -> None:
+            conn.execute(
+                "INSERT INTO settings (user_id, directness, formality, country, updated_at)"
+                " VALUES (?, ?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET"
+                " directness = excluded.directness, formality = excluded.formality,"
+                " country = excluded.country, updated_at = excluded.updated_at",
+                (user_id, value.style.directness, value.style.formality, value.country,
+                 utc_now()),
+            )  # fmt: skip
 
         await self._run(op)
 

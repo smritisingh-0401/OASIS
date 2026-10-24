@@ -1,5 +1,5 @@
 """HTTP endpoints: /health, /session, /consent, /chat, /history, /trends, /explanations,
-/export and /account."""
+/settings, /export and /account."""
 
 from __future__ import annotations
 
@@ -39,17 +39,24 @@ from oasis.api.schemas import (
     StepAction,
     TrendsResponse,
     TurnPointOut,
+    UserSettingsBody,
 )
 from oasis.assessment import flow
 from oasis.core.engine import ChatEngine, ConsentRequired, InvalidSession
 from oasis.core.templates import TEMPLATES
 from oasis.router.exercise import card_for
 from oasis.router.router import load_state
-from oasis.storage.repository import ErasureIncomplete, SessionInfo, StorageError, utc_now
+from oasis.storage.repository import (
+    ErasureIncomplete,
+    SessionInfo,
+    StorageError,
+    UserSettings,
+    utc_now,
+)
 from oasis.storage.split import SplitRepository
 from oasis.tracking.aggregate import trend
 from oasis.tracking.features import load_config as load_tracking
-from oasis.types import AssessmentAction, ExerciseAction, ExerciseCard
+from oasis.types import AssessmentAction, ExerciseAction, ExerciseCard, StyleProfile
 
 log = logging.getLogger("oasis.api")
 
@@ -70,6 +77,7 @@ CONSENT_REQUIRED = ApiError(
     403, "consent_required", "Please review and accept the data notice first."
 )
 OUTDATED_NOTICE = ApiError(422, "invalid_consent", "That is not the current data notice.")
+UNKNOWN_COUNTRY = ApiError(422, "invalid_settings", "That country is not on the help card.")
 ERASURE_PENDING = ApiError(
     503,
     "erasure_pending",
@@ -103,7 +111,13 @@ def _exercise_out(card: ExerciseCard | None) -> ExerciseCardOut | None:
     return ExerciseCardOut(**asdict(card)) if card else None
 
 
-def build_router(engine: ChatEngine, repo: SplitRepository) -> APIRouter:
+def _settings_out(value: UserSettings) -> UserSettingsBody:
+    return UserSettingsBody(directness=value.style.directness, formality=value.style.formality,
+                            country=value.country)  # fmt: skip
+
+
+def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset[str]) -> APIRouter:
+    """`countries`: the help card's country codes, the only ones a user can choose."""
     router = APIRouter()
 
     async def resolve(session: str | None) -> tuple[str, SessionInfo]:
@@ -160,6 +174,36 @@ def build_router(engine: ChatEngine, repo: SplitRepository) -> APIRouter:
             raise STORAGE_DOWN from None
         engine.remember_consent(session_hash)
         return Response(status_code=204)
+
+    @router.get("/settings")
+    async def get_settings(session: SessionHeader = None) -> UserSettingsBody:
+        _, info = await resolve(session)
+        try:
+            return _settings_out(await repo.get_settings(info.user_id))
+        except StorageError:
+            raise STORAGE_DOWN from None
+
+    @router.put("/settings")
+    async def put_settings(
+        body: UserSettingsBody, session: SessionHeader = None
+    ) -> UserSettingsBody:
+        """Only the user changes their settings; OASIS never sets them (FR-CUL-2)."""
+        _, info = await resolve(session)
+        if info.consent_version != load_disclosure().version:
+            raise CONSENT_REQUIRED  # nothing is stored before the notice is accepted
+        if body.country is not None and body.country not in countries:
+            raise UNKNOWN_COUNTRY
+        new = UserSettings(StyleProfile(body.directness, body.formality), body.country)
+        try:
+            old = _settings_out(await repo.get_settings(info.user_id))
+            await repo.set_settings(info.user_id, new)
+            changed = sorted(k for k, v in body.model_dump().items() if getattr(old, k) != v)
+            if changed:  # field names only: the chosen country stays in the settings row
+                detail = json.dumps({"fields": changed})
+                await repo.append_audit(info.user_id, "settings_changed", detail)
+        except StorageError:
+            raise STORAGE_DOWN from None
+        return _settings_out(new)
 
     @router.get("/export")
     async def export(session: SessionHeader = None) -> Response:
@@ -233,6 +277,7 @@ def build_router(engine: ChatEngine, repo: SplitRepository) -> APIRouter:
             assessment=AssessmentCardOut(**asdict(result.card)) if result.card else None,
             exercise=_exercise_out(result.exercise_card),
             explanation_id=result.explanation_id,
+            style_suggestion=result.style_suggestion,
         )
 
     @router.get("/history")

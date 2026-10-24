@@ -26,23 +26,34 @@ function showCrisisSupport() {
   continueButton.hidden = false;
 }
 
-// Opens the computer's own country first (decision 2026-10-24). The time zone is read from
-// the browser's own settings, never sent anywhere and never stored, so this works with the
-// backend down. Each country in the server-rendered card lists its zone names in data-zones;
-// a copy of the match goes on top, and the full list folds into a "Not right?" dropdown.
+// Opens the country chosen in Settings first, or else the computer's own country (decision
+// 2026-10-24). The chosen one is fetched when the chat loads; the time zone is read from the
+// browser's own settings, never sent anywhere and never stored. Either way the card itself
+// needs no request, so it works with the backend down. Each country in the server-rendered
+// card lists its zone names in data-zones; a copy of the match goes on top, and the full list
+// folds into a "Not right?" dropdown.
 const ZONE_NAME = /^[A-Za-z0-9_+-]+(\/[A-Za-z0-9_+-]+)+$/;
+const COUNTRY_CODE = /^[A-Z]{2}$/;
+let chosenCountry = "";
 
 function suggestCountry() {
   const helpCard = help.querySelector(".help-card");
   if (helpCard.querySelector(".suggested")) return;
-  let zone = "";
-  try {
-    zone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-  } catch {
-    return;
+  let label = "Your chosen country:";
+  let match = COUNTRY_CODE.test(chosenCountry)
+    ? helpCard.querySelector(`.country#crisis-${chosenCountry}`)
+    : null;
+  if (!match) {
+    let zone = "";
+    try {
+      zone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    } catch {
+      return;
+    }
+    if (!ZONE_NAME.test(zone)) return;
+    label = "From this computer's time zone:";
+    match = helpCard.querySelector(`.country[data-zones~="${zone}"]`);
   }
-  if (!ZONE_NAME.test(zone)) return;
-  const match = helpCard.querySelector(`.country[data-zones~="${zone}"]`);
   if (!match) return;
   const copy = match.cloneNode(true);
   copy.removeAttribute("id");
@@ -50,7 +61,7 @@ function suggestCountry() {
   copy.open = true;
   const box = document.createElement("div");
   box.className = "suggested";
-  box.append(line("p", "From this computer's time zone:", "help-pick"), copy);
+  box.append(line("p", label, "help-pick"), copy);
   // The full list folds away under "Not right?"; without a suggestion it stays open.
   const others = helpCard.querySelector(".all-countries");
   others.open = false;
@@ -173,9 +184,33 @@ async function init() {
     }
     showChat();
     await loadHistory();
+    loadSettings();
   } catch {
     showOnboarding(OFFLINE);
   }
+}
+
+// The help card's country from Settings. Best effort: without it the card uses the time zone.
+async function loadSettings() {
+  try {
+    const resp = await api("/settings");
+    if (resp.ok) chosenCountry = (await resp.json()).country || "";
+  } catch {
+    // The time-zone suggestion still works.
+  }
+}
+
+// Shown once per tab when their recent messages are hedged (FR-CUL-2). It only points to
+// Settings; the style changes only if they change it there.
+let styleSuggested = false;
+
+function styleNote() {
+  const note = line("p", "You can ask OASIS to word things more gently in ", "note");
+  const link = document.createElement("a");
+  link.href = "settings.html";
+  link.textContent = "Settings";
+  note.append(link, ".");
+  return note;
 }
 
 function addMessage(role, text, note, explanationId) {
@@ -390,7 +425,11 @@ async function sendText(text, action) {
     // A crisis turn is never stored by design, so the not-saved note would only alarm.
     const note = body.persisted || body.mode === "crisis" ? "" : "This message may not have been saved.";
     if (body.preface) addMessage("assistant", body.preface);
-    addMessage("assistant", body.reply, note, body.explanation_id);
+    const reply = addMessage("assistant", body.reply, note, body.explanation_id);
+    if (body.style_suggestion && !styleSuggested) {
+      styleSuggested = true;
+      reply.insertBefore(styleNote(), reply.querySelector(".why"));
+    }
     status.textContent = "";
     showCard(body);
     if (body.mode === "crisis" || body.mode === "post_crisis") {

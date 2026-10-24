@@ -213,8 +213,13 @@ body {
   width: calc(100% - 32px);
   margin: 0 auto;
   padding: 12px 18px 0;
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.3));
-  box-shadow: 0 20px 50px rgba(40, 80, 170, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  /* Clear glass: a thin tint and a light blur, so the orbs behind stay visible; the bright
+     edge and top highlight give it its shape. Text on it stays AA over the darkest orb. */
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  -webkit-backdrop-filter: blur(2px) saturate(120%);
+  backdrop-filter: blur(2px) saturate(120%);
+  box-shadow: 0 20px 50px rgba(40, 80, 170, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25);
   border-radius: 28px;
 }
 
@@ -230,7 +235,7 @@ body {
 .msg p { margin: 0; white-space: pre-wrap; }
 .msg .note { margin-top: 6px; font-size: 14px; color: var(--muted); }
 /* Bot: translucent blue tile. User: the solid white "active" tile. */
-.msg.bot { background: rgba(157, 189, 245, 0.55); }
+.msg.bot { background: rgba(157, 189, 245, 0.75); }
 .msg.user { background: var(--glass-strong); box-shadow: var(--glass-shadow); margin-left: auto; }
 .msg.system { margin: 8px auto; padding: 4px 16px; font-size: 14px; color: var(--muted); text-align: center; }
 
@@ -414,6 +419,38 @@ body {
 }
 .settings .danger { color: #fff; background: #a3262a; }
 .settings .danger:hover { background: #8a1f23; }
+/* Style profile: native radios as segmented controls, each with an example reply. */
+.style-form fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+}
+.style-form legend { margin-bottom: 8px; font-weight: 600; }
+.segment { flex: 1 1 12em; cursor: pointer; }
+.segment input { position: absolute; opacity: 0; }
+.segment > span {
+  display: block;
+  height: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--glass);
+}
+.segment input:checked + span { border-color: var(--accent); background: var(--glass-strong); }
+.segment input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+.segment input:disabled + span { opacity: 0.6; cursor: not-allowed; }
+.segment .example { display: block; margin-top: 4px; color: var(--muted); font-size: 15px; }
+.style-form select {
+  font: inherit;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--muted);
+  border-radius: 10px;
+  background: var(--glass-strong);
+}
 
 @media (max-width: 520px) {
   .top { flex-wrap: wrap; }

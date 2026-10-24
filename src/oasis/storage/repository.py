@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
-from oasis.types import AssessmentRecord, Mode, Role, SignalRecord, TurnFeatures, TurnRecord
+from oasis.types import (
+    AssessmentRecord,
+    Mode,
+    Role,
+    SignalRecord,
+    StyleProfile,
+    TurnFeatures,
+    TurnRecord,
+)
 
 
 class StorageError(Exception):
@@ -37,6 +45,15 @@ class SessionInfo:
     post_crisis: bool = False
     router_state: str = "{}"  # JSON owned by the router; storage never interprets it
     consent_version: str | None = None  # the data notice the user accepted, if any
+
+
+@dataclass(frozen=True)
+class UserSettings:
+    """What the user chose in Settings (design §11): the style, and the help card's country
+    (an ISO code from resources.yaml, checked by the API). Nothing here is ever inferred."""
+
+    style: StyleProfile = field(default_factory=StyleProfile)
+    country: str | None = None
 
 
 @dataclass(frozen=True)
@@ -82,6 +99,14 @@ class Repository(Protocol):
 
     async def set_consent(self, user_id: str, disclosure_version: str) -> None:
         """Record acceptance of a data notice, replacing any earlier one."""
+        ...
+
+    async def get_settings(self, user_id: str) -> UserSettings:
+        """The user's settings; the defaults until they change them."""
+        ...
+
+    async def set_settings(self, user_id: str, value: UserSettings) -> None:
+        """Replace the user's settings; values outside the allowed sets are rejected."""
         ...
 
     async def append_audit(self, user_id: str, event: str, detail_json: str) -> None: ...

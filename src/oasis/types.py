@@ -36,6 +36,10 @@ InstrumentId = Literal["PHQ9", "GAD7"]
 AssessmentStatus = Literal[
     "offered", "declined", "in_progress", "paused", "aborted", "escalated", "scored"
 ]
+# The user's chosen communication style (FR-CUL-1). Set only by the user, never inferred.
+Directness = Literal["direct", "balanced", "indirect"]
+Formality = Literal["casual", "neutral", "formal"]
+
 # Assessments that are still open: an offer awaiting an answer, or a questionnaire underway.
 ACTIVE_STATUSES = frozenset({"offered", "in_progress", "paused"})
 
@@ -168,6 +172,14 @@ class ExerciseCard:
 
 
 @dataclass(frozen=True)
+class StyleProfile:
+    """How replies are worded; changes framing only, never what a reply does (FR-CUL-3)."""
+
+    directness: Directness = "balanced"
+    formality: Formality = "neutral"
+
+
+@dataclass(frozen=True)
 class Plan:
     """What the reply must do. The LLM only phrases a plan; it never chooses one."""
 
@@ -196,6 +208,9 @@ class Plan:
     # user text, so never stored or traced (rules P2).
     distortion_types: frozenset[str] = frozenset()
     claims: tuple[frozenset[str], ...] = ()
+    # Attached by the engine after planning, so no decision can depend on it; read only by
+    # the prompt builder (design §6).
+    style: StyleProfile = StyleProfile()
 
     @property
     def is_step(self) -> bool:

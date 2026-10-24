@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
+from oasis.style.framing import framing
 from oasis.types import ChatMessage, Plan, TurnRecord
 
 SYSTEM_TEMPLATE = (
@@ -15,6 +16,7 @@ SYSTEM_TEMPLATE = (
     "Match their tone: keep small talk light, and never make a feeling sound bigger or "
     "darker than they said it.\n"
     "Follow the PLAN exactly. Do not change its approach.\n"
+    "{style}"  # the user's chosen wording (design §13.1); empty for the default style
     "PLAN:\n"
     "- mode: {mode}\n"
     "- goal: {goal}\n"
@@ -93,8 +95,12 @@ def build_messages(
     retry_reasons: Sequence[str] = (),
 ) -> list[ChatMessage]:
     goal = STEP_GOAL if plan.is_step else GOALS.get(plan.mode, GOALS["companion"])
+    style = framing(plan.style)
     system = SYSTEM_TEMPLATE.format(
-        mode=plan.mode, goal=goal, constraints=_rule_text(plan.constraints) or "none"
+        style=style + "\n" if style else "",
+        mode=plan.mode,
+        goal=goal,
+        constraints=_rule_text(plan.constraints) or "none",
     )
     if plan.avoid_openers:
         system += "\n- do not begin with: " + ", ".join(f'"{o}"' for o in plan.avoid_openers)
