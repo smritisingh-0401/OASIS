@@ -1,7 +1,7 @@
 "use strict";
 
 // Settings (design §15.1, FR-PRV-2, FR-PRV-3): whether this conversation is saved, export and
-// delete. Uses the chat's session token from sessionStorage, sent only in the X-OASIS-Session
+// delete. Uses the chat's session token from browser storage, sent only in the X-OASIS-Session
 // header (rules P3, F5). All text goes in with textContent (rules F4).
 
 const SESSION_KEY = "oasis.session";
@@ -14,9 +14,10 @@ const deleteStart = document.getElementById("delete-start");
 const confirmForm = document.getElementById("delete-confirm");
 const confirmWord = document.getElementById("delete-word");
 
+// A saved session's key is in localStorage, an unsaved one's in sessionStorage (rules F5).
 function readToken() {
   try {
-    return sessionStorage.getItem(SESSION_KEY);
+    return localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
   } catch {
     return null;
   }
@@ -37,9 +38,11 @@ async function load() {
     if (!resp.ok) throw new Error("status " + resp.status);
     const info = await resp.json();
     mode.textContent = info.ephemeral
-      ? "This conversation is not being saved. It is kept in memory only and is gone when you " +
-        "delete it, after two hours without a message, or when OASIS restarts."
-      : "This conversation is saved in a file on this computer until you delete it.";
+      ? "This conversation is not being saved. It is kept in memory only: closing this tab ends " +
+        "your access, and it is gone after two hours without a message, when you delete it, " +
+        "or when OASIS restarts."
+      : "This conversation is saved in a file on this computer until you delete it. This " +
+        "browser remembers it, so anyone who uses this browser on this computer can open it.";
     exportButton.disabled = false;
     deleteStart.disabled = false;
   } catch {
@@ -98,6 +101,7 @@ confirmForm.addEventListener("submit", async (event) => {
     const code = body.error && body.error.code;
     if (resp.status !== 204 && code !== "erasure_pending") throw new Error("status " + resp.status);
     try {
+      localStorage.removeItem(SESSION_KEY);
       sessionStorage.removeItem(SESSION_KEY);
     } catch {
       // Nothing to remove.

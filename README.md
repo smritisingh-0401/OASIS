@@ -14,14 +14,14 @@ A review of 97 studies (16,620 participants) on mental health chatbots identifie
 
 ## Key properties
 
-- **Safety first** — pure-Python crisis detection runs before anything else; crisis handoff makes zero model calls.
-- **Explainable** — every reply links to an explanation of the signals that drove its strategy.
-- **Private** — local-only, pseudonymous, ephemeral mode, export and delete.
+- **Safety first** — pure-Python crisis detection runs before anything else; crisis handoff makes zero model calls. "Need help now?" works with no script and no server, and opens the country of the computer's time zone first.
+- **Explainable** — every reply has a "Why this reply?" panel: the signals that drove its strategy, with exact SHAP values and the router's weighted sum.
+- **Private** — nothing leaves the computer. A data notice comes first; each conversation is either saved in a local file or kept in memory only, and Settings exports or deletes everything (deleted text is overwritten on disk). No name, email or phone number.
 - **Free to run** — quantised open model on a CPU laptop; no paid API.
 
 ## Quick start (development)
 
-> Development only. The safety layer (Phase 2) awaits clinician review, and privacy controls arrive in Phase 10. Use test messages only.
+> Development only. The safety content, clinical wording and data notice await clinician and legal review ([docs/clinical_review.md](docs/clinical_review.md)). Use test messages only.
 
 Requires [uv](https://docs.astral.sh/uv/). uv installs Python 3.12 itself.
 
@@ -31,7 +31,9 @@ cp .env.example .env
 uv run uvicorn oasis.api.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Open http://127.0.0.1:8000. With `OASIS_LLM_BACKEND=fake` (the `.env.example` default), replies come from a deterministic stand-in model.
+Open http://127.0.0.1:8000, read the data notice and choose **Save on this computer** or **Start without saving**. With `OASIS_LLM_BACKEND=fake` (the `.env.example` default), replies come from a deterministic stand-in model.
+
+Saved conversations live in `data/oasis.db` (`OASIS_DB_PATH`); the browser keeps only the session key, so anyone using the same browser can reopen a saved conversation. Unsaved conversations stay in memory and are forgotten after two hours idle or on restart. Export and delete are under the gear icon (Settings).
 
 Run every check (lint, types, import rules, security scan, dependency audit, tests with coverage):
 
@@ -51,7 +53,14 @@ A fresh-machine install guide is verified in Phase 14.
 | 1 — Core chat loop | Approved |
 | 2 — Safety layer | Approved |
 | 3 — Assessment (PHQ-9 / GAD-7) | Approved |
-| 4–14 | Not started |
+| 4 — Therapy router | Approved |
+| 5 — Psychoeducation | Approved |
+| 6 — Companion mode | Approved |
+| 7 — Hypercompliance guard | Approved |
+| 8 — Sentiment tracking | Approved |
+| 9 — Explainability | Approved |
+| 10 — Privacy and autonomy | Built; awaiting approval ([report](docs/reports/phase-10.md)) |
+| 11–14 | Not started |
 
 See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 
@@ -66,6 +75,7 @@ See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 | [docs/phases.md](docs/phases.md) | Build plan |
 | [docs/memory.md](docs/memory.md) | Project memory and decision log |
 | [docs/clinical_review.md](docs/clinical_review.md) | Items awaiting clinician review |
+| [docs/reports/](docs/reports/) | Per-phase reports: design, evaluation, measured results, known limits |
 
 ## Licence
 

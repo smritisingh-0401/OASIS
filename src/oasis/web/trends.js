@@ -1,6 +1,6 @@
 "use strict";
 
-// Mood-trend view (design §9, FR-TRK-3). Uses the chat's session token from sessionStorage,
+// Mood-trend view (design §9, FR-TRK-3). Uses the chat's session token from browser storage,
 // sent only in the X-OASIS-Session header (rules P3, F5). All text goes in with textContent
 // (rules F4); the charts are plain SVG built here, with no outside requests.
 
@@ -29,9 +29,10 @@ const NAMES = {
 
 const status = document.getElementById("trend-status");
 
+// A saved session's key is in localStorage, an unsaved one's in sessionStorage (rules F5).
 function readToken() {
   try {
-    return sessionStorage.getItem(SESSION_KEY);
+    return localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
   } catch {
     return null;
   }

@@ -178,7 +178,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | English-only; no fine-tuning; WEIRD-data caveat | By design for v1 |
 | Explanations with real-model replies | Not verified here (browser check ran with llama-server down, so replies were fallbacks); the explanation does not read the reply text |
 | Which words drove VADER valence | Not explained; valence enters the router explanation as one exact contribution |
-| Saved conversation after the tab closes | Unreachable from the app (session key in sessionStorage); open item 11, Phase 13 |
+| Saved conversation in the browser | Key in localStorage (rules F5, 2026-10-24): anyone using the browser can open it; clearing site data strands it on disk until Phase 13 |
 | Erasure beyond SQLite | OS swap, SSD wear levelling and backups are outside OASIS; disk encryption recommended in the notice |
 
 ---
@@ -232,7 +232,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-22 | 9 | Tests / coverage | 1291 passed; 98.57% overall (explain/builder 100%, shap_values 95%, router 100%, assessment 97.8%, safety 97.1%) |
 | 2026-10-22 | 9 | Explanation exactness (615 test-data messages x 22 scorers) | Additivity error at most 2.2e-16 (limit 1e-6); 615/615 `ok`; largest difference from `shap.LinearExplainer` 0.0; 615/615 byte-identical on rebuild |
 | 2026-10-22 | 9 | Explanation speed (dev machine) | p50 1.1-1.4 ms, p99 2.3-2.6 ms per reply; 1,840-character message 14.6-15.5 ms (32 ms before counting matches once); record median 827 bytes |
-| 2026-10-24 | 10 | Tests / coverage | 1371 passed; 98% overall (storage 97-99%, router 100%, assessment 97.8%, safety 97.1%) |
+| 2026-10-24 | 10 | Tests / coverage | 1375 passed; 98% overall (storage 97-99%, router 100%, assessment 97.8%, safety 97.1%) |
 | 2026-10-24 | 10 | Export / delete (dev machine, SQLite) | Export 2.4 ms / 100 turns, 10.9 ms / 1,000 turns (533 KB); delete with checkpoint 10.2 ms / 22.3 ms; expiry check 2 us (10 unsaved sessions) to 108 us (1,000) per request |
 | 2026-10-24 | 10 | Erasure | Schema crawl 0 rows; marker absent from .db and -wal; WAL 0 bytes; a reader mid-read blocked the checkpoint silently (busy, no error) until the fix |
 | 2026-10-24 | 10 | Mutation spot-check | 23/25 at first (expiry check hid by the test's own lookup; startup overwrite masked by SQLite's last-connection checkpoint); two tests tightened; 25/25 |

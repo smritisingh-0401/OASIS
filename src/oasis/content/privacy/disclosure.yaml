@@ -4,7 +4,7 @@
 # of the crisis paragraph (CR-23).
 schema: oasis.content/v1
 kind: disclosure
-version: "1"
+version: "2"  # 2 (2026-10-24): a saved conversation is reopened from this browser (rules F5)
 review_status: needs_clinician_review
 title: "Before you start"
 # The first sections are always shown; the rest sit under a "Read more" dropdown (a native
@@ -18,8 +18,8 @@ sections:
       - "Replies are written by a language model that runs on this computer. OASIS decides what kind of reply to give with fixed rules, and each reply can tell you why."
   - heading: "Two ways to start"
     paragraphs:
-      - "Save on this computer: your conversation is kept in a file on this computer, so you can come back to it, see your mood trend, export it or delete it."
-      - "Start without saving: nothing is written to disk. The conversation is kept in memory only and is gone when you delete it, after two hours without a message, or when OASIS restarts."
+      - "Save on this computer: your conversation is kept in a file on this computer, and this browser remembers it, so you can come back to it in a new tab or after a restart, see your mood trend, export it or delete it. Anyone who uses this browser on this computer can open it too, so on a shared computer choose Start without saving."
+      - "Start without saving: nothing is written to disk. The conversation is kept in memory only: closing this tab ends your access, and it is gone after two hours without a message, when you delete it, or when OASIS restarts."
   - heading: "What is kept"
     paragraphs:
       - "Your messages and OASIS's replies; your answers and scores if you take a PHQ-9 or GAD-7 questionnaire; numbers that describe your word choice for the mood trend; the explanation of each reply; and a technical record of each reply (timings and decisions, never your words)."

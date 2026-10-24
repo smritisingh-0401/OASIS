@@ -1,7 +1,8 @@
 "use strict";
 
-// The session token is kept in sessionStorage and sent only in the X-OASIS-Session
-// header, never in a URL (rules P3, F5). All text is rendered with textContent (rules F4).
+// The session token is the only thing kept in the browser (rules F5, see saveToken) and is
+// sent only in the X-OASIS-Session header, never in a URL (rules P3). All text is rendered
+// with textContent (rules F4).
 
 const SESSION_KEY = "oasis.session";
 const SLOW_NOTICE_MS = 8000;
@@ -63,15 +64,24 @@ help.addEventListener("toggle", () => {
 
 function readToken() {
   try {
-    return sessionStorage.getItem(SESSION_KEY);
+    return localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
   } catch {
     return null;
   }
 }
 
-function saveToken(token) {
+// A saved session's key goes in localStorage, so the conversation can be reopened in a new
+// tab or after a restart; an unsaved one's in sessionStorage, so it ends with this tab
+// (rules F5). An empty token forgets both.
+function saveToken(token, ephemeral = false) {
   try {
-    sessionStorage.setItem(SESSION_KEY, token);
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    if (token && ephemeral) {
+      sessionStorage.setItem(SESSION_KEY, token);
+    } else if (token) {
+      localStorage.setItem(SESSION_KEY, token);
+    }
   } catch {
     // Storage blocked: the session lasts for this page only.
   }
@@ -85,14 +95,33 @@ async function api(path, options = {}) {
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const OFFLINE = "I couldn't reach the server. \"Need help now?\" still works.";
 
+const startSaved = document.getElementById("start-saved");
+const startEphemeral = document.getElementById("start-ephemeral");
+// True when the notice is shown again to a session that already exists (the notice changed):
+// accepting continues that conversation instead of starting a new one, so a saved
+// conversation is never stranded.
+let resuming = false;
+
 // The data notice replaces the conversation until a session has accepted it (FR-PRV-1).
-function showOnboarding(note) {
+function showOnboarding(note, resume = false) {
+  resuming = resume;
+  startSaved.textContent = resume ? "Accept and continue" : "Save on this computer";
+  startEphemeral.hidden = resume;
   onboarding.hidden = false;
   messages.hidden = true;
   form.hidden = true;
   card.hidden = true;
   status.textContent = note || "";
-  if (!help.contains(document.activeElement)) onboarding.querySelector("button").focus();
+  if (!help.contains(document.activeElement)) startSaved.focus();
+}
+
+async function postConsent(token, version) {
+  const resp = await fetch("/consent", {
+    method: "POST",
+    headers: { ...JSON_HEADERS, "X-OASIS-Session": token },
+    body: JSON.stringify({ disclosure_version: version }),
+  });
+  if (!resp.ok) throw new Error("consent");
 }
 
 function showChat() {
@@ -105,6 +134,14 @@ function showChat() {
 async function start(ephemeral) {
   const version = onboarding.querySelector(".notice").dataset.version;
   try {
+    if (resuming) {
+      await postConsent(readToken(), version);
+      status.textContent = "";
+      showChat();
+      await loadHistory();
+      input.focus();
+      return;
+    }
     const resp = await fetch("/session", {
       method: "POST",
       headers: JSON_HEADERS,
@@ -112,13 +149,8 @@ async function start(ephemeral) {
     });
     if (!resp.ok) throw new Error("session");
     const token = (await resp.json()).session_id;
-    const consent = await fetch("/consent", {
-      method: "POST",
-      headers: { ...JSON_HEADERS, "X-OASIS-Session": token },
-      body: JSON.stringify({ disclosure_version: version }),
-    });
-    if (!consent.ok) throw new Error("consent");
-    saveToken(token);
+    await postConsent(token, version);
+    saveToken(token, ephemeral);
     status.textContent = "";
     showChat();
     input.focus();
@@ -136,7 +168,9 @@ async function init() {
       return showOnboarding();
     }
     // Storage down: the chat may still answer, so let them try.
-    if (resp.ok && !(await resp.json()).consented) return showOnboarding();
+    if (resp.ok && !(await resp.json()).consented) {
+      return showOnboarding("The data notice has changed. Please read it and accept to carry on.", true);
+    }
     showChat();
     await loadHistory();
   } catch {
@@ -333,10 +367,11 @@ async function sendText(text, action) {
       const body = await resp.json().catch(() => ({}));
       pending.remove();
       if (resp.status === 401) saveToken("");
-      const code = body.error && body.error.code;
-      showOnboarding(code === "consent_required"
+      // 403: the session still exists, so accepting continues it (a changed notice).
+      const consent = body.error && body.error.code === "consent_required";
+      showOnboarding(consent
         ? "Please read and accept the data notice first. Your message wasn't sent."
-        : "Please choose how to start again. Your message wasn't sent.");
+        : "Please choose how to start again. Your message wasn't sent.", consent);
       return false;
     }
     if (!resp.ok) throw new Error("status " + resp.status);
