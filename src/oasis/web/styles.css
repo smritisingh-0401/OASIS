@@ -235,7 +235,7 @@ body {
 .msg p { margin: 0; white-space: pre-wrap; }
 .msg .note { margin-top: 6px; font-size: 14px; color: var(--muted); }
 /* Bot: translucent blue tile. User: the solid white "active" tile. */
-.msg.bot { background: rgba(157, 189, 245, 0.55); }
+.msg.bot { background: rgba(157, 189, 245, 0.75); }
 .msg.user { background: var(--glass-strong); box-shadow: var(--glass-shadow); margin-left: auto; }
 .msg.system { margin: 8px auto; padding: 4px 16px; font-size: 14px; color: var(--muted); text-align: center; }
 
