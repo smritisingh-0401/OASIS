@@ -88,7 +88,7 @@ These rules apply to every phase of the build. They are binding: a change that b
 | F2 | The static "Need help now?" button works with the backend down (content inlined in HTML). |
 | F3 | Accessible: full keyboard operation, visible focus, WCAG 2.2 AA contrast, ARIA labels, `aria-live="polite"` for new messages, respects `prefers-reduced-motion`. |
 | F4 | No `innerHTML` with any server or user text — `textContent` only (prevents XSS). |
-| F5 | No browser storage of message content. `sessionStorage` may hold the session ID only. |
+| F5 | No browser storage of message content. The session ID is the only thing stored: in `localStorage` for a saved session, so it can be reopened from a new tab or after a restart, and in `sessionStorage` for an unsaved one, so it ends with its tab. (Changed 2026-10-24: `sessionStorage` only.) |
 | F6 | Calm, text-only design; no gamification, streaks or guilt-inducing prompts. |
 
 ## 7. Git rules
