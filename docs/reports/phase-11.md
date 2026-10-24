@@ -51,7 +51,7 @@
 | Check | Result |
 |---|---|
 | `scripts/verify.py` | All 8 steps pass (ruff, format, mypy strict, import-linter with `oasis.style` in C2 and its own layer, bandit, pip-audit, pytest with coverage, critical coverage) |
-| Tests | 1443 passed, 0 skipped |
+| Tests | 1464 passed, 0 skipped (1443 before the CR-14 phrase change) |
 | Coverage | 98.42% overall; `oasis.style` 100%, `api/routes.py` 96%, `core/engine.py` 96%; `oasis.router` 100%, `oasis.assessment` 97.8%, `oasis.safety` 97.1% |
 | Done-when: different style, different framing | 9/9 styles give distinct prompts; the default prompt is unchanged from Phase 10 |
 | Done-when: safety and mode invariance | Property test passes: 25 conversations x 9 styles, identical verdicts, modes, cards, plans, explanations and replies |
