@@ -17,6 +17,9 @@ same pipeline against the fake model to check the plumbing.
 `--agreeable` is the guard stress check: the system prompt also tells the model to agree with
 the user, and only the thinking-trap messages run, so the guard meets real people-pleasing
 drafts (the plain model rarely writes one). Read the final replies: none may agree.
+
+`--style direct,casual` (any directness, formality) runs every session with that style profile
+(Phase 11), to check the model follows the framing and that the guard still holds under it.
 """
 
 from __future__ import annotations
@@ -36,7 +39,8 @@ from oasis.safety.gate import RuleBasedSafetyGate
 from oasis.safety.rules import load_ruleset
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
-from oasis.types import ChatMessage, ExerciseAction, GuardVerdict, Plan
+from oasis.storage.repository import UserSettings
+from oasis.types import ChatMessage, ExerciseAction, GuardVerdict, Plan, StyleProfile
 
 SINGLES = [
     # everyday low moments
@@ -165,7 +169,9 @@ CONVERSATIONS = {
 }
 
 
-async def run(url: str, fake: bool, agreeable: bool = False) -> list[str] | None:
+async def run(
+    url: str, fake: bool, agreeable: bool = False, style: StyleProfile | None = None
+) -> list[str] | None:
     """The transcript lines, or None when llama-server is not healthy."""
     s = Settings()
     llm: LLMClient
@@ -202,6 +208,12 @@ async def run(url: str, fake: bool, agreeable: bool = False) -> list[str] | None
                         settings=s, guard=recording_check)  # fmt: skip
     body: list[str] = []
     turns = first_pass = fallbacks = 0
+
+    async def new_session(name: str) -> None:
+        uid = await repo.create_user_session(name)
+        if style is not None:
+            await repo.set_settings(uid, UserSettings(style))
+
     caught: dict[str, int] = dict.fromkeys(PHASE7_RULES, 0)
 
     async def turn(
@@ -226,18 +238,18 @@ async def run(url: str, fake: bool, agreeable: bool = False) -> list[str] | None
 
     body.extend(["## Single messages", ""])
     for i, message in enumerate([] if agreeable else SINGLES, 1):
-        await repo.create_user_session(f"single-{i}")
+        await new_session(f"single-{i}")
         await turn(f"single-{i}", str(i), message)
 
     body.extend(["## Thinking-trap messages", ""])
     for i, message in enumerate(THINKING_TRAPS, 1):
-        await repo.create_user_session(f"trap-{i}")
+        await new_session(f"trap-{i}")
         await turn(f"trap-{i}", f"t{i}", message)
 
     repeats: list[str] = []
     for name, messages in ({} if agreeable else CONVERSATIONS).items():
         body.extend([f"## Conversation: {name}", ""])
-        await repo.create_user_session(name)
+        await new_session(name)
         seen: list[str] = []
         repeated = 0
         for k, message in enumerate(messages, 1):
@@ -248,7 +260,7 @@ async def run(url: str, fake: bool, agreeable: bool = False) -> list[str] | None
         repeats.append(f"{name}: {repeated} of {len(seen)} companion replies repeat an opener")
     if not agreeable:
         body.extend(["## Conversation: anger and the STOP skill", ""])
-        await repo.create_user_session("exercise")
+        await new_session("exercise")
         for k, (action, message) in enumerate(EXERCISE, 1):
             await turn("exercise", f"x{k}", message, action)
     await llm.aclose()
@@ -263,7 +275,8 @@ async def run(url: str, fake: bool, agreeable: bool = False) -> list[str] | None
     print("\n" + "\n".join(summary))
     model = "fake" if fake else s.llm_model
     title = "# Guard stress check (model told to agree)" if agreeable else "# Tone and guard check"
-    return [title, "", f"Model: {model}", "", *summary, "", *body]
+    styled = f"Style: {style.directness}, {style.formality}" if style else "Style: default"
+    return [title, "", f"Model: {model}", "", styled, "", *summary, "", *body]
 
 
 if __name__ == "__main__":
@@ -276,8 +289,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--fake", action="store_true", help="use the fake model")
     parser.add_argument("--agreeable", action="store_true", help="guard stress check")
+    parser.add_argument("--style", help="directness,formality, e.g. indirect,formal")
     args = parser.parse_args()
-    transcript = asyncio.run(run(args.url, args.fake, args.agreeable))
+    profile = StyleProfile(*args.style.split(",")) if args.style else None
+    transcript = asyncio.run(run(args.url, args.fake, args.agreeable, profile))
     if transcript is None:
         sys.exit(1)
     args.out.write_text("\n".join(transcript) + "\n", encoding="utf-8", newline="\n")
