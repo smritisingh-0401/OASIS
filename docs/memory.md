@@ -10,10 +10,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 10 — privacy and autonomy** (approved by Smriti 2026-10-24; PR open, awaiting merge) |
-| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5). 2026-10-13: Phase 7 approved by Smriti, including the manual-testing changes (DBT anger, exact exercise steps, companion after an exercise) and the closed known limits; merged (PR #6). 2026-10-22: Phase 8 approved by Smriti; merged (PR #7). 2026-10-23: Phase 9 approved by Smriti; merged (PR #8) |
-| In progress | Phase 10 on `phase-10-privacy` (from `main` at the Phase 9 merge) |
-| Next | Phase 11 (cultural adaptation), after Phase 10 approval |
+| Current phase | **Phase 11 — cultural adaptation** |
+| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5). 2026-10-13: Phase 7 approved by Smriti, including the manual-testing changes (DBT anger, exact exercise steps, companion after an exercise) and the closed known limits; merged (PR #6). 2026-10-22: Phase 8 approved by Smriti; merged (PR #7). 2026-10-23: Phase 9 approved by Smriti; merged (PR #8). 2026-10-24: Phase 10 approved by Smriti; merged (PR #9) |
+| In progress | Phase 11 on `phase-11-style` (from `main` at the Phase 10 merge) |
+| Next | Phase 12 (bias evaluation), after Phase 11 approval |
 | Blocked on | Nothing; open items 8-10 need Smriti but do not block Phase 5 |
 
 ### Environment notes (development machine, 2026-10-07)
