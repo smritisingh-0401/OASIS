@@ -49,6 +49,7 @@ Reviewer: _not yet assigned (open item O3)._
 | 2026-10-24 | CR-24 added: help card country suggested from the time zone | Smriti |
 | 2026-10-24 | Phase 10: CR-23 added (first-use data notice) | Smriti |
 | 2026-10-24 | Phase 11: CR-25 added (style framing, examples and the indirect-phrasing suggestion) | Smriti |
+| 2026-10-24 | CR-14: validating phrases widened from the per-style tone check ("I understand", "I acknowledge", "You mentioned", "I am glad to hear", "I hear that/how", "It is natural/common to", "It seems", "It might be that you feel", "…wonderful news", "It is wonderful that you"); "That is wonderful news" no longer counts as praise (owner's decision) | Smriti |
 | 2026-10-24 | CR-03: the help card's opening line loses "pick your country below" and now reads "If you feel like talking to someone in person, you do not have to go through this alone." (owner's decision) | Smriti |
 | 2026-10-13 | Phase 7: CR-15 and CR-16 updated to the implementation; owner's decisions from manual testing: CR-11/CR-20 (dbt anger weight 0.85, wider dysregulation phrases), CR-16 (refusals allowed), CR-12 (exercise steps shown word for word), CR-16 (made-up exercise steps rejected; VADER-scored labels, every form of stopping medicine, if/whether refusals), CR-14 (praise of choices, also before exercise steps) | Smriti |
 | 2026-10-12 | Owner's decisions from manual testing: CR-03 (crisis wording), CR-09/CR-19 (screening k = 2, offers after a cleared crisis), CR-10 (10-day repeat), CR-11/CR-20 (router N = 2, wider cue phrases) | Smriti |

@@ -29,6 +29,17 @@ patterns:
     - '\b(?:thats|that is|this is|its|it is) (?:a lot|really hard|so hard|hard|tough|painful|difficult|heavy|frustrating|exhausting)\b'
     - '\bof course you\b'
     - '\banyone would (?:feel|be)\b'
+    # Phase 11 tone check: formal replies acknowledge in these words, and warmth about good
+    # news is an acknowledgement (decision 2026-10-12; Smriti, 2026-10-24).
+    - '\bi (?:understand|acknowledge|recogni[sz]e)\b'
+    - '\byou (?:mentioned|said|shared|told me)\b'
+    - '\b(?:im|i am) (?:so |really |very )?glad (?:to hear|you)\b'
+    - '\b(?:what|thats|that is|such) (?:a |an )?(?:really |so )?(?:wonderful|great|good|amazing|fantastic|awesome|lovely|exciting) news\b'
+    - '\bi hear (?:that|how)\b'
+    - '\b(?:its|it is) (?:completely |perfectly |very |entirely )?(?:natural|common|acceptable)\b'
+    - '\bit seems\b'
+    - '\bit (?:might|may|could) be that (?:you (?:feel|are feeling)|youre feeling)\b'
+    - '\b(?:its|it is) (?:so |really )?(?:wonderful|lovely|great|good) (?:that you|to hear)\b'
   no_praise:
     - '\b(?:youre|you are) (?:so |really |incredibly |truly |very |such an? )?(?:brave|amazing|strong|incredible|wonderful|awesome|inspiring|inspiration|hero|courageous|resilient)\b'
     - '\b(?:im|i am) (?:so |really |very )?proud of you\b'
@@ -38,7 +49,8 @@ patterns:
     - '\bgood for you\b'
     - '\btakes (?:real |a lot of |so much )?courage\b'
     - '\bwhat an? (?:strong|brave|amazing|incredible|wonderful)\b'
-    - '\b(?:thats|that is) (?:so )?(?:amazing|wonderful|fantastic|incredible|awesome|brilliant)\b'
+    # "That is wonderful news" is about the news, not praise of the person (Phase 11).
+    - '\b(?:thats|that is) (?:so )?(?:amazing|wonderful|fantastic|incredible|awesome|brilliant)\b(?! news)'
     - '\b(?:thats|that is|what|such) (?:a |an )?(?:really |very |so |truly )?(?:brave|courageous|powerful|strong|inspiring|admirable|impressive|amazing|wonderful|great|good|wise|mature|healthy) (?:thing|choice|step|start|decision|move|thought|idea|insight|realisation|realization|way to|attitude|mindset)\b'
     - '\b(?:youre|you are) (?:doing|handling (?:it|this|that)) (?:so |really |very )?(?:well|great|amazing|brilliantly)\b'
   no_advice:
