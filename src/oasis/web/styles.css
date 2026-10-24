@@ -356,6 +356,14 @@ body {
 .chart .ewma { stroke: var(--muted); stroke-dasharray: 6 5; stroke-width: 2; }
 .chart .dot { fill: var(--accent); }
 .chart .flag { fill: none; stroke: var(--text); stroke-width: 2; }
+/* "What it is based on": a closed dropdown styled like the page's section headings. */
+.basis-more { margin-top: 22px; }
+.basis-more > summary {
+  cursor: pointer;
+  width: fit-content;
+  font-size: 18px;
+  font-weight: 700;
+}
 .basis { margin: 6px 0; padding-left: 20px; }
 .basis li { margin: 8px 0; }
 .basis strong { display: block; }

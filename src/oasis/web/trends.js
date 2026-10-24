@@ -95,8 +95,8 @@ function showPast(body) {
   const means = body.sessions.map((s) => s.mean.valence);
   if (means.length < 2) {
     note.textContent =
-      "This fills in when there are more conversations to compare. For now, each visit to " +
-      "OASIS starts a new record, so there is only this one.";
+      "This fills in when there are more conversations to compare. For now, everything you " +
+      "have written is one conversation, so there is only this one.";
     return;
   }
   const label = `${means.length} conversations. Dots: each conversation's average. Dashed: the overall direction.`;

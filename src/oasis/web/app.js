@@ -197,8 +197,8 @@ function addMessage(role, text, note, explanationId) {
 }
 
 // "Why this reply?" (design §10, FR-XAI-3): fetched when opened, the plain-language bullets
-// and the scope note. The raw record stays out of the page (Smriti, 2026-10-24); it is still
-// served by GET /explanations/{id} and included in the export.
+// only. The scope note and the raw record stay out of the page (Smriti, 2026-10-24); both
+// are still in the record served by GET /explanations/{id} and included in the export.
 function whyPanel(explanationId) {
   const panel = document.createElement("details");
   panel.className = "why";
@@ -234,7 +234,7 @@ function whyPanel(explanationId) {
     }
     const list = document.createElement("ul");
     for (const text of body.plain_language) list.appendChild(line("li", text));
-    panel.append(list, line("p", body.scope_note, "why-note"));
+    panel.append(list);
   });
   return panel;
 }
