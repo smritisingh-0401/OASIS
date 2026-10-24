@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from oasis.storage.split import SplitRepository
 
 from oasis.api.pages import load_disclosure, parse_disclosure, render_onboarding
 from oasis.core.engine import ChatEngine, ConsentRequired
@@ -17,6 +16,7 @@ from oasis.safety.rules import load_ruleset
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import StorageUnavailable
+from oasis.storage.split import SplitRepository
 from oasis.storage.sqlite import SQLiteRepository
 
 GATE = RuleBasedSafetyGate(load_ruleset())
@@ -210,7 +210,11 @@ def test_disclosure_covers_what_the_policy_must_say() -> None:
     lambda r: r.update(review_status="approved"),
     lambda r: r.update(sections=[]),
     lambda r: r["sections"][0].update(paragraphs=[]),
-], ids=["no_version", "approved_status", "no_sections", "empty_section"])  # fmt: skip
+    lambda r: r.update(visible_sections=0),
+    lambda r: r.update(visible_sections=99),
+    lambda r: r.update(agreement=""),
+], ids=["no_version", "approved_status", "no_sections", "empty_section", "none_visible",
+        "too_many_visible", "no_agreement"])  # fmt: skip
 def test_an_invalid_disclosure_is_rejected(change: Any) -> None:
     from oasis.content import load_yaml
 
@@ -222,9 +226,24 @@ def test_an_invalid_disclosure_is_rejected(change: Any) -> None:
 
 def test_onboarding_is_rendered_escaped_with_its_version() -> None:
     raw = {"version": "9", "review_status": "needs_clinician_review", "title": "Before <you> start",
-           "sections": [{"heading": "A & B", "paragraphs": ["<script>x</script>"]}]}  # fmt: skip
+           "visible_sections": 1, "agreement": "Agree & go",
+           "sections": [{"heading": "A & B", "paragraphs": ["<script>x</script>"]},
+                        {"heading": "Later", "paragraphs": ["folded"]}]}  # fmt: skip
     html = render_onboarding(parse_disclosure(raw))
     assert 'data-version="9"' in html
     assert "<script>" not in html
     assert "&lt;script&gt;" in html
     assert "A &amp; B" in html
+    # The first section is open; the rest is under "Read more"; the agreement stays outside it.
+    shown, folded = html.split("<summary>Read more</summary>")
+    assert "A &amp; B" in shown
+    assert "Later" not in shown
+    assert "folded" in folded.split("</details>")[0]
+    assert "Agree &amp; go" in folded.split("</details>")[1]
+
+
+def test_the_notice_folds_after_the_first_two_sections() -> None:
+    d = load_disclosure()
+    assert [s.heading for s in d.sections[: d.visible]] == ["What OASIS is", "Two ways to start"]
+    assert d.sections[d.visible].heading == "What is kept"
+    assert "agree" in d.agreement

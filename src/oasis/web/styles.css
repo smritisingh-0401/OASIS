@@ -370,6 +370,14 @@ body {
 .notice h2 { margin: 0 0 6px; font-size: 22px; }
 .notice h3 { margin: 16px 0 4px; font-size: 17px; }
 .notice p { margin: 4px 0; max-width: 70ch; }
+.notice-more { margin-top: 10px; }
+.notice-more summary {
+  cursor: pointer;
+  width: fit-content;
+  font-weight: 600;
+  color: var(--accent);
+}
+.notice-agreement { margin-top: 14px !important; font-weight: 600; }
 .onboarding-actions { margin-top: 14px; }
 .settings { padding: 18px 22px 24px; }
 .settings h2 { margin: 4px 0 10px; font-size: 22px; }

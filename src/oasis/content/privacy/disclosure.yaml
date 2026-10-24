@@ -7,6 +7,10 @@ kind: disclosure
 version: "1"
 review_status: needs_clinician_review
 title: "Before you start"
+# The first sections are always shown; the rest sit under a "Read more" dropdown (a native
+# <details>, so it opens without script). The agreement line stays visible above the buttons.
+visible_sections: 2
+agreement: "Choosing one of the options below means you have read this notice, including the part under \"Read more\", and agree to it."
 sections:
   - heading: "What OASIS is"
     paragraphs:
@@ -29,4 +33,3 @@ sections:
   - heading: "Your choices"
     paragraphs:
       - "In Settings you can export everything kept about you as a file, and delete it all at any time. Deleting removes your conversation, answers and trend, overwrites the space they used, and cannot be undone. Saved data is otherwise kept until you delete it."
-      - "Choosing one of the options below means you have read this and agree to it."

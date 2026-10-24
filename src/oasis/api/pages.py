@@ -33,6 +33,8 @@ class Disclosure:
     version: str
     title: str
     sections: tuple[Section, ...]
+    visible: int  # sections shown before "Read more"
+    agreement: str  # always shown, next to the buttons that give consent
 
 
 def parse_disclosure(raw: Mapping[str, Any]) -> Disclosure:
@@ -43,7 +45,10 @@ def parse_disclosure(raw: Mapping[str, Any]) -> Disclosure:
     )
     if not sections or not all(s.heading and s.paragraphs and all(s.paragraphs) for s in sections):
         raise ValueError("data notice needs sections, each with a heading and paragraphs")
-    return Disclosure(str(raw["version"]), str(raw["title"]), sections)
+    visible, agreement = int(raw["visible_sections"]), str(raw["agreement"])
+    if not 1 <= visible <= len(sections) or not agreement:
+        raise ValueError("data notice needs 1..len(sections) visible sections and an agreement")
+    return Disclosure(str(raw["version"]), str(raw["title"]), sections, visible, agreement)
 
 
 @functools.cache
@@ -51,14 +56,24 @@ def load_disclosure() -> Disclosure:
     return parse_disclosure(load_yaml("privacy", "disclosure.yaml"))
 
 
-def render_onboarding(d: Disclosure) -> str:
-    body = "".join(
+def _sections(sections: tuple[Section, ...]) -> str:
+    return "".join(
         f"<h3>{escape(s.heading)}</h3>" + "".join(f"<p>{escape(p)}</p>" for p in s.paragraphs)
-        for s in d.sections
+        for s in sections
+    )
+
+
+def render_onboarding(d: Disclosure) -> str:
+    more = d.sections[d.visible :]
+    folded = (
+        f'<details class="notice-more"><summary>Read more</summary>{_sections(more)}</details>'
+        if more
+        else ""
     )
     return (
         f'<div class="notice" data-version="{escape(d.version)}">'
-        f'<h2 id="notice-title">{escape(d.title)}</h2>{body}</div>'
+        f'<h2 id="notice-title">{escape(d.title)}</h2>{_sections(d.sections[: d.visible])}'
+        f'{folded}<p class="notice-agreement">{escape(d.agreement)}</p></div>'
     )
 
 
