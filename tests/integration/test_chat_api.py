@@ -512,6 +512,16 @@ def test_the_trend_page_always_shows_the_label(client: TestClient) -> None:
     assert 'href="trends.html"' in client.get("/").text
 
 
+def test_the_trend_sources_are_a_closed_dropdown(client: TestClient) -> None:
+    """The sources fold under "What it is based on"; the non-clinical label stays visible."""
+    page = client.get("/trends.html").text
+    assert '<details class="basis-more">' in page
+    assert "<summary>What it is based on</summary>" in page
+    head, folded = page.split('<details class="basis-more">', 1)
+    assert LABEL in head  # FR-TRK-3: never behind a toggle
+    assert 'id="basis"' in folded.split("</details>")[0]
+
+
 def test_memory_storage_writes_nothing_to_disk(settings: Settings, tmp_path: Path) -> None:
     with TestClient(create_app(settings, llm=FakeLLM())) as c:
         token = _session(c)
@@ -568,6 +578,8 @@ def test_the_why_panel_is_fetched_on_demand() -> None:
     assert "Why this reply?" in js
     # No raw record in the panel (Smriti, 2026-10-24); GET /explanations and export keep it.
     assert "See details" not in js
+    # The scope note stays in the record (GET /explanations, export), not in the panel.
+    assert "scope_note" not in js
     assert "Explanation unavailable for this reply." in js
     # A connection failure says so and is tried again on the next open; only a definite
     # answer from the server (the explanation, or none) is kept.
