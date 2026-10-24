@@ -566,7 +566,8 @@ def test_the_why_panel_is_fetched_on_demand() -> None:
     js = (Path(oasis.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
     assert "/explanations/" in js
     assert "Why this reply?" in js
-    assert "See details" in js
+    # No raw record in the panel (Smriti, 2026-10-24); GET /explanations and export keep it.
+    assert "See details" not in js
     assert "Explanation unavailable for this reply." in js
     # A connection failure says so and is tried again on the next open; only a definite
     # answer from the server (the explanation, or none) is kept.

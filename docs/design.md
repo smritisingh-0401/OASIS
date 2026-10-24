@@ -512,7 +512,7 @@ Feature names are lexicon keys, never raw user text. `status ∈ {ok, unavailabl
 - **Plain language** (`content/explain/plain_language.yaml`): for a routed reply, the top two positive inputs of the leading mode, the thinking-trap categories (the trap replaces "a thinking trap" in the first bullet), and what the reply does (mode, offer, exercise step, or a hold while hysteresis builds). For a reply the planner chose by precedence (questionnaire, psychoeducation, exercise buttons, leaving post-crisis mode), one bullet per reason code instead; a screening offer is keyed by its stored reason (explicit request or sustained readiness). A pre-written fallback adds one bullet. The user's words are never quoted. The file must cover every router signal, mode and distortion category, or startup stops.
 - **Storage:** a nullable `explanation` JSON column on `turns` (migration `0005_explanations.sql`, `json_valid` CHECK) instead of the `explanations` table in §11, written in the same `append_turn` as the reply. It is exported and deleted with the turn; `explanation_id` is the reply's `turn_id`. `GET /history` gives each turn's `explanation_id` (or null) without loading the records.
 - **Engine:** stage 8 builds the explanation after generation and the guard, before recording. An exception stores `{"status": "unavailable", "reason": "explain.error"}` and adds `explain.error` to the turn's degraded list; the reply is unchanged. Crisis turns return before stage 8 and have no explanation.
-- **Debug view:** the panel's "See details" shows the stored record. The separate `GET /debug/turns/{turn_id}` page (§12) is not built: the record already carries the raw contributions, and the trace stays in the logs.
+- **Debug view:** removed from the page (Smriti, 2026-10-24); the panel shows the plain-language bullets and the scope note only. The raw record is still served by `GET /explanations/{id}` and included in the export. The separate `GET /debug/turns/{turn_id}` page (§12) is not built. A failed fetch says "Couldn't reach OASIS" (or that it could not be loaded, for a server error) and is tried again on the next open; a definite answer is kept.
 
 ---
 
@@ -792,7 +792,7 @@ All files are validated against Pydantic schemas at startup; invalid content ref
 2. **Chat** — message list, input, send; persistent footer "Support tool, not a diagnosis or emergency service"; "Need help now?" button top-right.
 3. **Assessment card** — inline card: instrument name, "Question 3 of 9", item text, four large 0–3 buttons with labels, Pause and Stop links.
 4. **Score explanation** — total, band in words, plain-language meaning, non-diagnostic statement, "talk to a professional" text when the band text says so.
-5. **"Why this reply" panel** — expandable under each bot message; plain-language bullets; scope note (§10.2); "See details" for the debug view.
+5. **"Why this reply" panel** — expandable under each bot message; plain-language bullets; scope note (§10.2). No raw record in the page (2026-10-24).
 6. **Mood-trend view** — simple line of session means with the non-clinical label always visible.
 7. **Settings** — style profile (two segmented controls with examples), ephemeral status, Export, Delete (two-step confirm).
 8. **Crisis card** — replaces the input area focus: calm heading, resources as large tappable links (`tel:`), "Continue talking" button.

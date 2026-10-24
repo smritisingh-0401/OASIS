@@ -196,34 +196,45 @@ function addMessage(role, text, note, explanationId) {
   return item;
 }
 
-// "Why this reply?" (design §10, FR-XAI-3): fetched the first time it is opened. The
-// plain-language bullets come first; "See details" shows the raw record (the debug view).
+// "Why this reply?" (design §10, FR-XAI-3): fetched when opened, the plain-language bullets
+// and the scope note. The raw record stays out of the page (Smriti, 2026-10-24); it is still
+// served by GET /explanations/{id} and included in the export.
 function whyPanel(explanationId) {
   const panel = document.createElement("details");
   panel.className = "why";
   const summary = document.createElement("summary");
   summary.textContent = "Why this reply?";
   panel.appendChild(summary);
+  let note = null;
   panel.addEventListener("toggle", async () => {
-    if (!panel.open || panel.dataset.loaded) return;
-    panel.dataset.loaded = "1";
-    let body = null;
+    if (!panel.open || panel.dataset.loaded || panel.dataset.loading) return;
+    panel.dataset.loading = "1";
+    if (note) note.remove();
+    let resp = null;
     try {
-      const resp = await api("/explanations/" + encodeURIComponent(explanationId));
-      if (resp.ok) body = await resp.json();
+      resp = await api("/explanations/" + encodeURIComponent(explanationId));
     } catch {
-      // Shown as unavailable below; the reply itself is unaffected.
+      // No connection: said below and tried again on the next open.
     }
+    delete panel.dataset.loading;
+    // No answer, or the server could not load it right now: say which, and fetch again the
+    // next time the panel is opened. Only a definite answer is kept.
+    if (!resp || resp.status >= 500) {
+      note = line("p", resp
+        ? "OASIS couldn't load this right now. Close and reopen this to try again."
+        : "Couldn't reach OASIS. Close and reopen this to try again.", "why-note");
+      panel.appendChild(note);
+      return;
+    }
+    panel.dataset.loaded = "1";
+    const body = resp.ok ? await resp.json().catch(() => null) : null;
     if (!body || body.status === "unavailable") {
       panel.appendChild(line("p", "Explanation unavailable for this reply.", "why-note"));
       return;
     }
     const list = document.createElement("ul");
     for (const text of body.plain_language) list.appendChild(line("li", text));
-    const details = document.createElement("details");
-    details.className = "why-details";
-    details.append(line("summary", "See details"), line("pre", JSON.stringify(body, null, 2)));
-    panel.append(list, line("p", body.scope_note, "why-note"), details);
+    panel.append(list, line("p", body.scope_note, "why-note"));
   });
   return panel;
 }
