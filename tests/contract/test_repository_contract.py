@@ -14,9 +14,9 @@ from typing import Any
 import pytest
 
 from oasis.storage.memory import MemoryRepository
-from oasis.storage.repository import Repository, StorageError
+from oasis.storage.repository import Repository, StorageError, UserSettings
 from oasis.storage.sqlite import SQLiteRepository
-from oasis.types import AssessmentRecord, TurnFeatures
+from oasis.types import AssessmentRecord, StyleProfile, TurnFeatures
 
 BACKENDS: dict[str, Callable[[Path], Repository]] = {
     "memory": lambda tmp: MemoryRepository(),
@@ -324,6 +324,7 @@ async def _full_user(repo: Repository, session: str = "a") -> str:
     await repo.append_audit(uid, "crisis_handoff", '{"tiers":["passive"]}')
     await repo.save_assessment(uid, _assessment("a-" + session, answers=(1, 2)))
     await repo.append_signals(uid, session, _features(valence=-0.5))
+    await repo.set_settings(uid, UserSettings(StyleProfile("indirect", "formal"), "IN"))
     return uid
 
 
@@ -339,8 +340,45 @@ async def test_consent_round_trip_and_replace(repo: Repository) -> None:
     assert b != a
 
 
+# --- settings (Phase 11) -------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_settings_default_until_set_then_round_trip(repo: Repository) -> None:
+    a = await repo.create_user_session("a")
+    b = await repo.create_user_session("b")
+    assert await repo.get_settings(a) == UserSettings()
+    chosen = UserSettings(StyleProfile("direct", "casual"), "GB")
+    await repo.set_settings(a, chosen)
+    assert await repo.get_settings(a) == chosen
+    assert await repo.get_settings(b) == UserSettings()  # scoped to the user (rules P5)
+    await repo.set_settings(a, UserSettings())  # back to the defaults, country cleared
+    assert await repo.get_settings(a) == UserSettings()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "bad",
+    [
+        UserSettings(StyleProfile("blunt", "neutral")),  # type: ignore[arg-type]
+        UserSettings(StyleProfile("direct", "posh")),  # type: ignore[arg-type]
+    ],
+)
+async def test_invalid_settings_are_rejected(repo: Repository, bad: UserSettings) -> None:
+    uid = await repo.create_user_session("a")
+    with pytest.raises(StorageError):
+        await repo.set_settings(uid, bad)
+    assert await repo.get_settings(uid) == UserSettings()
+
+
+@pytest.mark.anyio
+async def test_settings_for_an_unknown_user_are_rejected(repo: Repository) -> None:
+    with pytest.raises(StorageError):
+        await repo.set_settings("nobody", UserSettings())
+
+
 EXPECTED_TABLES = {"users", "sessions", "turns", "audit_log", "assessments",
-                   "assessment_answers", "turn_signals", "consent"}  # fmt: skip
+                   "assessment_answers", "turn_signals", "consent", "settings"}  # fmt: skip
 
 
 @pytest.mark.anyio
@@ -360,6 +398,8 @@ async def test_export_holds_every_record_of_the_user_and_nothing_else(repo: Repo
     assert [a["value"] for a in tables["assessment_answers"]] == [1, 2]
     assert json.loads(tables["turn_signals"][0]["features"])["valence"] == -0.5
     assert [c["disclosure_version"] for c in tables["consent"]] == ["1"]
+    assert [(r["directness"], r["formality"], r["country"]) for r in tables["settings"]] == [
+        ("indirect", "formal", "IN")]  # fmt: skip
     json.dumps(tables)  # plain JSON, ready to download
 
 
@@ -384,6 +424,7 @@ async def test_delete_removes_every_record_of_the_user_only(repo: Repository) ->
     assert all(rows == [] for rows in (await repo.export_user(uid)).values())
     assert await repo.recent_turns(uid, "a", 10) == []
     assert await repo.get_explanation(uid, "a2") is None
+    assert await repo.get_settings(uid) == UserSettings()
     kept = await repo.export_user(other)
     assert len(kept["turns"]) == 2
     assert (await repo.get_session("b")) is not None
