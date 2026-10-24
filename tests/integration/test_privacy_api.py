@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
@@ -255,10 +256,27 @@ def test_settings_page_offers_export_and_delete(client: TestClient) -> None:
     assert '"DELETE"' in js
 
 
-def test_settings_page_says_a_saved_conversation_lives_in_this_tab(client: TestClient) -> None:
+def test_settings_page_says_this_browser_keeps_the_key(client: TestClient) -> None:
     js = client.get("/settings.js").text
-    assert "Keep this tab open" in js
-    assert "cannot open, export or delete" in js
+    assert "anyone who uses this browser" in js
+
+
+def test_only_the_session_key_is_stored_in_the_browser() -> None:
+    """Rule F5: saved key in localStorage, unsaved key in sessionStorage, nothing else."""
+    import oasis
+
+    web = Path(oasis.__file__).parent / "web"
+    for name in ("app.js", "settings.js", "trends.js"):
+        js = (web / name).read_text(encoding="utf-8")
+        for call in re.findall(r"(?:local|session)Storage\.setItem\(([^,]+),", js):
+            assert call.strip() == "SESSION_KEY", name
+    app = (web / "app.js").read_text(encoding="utf-8")
+    assert "localStorage.setItem(SESSION_KEY" in app
+    assert "sessionStorage.setItem(SESSION_KEY" in app
+    for name in ("settings.js", "trends.js"):  # both read either place
+        js = (web / name).read_text(encoding="utf-8")
+        assert "localStorage.getItem(SESSION_KEY)" in js, name
+        assert "sessionStorage.getItem(SESSION_KEY)" in js, name
 
 
 def test_chat_page_script_handles_consent() -> None:

@@ -256,13 +256,14 @@ def test_onboarding_is_rendered_escaped_with_its_version() -> None:
     assert "Agree &amp; go" in folded.split("</details>")[1]
 
 
-def test_the_notice_says_a_saved_conversation_lives_in_this_tab() -> None:
-    """Open item 11: the session key is in sessionStorage, so closing the tab ends access."""
+def test_the_notice_says_this_browser_keeps_the_key() -> None:
+    """Rule F5 (2026-10-24): a saved session's key stays in this browser, so anyone using the
+    browser can reopen it. Said before "Read more", next to the choice it affects."""
     d = load_disclosure()
     shown = " ".join(p for s in d.sections[: d.visible] for p in s.paragraphs).lower()
-    assert "tab" in shown  # in the part shown before "Read more"
-    assert "come back to it" not in shown.split("tab")[0]  # no promise before the condition
-    assert "cannot open, export or delete" in shown
+    assert "anyone who uses this browser" in shown
+    assert "shared computer" in shown
+    assert "new tab" in shown
 
 
 def test_the_notice_folds_after_the_first_two_sections() -> None:
