@@ -1,7 +1,7 @@
 "use strict";
 
-// Settings (design §15.1, FR-PRV-2, FR-PRV-3): whether this conversation is saved, export and
-// delete. Uses the chat's session token from browser storage, sent only in the X-OASIS-Session
+// Settings (design §15.1, FR-CUL-1, FR-PRV-2, FR-PRV-3): how OASIS words replies, the help
+// card's country, whether this conversation is saved, export and delete. Uses the chat's session token from browser storage, sent only in the X-OASIS-Session
 // header (rules P3, F5). All text goes in with textContent (rules F4).
 
 const SESSION_KEY = "oasis.session";
@@ -13,6 +13,11 @@ const exportButton = document.getElementById("export");
 const deleteStart = document.getElementById("delete-start");
 const confirmForm = document.getElementById("delete-confirm");
 const confirmWord = document.getElementById("delete-word");
+const styleForm = document.getElementById("style-form");
+const styleStatus = document.getElementById("style-status");
+const country = document.getElementById("country");
+const styleInputs = [...styleForm.querySelectorAll("input"), country];
+let saved = null; // the settings as last stored, put back if a change does not save
 
 // A saved session's key is in localStorage, an unsaved one's in sessionStorage (rules F5).
 function readToken() {
@@ -45,10 +50,49 @@ async function load() {
         "browser remembers it, so anyone who uses this browser on this computer can open it.";
     exportButton.disabled = false;
     deleteStart.disabled = false;
+    await loadStyle(info.ephemeral);
   } catch {
     mode.textContent = "I couldn't reach the server, so these settings are unavailable right now.";
   }
 }
+
+function showStyle(value) {
+  for (const name of ["directness", "formality"]) {
+    styleForm.querySelector(`input[name="${name}"][value="${value[name]}"]`).checked = true;
+  }
+  country.value = value.country || "";
+}
+
+async function loadStyle(ephemeral) {
+  const resp = await api("/settings");
+  if (!resp.ok) throw new Error("status " + resp.status);
+  saved = await resp.json();
+  showStyle(saved);
+  for (const el of styleInputs) el.disabled = false;
+  if (ephemeral) styleStatus.textContent = "These choices last as long as this conversation.";
+}
+
+// Saved as soon as one is chosen. Only the user changes these; OASIS never does (FR-CUL-2).
+styleForm.addEventListener("change", async () => {
+  const value = {
+    directness: styleForm.elements.directness.value,
+    formality: styleForm.elements.formality.value,
+    country: country.value || null,
+  };
+  try {
+    const resp = await api("/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(value),
+    });
+    if (!resp.ok) throw new Error("status " + resp.status);
+    saved = await resp.json();
+    styleStatus.textContent = "Saved. The next reply uses it.";
+  } catch {
+    showStyle(saved);
+    styleStatus.textContent = "That did not save. Please try again in a moment.";
+  }
+});
 
 // The file is built in the page and saved with a temporary link; nothing leaves the computer.
 exportButton.addEventListener("click", async () => {
@@ -108,6 +152,7 @@ confirmForm.addEventListener("submit", async (event) => {
     }
     confirmForm.hidden = true;
     exportButton.disabled = true;
+    for (const el of styleInputs) el.disabled = true;
     // erasure_pending: deleted, but another program holds the file, so the overwrite waits.
     mode.textContent = code === "erasure_pending"
       ? body.error.message

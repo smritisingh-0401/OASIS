@@ -22,6 +22,7 @@ from oasis.safety.resources import Country, CrisisLine, Resources, dial_string
 MARKER = "<!-- CRISIS_RESOURCES -->"
 _ZONE = re.compile(r"[A-Za-z0-9_+\-]+(?:/[A-Za-z0-9_+\-]+)+")  # "Asia/Kolkata"
 NOTICE_MARKER = "<!-- DATA_NOTICE -->"
+COUNTRY_MARKER = "<!-- COUNTRY OPTIONS -->"
 
 
 @dataclass(frozen=True)
@@ -156,3 +157,14 @@ def render_index(template: str, resources: Resources, disclosure: Disclosure) ->
     return template.replace(MARKER, render_help(resources, load_time_zones())).replace(
         NOTICE_MARKER, render_onboarding(disclosure)
     )
+
+
+def render_settings(template: str, resources: Resources) -> str:
+    """The settings page, with the help card's countries as the choices for its country."""
+    if COUNTRY_MARKER not in template:
+        raise ValueError("settings.html is missing the country options marker")
+    options = ['<option value="">Use this computer\'s time zone</option>'] + [
+        f'<option value="{escape(c.code)}">{escape(c.name)}</option>'
+        for c in sorted(resources.countries, key=lambda c: c.name)
+    ]
+    return template.replace(COUNTRY_MARKER, "".join(options))

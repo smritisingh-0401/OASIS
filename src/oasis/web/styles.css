@@ -414,6 +414,38 @@ body {
 }
 .settings .danger { color: #fff; background: #a3262a; }
 .settings .danger:hover { background: #8a1f23; }
+/* Style profile: native radios as segmented controls, each with an example reply. */
+.style-form fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+}
+.style-form legend { margin-bottom: 8px; font-weight: 600; }
+.segment { flex: 1 1 12em; cursor: pointer; }
+.segment input { position: absolute; opacity: 0; }
+.segment > span {
+  display: block;
+  height: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--glass);
+}
+.segment input:checked + span { border-color: var(--accent); background: var(--glass-strong); }
+.segment input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+.segment input:disabled + span { opacity: 0.6; cursor: not-allowed; }
+.segment .example { display: block; margin-top: 4px; color: var(--muted); font-size: 15px; }
+.style-form select {
+  font: inherit;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--muted);
+  border-radius: 10px;
+  background: var(--glass-strong);
+}
 
 @media (max-width: 520px) {
   .top { flex-wrap: wrap; }

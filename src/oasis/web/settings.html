@@ -16,6 +16,38 @@
   </header>
 
   <main class="chat settings">
+    <h2>How OASIS talks</h2>
+    <p>Choose how replies are worded. This changes the wording only: what OASIS does, when it
+      offers a questionnaire or an exercise, and how it responds to a crisis stay the same. OASIS
+      never guesses this from how you write or where you are; it only uses what you choose here.</p>
+
+    <form id="style-form" class="style-form">
+      <fieldset>
+        <legend>How direct</legend>
+        <label class="segment"><input type="radio" name="directness" value="direct" disabled>
+          <span><strong>Direct</strong><span class="example">“That sounds stressful. Which part bothers you most?”</span></span></label>
+        <label class="segment"><input type="radio" name="directness" value="balanced" checked disabled>
+          <span><strong>Balanced</strong><span class="example">“That sounds really stressful. Which part is weighing on you most?”</span></span></label>
+        <label class="segment"><input type="radio" name="directness" value="indirect" disabled>
+          <span><strong>Gentle</strong><span class="example">“It sounds like that might have been quite stressful. I wonder which part is weighing on you?”</span></span></label>
+      </fieldset>
+      <fieldset>
+        <legend>How formal</legend>
+        <label class="segment"><input type="radio" name="formality" value="casual" disabled>
+          <span><strong>Casual</strong><span class="example">“Oh no, that sounds rough. What’s been going on?”</span></span></label>
+        <label class="segment"><input type="radio" name="formality" value="neutral" checked disabled>
+          <span><strong>Neutral</strong><span class="example">“That sounds difficult. What has been going on?”</span></span></label>
+        <label class="segment"><input type="radio" name="formality" value="formal" disabled>
+          <span><strong>Formal</strong><span class="example">“That sounds very difficult. Would you like to tell me what has happened?”</span></span></label>
+      </fieldset>
+
+      <h3 id="country-title">Your country for “Need help now?”</h3>
+      <p>The help card opens this country’s crisis lines first. Without a choice it uses this
+        computer’s time zone.</p>
+      <select id="country" aria-labelledby="country-title" disabled><!-- COUNTRY OPTIONS --></select>
+    </form>
+    <p id="style-status" class="status" role="status" aria-live="polite"></p>
+
     <h2>Your data</h2>
     <p id="mode" class="settings-mode" role="status" aria-live="polite">Loading…</p>
 

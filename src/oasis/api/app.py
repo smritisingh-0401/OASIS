@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
 from oasis.api.middleware import error_response, security_middleware
-from oasis.api.pages import load_disclosure, render_index
+from oasis.api.pages import load_disclosure, render_index, render_settings
 from oasis.api.routes import ApiError, build_router
 from oasis.assessment.instruments import load_all as load_assessment_content
 from oasis.core.engine import ChatEngine
@@ -33,6 +33,7 @@ from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import Repository
 from oasis.storage.split import SplitRepository
 from oasis.storage.sqlite import SQLiteRepository
+from oasis.style.framing import load_framing
 from oasis.tracking.features import load_config as load_tracking
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
@@ -81,11 +82,14 @@ def create_app(
     load_psychoed()
     load_reply_checks()
     load_tracking()
+    load_framing()
     disclosure = load_disclosure()
+    resources = crisis_resources or load_resources()
     index_html = render_index(
-        (WEB_DIR / "index.html").read_text(encoding="utf-8"),
-        crisis_resources or load_resources(),
-        disclosure,
+        (WEB_DIR / "index.html").read_text(encoding="utf-8"), resources, disclosure
+    )
+    settings_html = render_settings(
+        (WEB_DIR / "settings.html").read_text(encoding="utf-8"), resources
     )
 
     bounded = BoundedLLM(
@@ -130,12 +134,16 @@ def create_app(
         code = {404: "not_found", 405: "method_not_allowed"}.get(exc.status_code, "http_error")
         return error_response(exc.status_code, code, str(exc.detail))
 
-    app.include_router(build_router(engine, store))
+    app.include_router(build_router(engine, store, frozenset(c.code for c in resources.countries)))
 
     @app.get("/", include_in_schema=False)
     @app.get("/index.html", include_in_schema=False)
     async def index() -> HTMLResponse:
         return HTMLResponse(index_html)
+
+    @app.get("/settings.html", include_in_schema=False)
+    async def settings_page() -> HTMLResponse:
+        return HTMLResponse(settings_html)
 
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app

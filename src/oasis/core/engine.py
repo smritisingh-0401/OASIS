@@ -37,7 +37,9 @@ from oasis.storage.repository import (
     Repository,
     StorageBusy,
     StorageError,
+    UserSettings,
 )
+from oasis.style.suggest import suggest
 from oasis.tracking.features import turn_features
 from oasis.types import (
     AssessmentAction,
@@ -101,6 +103,9 @@ class TurnResult:
     escalated: AssessmentRecord | None = None
     preface: str | None = None  # shown as its own message before `reply`
     explanation_id: str | None = None  # the reply's turn ID, once its explanation is stored
+    # Their recent messages are hedged: point them to the indirect style in Settings. Only a
+    # suggestion; the profile is never changed here (FR-CUL-2).
+    style_suggestion: bool = False
 
 
 @dataclass
@@ -174,6 +179,7 @@ class ChatEngine:
         history: list[TurnRecord] = []
         assessments: list[AssessmentRecord] = []
         router_state = RouterState()
+        chosen = UserSettings()
         post_crisis = session_hash in self._post_crisis
         try:
             session = await self.repo.get_session(session_hash)
@@ -188,6 +194,7 @@ class ChatEngine:
                 user_id, session_hash, max(self.settings.history_turns, HISTORY_LOAD)
             )
             assessments = await self.repo.list_assessments(user_id)
+            chosen = await self.repo.get_settings(user_id)
         except StorageError as exc:
             degraded.add(_storage_code(exc))
         clock.mark("load_state", "degraded" if degraded else "ok")
@@ -209,6 +216,9 @@ class ChatEngine:
             log.error("planner error")
             plan = Plan(mode="companion", templated=True, template_id="llm_unavailable")
             degraded.add("planner.error")
+        # After planning, so the style can change how a reply is worded but never what it
+        # does (FR-CUL-3, invariance test).
+        plan = replace(plan, style=chosen.style)
         clock.mark("plan", plan.mode)
         if plan.mode == "crisis":  # PHQ-9 item 9 answered positively (rules S11)
             return self._crisis(session_hash, turn_id, clock, ITEM9_VERDICT, plan.assessment)
@@ -317,6 +327,9 @@ class ChatEngine:
             exercise_card=plan.exercise_card,
             preface=plan.preface,
             explanation_id=turn_id if persisted else None,
+            style_suggestion=action is None
+            and not plan.templated
+            and suggest(message, [t.content for t in history if t.role == "user"], plan.style),
         )
 
     def remember_consent(self, session_hash: str) -> None:

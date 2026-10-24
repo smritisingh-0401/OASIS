@@ -12,16 +12,26 @@ import time
 import uuid
 from collections.abc import Callable
 from dataclasses import asdict
-from typing import Any
+from typing import Any, get_args
 
 from oasis.storage.repository import (
     AUDIT_EVENTS,
     AuditRecord,
     SessionInfo,
     StorageUnavailable,
+    UserSettings,
     utc_now,
 )
-from oasis.types import AssessmentRecord, Mode, Role, SignalRecord, TurnFeatures, TurnRecord
+from oasis.types import (
+    AssessmentRecord,
+    Directness,
+    Formality,
+    Mode,
+    Role,
+    SignalRecord,
+    TurnFeatures,
+    TurnRecord,
+)
 
 _MAX_TOTAL = {"PHQ9": 27, "GAD7": 21}
 
@@ -52,6 +62,7 @@ class MemoryRepository:
         self._signal_ids = 0
         self._explanations: dict[tuple[str, str], str] = {}  # (user_id, turn_id) -> JSON
         self._consent: dict[str, tuple[str, str]] = {}  # user_id -> (version, given_at)
+        self._settings: dict[str, tuple[UserSettings, str]] = {}  # user_id -> (value, updated)
 
     # SplitRepository asks these on every request, saved or not, so an idle unsaved session
     # is cleared out by the next request of any kind, not only by another unsaved one.
@@ -155,6 +166,20 @@ class MemoryRepository:
         if user_id not in self._users:
             raise StorageUnavailable("unknown user")
         self._consent[user_id] = (disclosure_version, utc_now())
+
+    async def get_settings(self, user_id: str) -> UserSettings:
+        return self._settings.get(user_id, (UserSettings(), ""))[0]
+
+    async def set_settings(self, user_id: str, value: UserSettings) -> None:
+        # Mirrors the SQLite CHECK constraints so both backends reject the same values.
+        style = value.style
+        if (
+            user_id not in self._users
+            or style.directness not in get_args(Directness)
+            or style.formality not in get_args(Formality)
+        ):
+            raise StorageUnavailable("invalid settings")
+        self._settings[user_id] = (value, utc_now())
 
     async def append_audit(self, user_id: str, event: str, detail_json: str) -> None:
         if event not in AUDIT_EVENTS or user_id not in self._users:
@@ -276,6 +301,18 @@ class MemoryRepository:
             ]
             if consent
             else [],
+            "settings": [
+                {
+                    "user_id": user_id,
+                    "directness": v.style.directness,
+                    "formality": v.style.formality,
+                    "country": v.country,
+                    "updated_at": updated,
+                }
+                for v, updated in [self._settings[user_id]]
+            ]
+            if user_id in self._settings
+            else [],
         }
 
     async def delete_user(self, user_id: str) -> None:
@@ -291,7 +328,7 @@ class MemoryRepository:
             self._post_crisis.discard(session_hash)
         for record in self._assessments.pop(user_id, []):
             self._answered_at.pop(record.assessment_id, None)
-        for by_user in (self._users, self._audit, self._signals, self._consent):
+        for by_user in (self._users, self._audit, self._signals, self._consent, self._settings):
             by_user.pop(user_id, None)
 
     async def ping(self) -> bool:

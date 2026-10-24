@@ -1,0 +1,45 @@
+# Style framing (design §6, FR-CUL-1). One sentence per setting, joined into one "Style:" line
+# of the system prompt before the PLAN. The defaults (balanced, neutral) add nothing, so a user
+# who never opens Settings gets the prompt every earlier phase was tested with. Framing only:
+# the decision plane never reads the style (FR-CUL-3). CR-25.
+schema: oasis.content/v1
+kind: style_framing
+version: "2026.10.0"
+review_status: needs_clinician_review
+directness:
+  direct: "Be clear and straightforward: say what you mean plainly, without softening words."
+  balanced: ""
+  indirect: >-
+    Be gentle and tentative: soften what you say with words like "perhaps" or "it might be
+    that", and never sound blunt.
+formality:
+  casual: "Sound relaxed and friendly, in everyday words."
+  neutral: ""
+  formal: "Sound polite and formal, with no slang and no contractions."
+
+# The indirect-phrasing suggestion (FR-CUL-2): shown when at least `min_hedged` of the user's
+# last `window` typed messages (this one included, and it must be one) contain a hedge. It
+# only points to Settings; the profile is never changed for them. Matched on whole words,
+# lower case, with apostrophes removed ("I'm" -> "im").
+suggest:
+  window: 3
+  min_hedged: 2
+  hedges:
+    - maybe
+    - perhaps
+    - i guess
+    - i suppose
+    - sort of
+    - kind of
+    - kinda
+    - sorta
+    - im not sure
+    - i dont know if
+    - i dont know whether
+    - probably nothing
+    - its nothing
+    - not a big deal
+    - no big deal
+    - i was wondering
+    - i wonder if
+    - might be

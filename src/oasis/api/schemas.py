@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
-from oasis.types import InstrumentId, Mode, Role
+from oasis.types import Directness, Formality, InstrumentId, Mode, Role
 
 MAX_MESSAGE_CHARS = 2000
 
@@ -96,6 +96,18 @@ class ChatResponse(BaseModel):
     exercise: ExerciseCardOut | None = None
     # GET /explanations/{explanation_id}; None for a crisis reply or an unsaved turn.
     explanation_id: str | None = None
+    # Point them to the indirect style in Settings; never changes the profile (FR-CUL-2).
+    style_suggestion: bool = False
+
+
+class UserSettingsBody(BaseModel):
+    """GET and PUT /settings (FR-CUL-1). The country is checked against the help card."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    directness: Directness
+    formality: Formality
+    country: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
 
 
 class SessionRequest(BaseModel):
