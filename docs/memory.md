@@ -186,7 +186,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Which words drove VADER valence | Not explained; valence enters the router explanation as one exact contribution |
 | Saved conversation in the browser | Key in localStorage (rules F5, 2026-10-24): anyone using the browser can open it; clearing site data strands it on disk until Phase 13 |
 | Erasure beyond SQLite | OS swap, SSD wear levelling and backups are outside OASIS; disk encryption recommended in the notice |
-| Real-model effect of each style | Not verified here beyond one browser conversation (formal followed) — `uv run python scripts/tone_check.py --style direct,casual --out FILE` per style |
+| Real-model effect of each style | Measured 2026-10-24 (4 styles x 70 turns, `docs/reports/phase-11-tone-*.md`): gentle and formal followed, direct and casual weakly; formal fails `validate_first` more (phrase list) and good news under a style hits `no_praise` ("That is wonderful news"); both await Smriti |
 | Hedge list recall | Not measured (no labelled hedged set); fires on 2/104 labelled conversation turns, 0 suggestions in 24 conversations |
 
 ---
@@ -245,6 +245,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-24 | 10 | Erasure | Schema crawl 0 rows; marker absent from .db and -wal; WAL 0 bytes; a reader mid-read blocked the checkpoint silently (busy, no error) until the fix |
 | 2026-10-24 | 10 | Mutation spot-check | 23/25 at first (expiry check hid by the test's own lookup; startup overwrite masked by SQLite's last-connection checkpoint); two tests tightened; 25/25 |
 | 2026-10-24 | 11 | Tests / coverage | 1443 passed; 98.42% overall (style 100%, router 100%, assessment 97.8%, safety 97.1%) |
+| 2026-10-24 | 11 | Tone check per style (real model, 70 turns each) | First drafts passing: direct+casual 50, direct+formal 31, gentle+casual 45, gentle+formal 39 (default 46); fallbacks 2/0/2/3, 5 of them guard fallbacks (4 good news, 1 medication refusal) |
 | 2026-10-24 | 11 | Invariance | 25 generated conversations x 9 styles: identical verdicts, modes, cards, plans, explanations and replies; 9/9 distinct prompts |
 | 2026-10-24 | 11 | Mutation spot-check | 16/17 at first (button-press test hit a fixed reply); test tightened; 17/17 |
 | 2026-10-24 | 11 | Speed (dev machine) | Settings read (SQLite) p50 0.42 ms, p99 0.81 ms; suggestion check p50 0.05 ms; longest style line 183 chars (~52 tokens) |
