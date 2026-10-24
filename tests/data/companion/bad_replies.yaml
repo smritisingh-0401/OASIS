@@ -36,3 +36,5 @@ replies:
   - {reply: "That is wonderful news, and you are so brave. What comes next?", fails: [no_praise]}
   - {reply: "That is wonderful. What comes next for you?", fails: [validate_first, no_praise]}
   - {reply: "I understand. You should tell your boss tomorrow. Will you?", fails: [no_advice]}
+  - {reply: "Staying late every night shows real dedication. What was the outcome?", fails: [validate_first]}
+  - {reply: "Switching off is important. You should take a walk after work. Will you try it?", fails: [validate_first, no_advice]}
