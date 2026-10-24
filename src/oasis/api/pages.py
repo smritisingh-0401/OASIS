@@ -139,9 +139,12 @@ def render_help(resources: Resources, zones: Mapping[str, str]) -> str:
             f"{''.join(_country(c, ' '.join(by_code.get(c.code, []))) for c in countries)}"
             "</details>"
         )
+    # One dropdown, open as rendered so the lines show with no script; app.js folds it under
+    # "Not right?" once it has put the time-zone country above. The fallback stays outside.
     return (
-        '<p class="help-pick">Choose your region and country for crisis lines:</p>'
+        '<details class="all-countries" open><summary>Choose your country</summary>'
         + "".join(regions)
+        + "</details>"
         + '<p class="help-fallback">If your country isn\'t listed, call your local emergency '
         "number.</p>"
     )

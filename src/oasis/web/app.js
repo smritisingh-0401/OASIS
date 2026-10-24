@@ -28,7 +28,7 @@ function showCrisisSupport() {
 // Opens the computer's own country first (decision 2026-10-24). The time zone is read from
 // the browser's own settings, never sent anywhere and never stored, so this works with the
 // backend down. Each country in the server-rendered card lists its zone names in data-zones;
-// a copy of the match goes on top, and the full list stays below to choose another.
+// a copy of the match goes on top, and the full list folds into a "Not right?" dropdown.
 const ZONE_NAME = /^[A-Za-z0-9_+-]+(\/[A-Za-z0-9_+-]+)+$/;
 
 function suggestCountry() {
@@ -49,12 +49,12 @@ function suggestCountry() {
   copy.open = true;
   const box = document.createElement("div");
   box.className = "suggested";
-  box.append(
-    line("p", "From this computer's time zone:", "help-pick"),
-    copy,
-    line("p", "Not right? Choose your region and country below.", "help-pick"),
-  );
-  helpCard.querySelector(".help-pick").before(box);
+  box.append(line("p", "From this computer's time zone:", "help-pick"), copy);
+  // The full list folds away under "Not right?"; without a suggestion it stays open.
+  const others = helpCard.querySelector(".all-countries");
+  others.open = false;
+  others.querySelector("summary").textContent = "Not right? Choose another country";
+  others.before(box);
 }
 
 help.addEventListener("toggle", () => {

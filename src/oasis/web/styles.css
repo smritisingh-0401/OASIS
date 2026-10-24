@@ -187,6 +187,16 @@ body {
 /* Darker than --accent: stays AA on the translucent card even over an orb. */
 .help-card a { color: #1e4aa8; font-weight: 600; }
 .help-fallback { font-weight: 600; }
+/* The full list: a plain link-like dropdown, its regions not indented a level further. */
+.help-card .all-countries > summary {
+  background: none;
+  padding: 6px 0;
+  color: #1e4aa8;
+  font-weight: 600;
+  width: fit-content;
+  cursor: pointer;
+}
+.help-card .all-countries > .region { margin-left: 0; }
 /* The country suggested from the time zone, above the full list. */
 .suggested {
   margin-bottom: 12px;

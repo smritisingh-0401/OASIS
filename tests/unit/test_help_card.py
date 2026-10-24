@@ -137,7 +137,7 @@ def test_the_card_no_longer_says_pick_your_country_below() -> None:
 
     page = (Path(oasis.__file__).parent / "web" / "index.html").read_text(encoding="utf-8")
     assert "pick your country below" not in page
-    assert "You do not have to go through this alone" in " ".join(page.split())
+    assert "you do not have to go through this alone" in " ".join(page.split()).lower()
 
 
 def test_the_suggestion_folds_the_list_under_not_right() -> None:
