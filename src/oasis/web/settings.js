@@ -94,7 +94,9 @@ confirmForm.addEventListener("submit", async (event) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ confirm: CONFIRM }),
     });
-    if (resp.status !== 204) throw new Error("status " + resp.status);
+    const body = resp.status === 204 ? {} : await resp.json().catch(() => ({}));
+    const code = body.error && body.error.code;
+    if (resp.status !== 204 && code !== "erasure_pending") throw new Error("status " + resp.status);
     try {
       sessionStorage.removeItem(SESSION_KEY);
     } catch {
@@ -102,11 +104,13 @@ confirmForm.addEventListener("submit", async (event) => {
     }
     confirmForm.hidden = true;
     exportButton.disabled = true;
-    mode.textContent = "Everything OASIS kept about you has been deleted.";
+    // erasure_pending: deleted, but another program holds the file, so the overwrite waits.
+    mode.textContent = code === "erasure_pending"
+      ? body.error.message
+      : "Everything OASIS kept about you has been deleted.";
     status.textContent = "You can start a new conversation from the chat page.";
   } catch {
-    status.textContent = "Nothing was deleted, because the server could not be reached. " +
-      "Please try again.";
+    status.textContent = "Nothing was deleted. Please try again in a moment.";
   }
 });
 

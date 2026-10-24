@@ -45,7 +45,7 @@ from oasis.core.engine import ChatEngine, ConsentRequired, InvalidSession
 from oasis.core.templates import TEMPLATES
 from oasis.router.exercise import card_for
 from oasis.router.router import load_state
-from oasis.storage.repository import SessionInfo, StorageError, utc_now
+from oasis.storage.repository import ErasureIncomplete, SessionInfo, StorageError, utc_now
 from oasis.storage.split import SplitRepository
 from oasis.tracking.aggregate import trend
 from oasis.tracking.features import load_config as load_tracking
@@ -70,6 +70,12 @@ CONSENT_REQUIRED = ApiError(
     403, "consent_required", "Please review and accept the data notice first."
 )
 OUTDATED_NOTICE = ApiError(422, "invalid_consent", "That is not the current data notice.")
+ERASURE_PENDING = ApiError(
+    503,
+    "erasure_pending",
+    "Your data was deleted, but another program has the data file open, so its old copy "
+    "is not overwritten yet. OASIS finishes this as soon as that program lets go of the file.",
+)
 
 
 def hash_token(token: str | None) -> str:
@@ -177,6 +183,9 @@ def build_router(engine: ChatEngine, repo: SplitRepository) -> APIRouter:
         session_hash, info = await resolve(session)
         try:
             await repo.delete_user(info.user_id)
+        except ErasureIncomplete:
+            engine.forget(session_hash)  # the rows are gone, so is the session
+            raise ERASURE_PENDING from None
         except StorageError:
             raise STORAGE_DOWN from None
         engine.forget(session_hash)

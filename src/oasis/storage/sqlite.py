@@ -15,6 +15,7 @@ from typing import Any, TypeVar
 
 from oasis.storage.repository import (
     AuditRecord,
+    ErasureIncomplete,
     SessionInfo,
     StorageBusy,
     StorageUnavailable,
@@ -52,6 +53,11 @@ class SQLiteRepository:
         # isolation_level=None: autocommit, with explicit BEGIN where atomicity matters.
         self._conn = sqlite3.connect(path, check_same_thread=False, isolation_level=None)
         self._lock = threading.Lock()
+        self._busy_timeout_ms = int(busy_timeout_ms)
+        # Set when another program blocked a delete's overwrite (FR-PRV-3); retried after
+        # every later call. The first attempt is at startup, below, in case OASIS stopped
+        # before an earlier delete could finish.
+        self._erasure_pending = False
         for pragma in (
             "journal_mode=WAL",
             f"busy_timeout={int(busy_timeout_ms)}",
@@ -61,6 +67,7 @@ class SQLiteRepository:
         ):
             self._conn.execute(f"PRAGMA {pragma}")
         self._migrate()
+        self._finish_erasure(self._conn)
 
     def _migrate(self) -> None:
         conn = self._conn
@@ -81,10 +88,24 @@ class SQLiteRepository:
             )
             conn.execute("COMMIT")
 
+    def _finish_erasure(self, conn: sqlite3.Connection) -> bool:
+        """Copy every page into the main file and empty the WAL. Never waits for another
+        program: with a zero busy timeout a blocked attempt just reports busy."""
+        conn.execute("PRAGMA busy_timeout=0")
+        try:
+            (busy, _, _) = conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+        finally:
+            conn.execute(f"PRAGMA busy_timeout={self._busy_timeout_ms}")
+        self._erasure_pending = bool(busy)
+        return not busy
+
     def _call(self, fn: Callable[[sqlite3.Connection], T]) -> T:
         with self._lock:
             try:
-                return fn(self._conn)
+                result = fn(self._conn)
+                if self._erasure_pending:
+                    self._finish_erasure(self._conn)
+                return result
             except sqlite3.OperationalError as exc:
                 if self._in_transaction():
                     self._conn.execute("ROLLBACK")
@@ -255,7 +276,10 @@ class SQLiteRepository:
 
         def op(conn: sqlite3.Connection) -> None:
             conn.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
-            conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            # A checkpoint blocked by another program's open read does not raise; it reports
+            # busy and leaves the old text on disk, so the result is checked.
+            if not self._finish_erasure(conn):
+                raise ErasureIncomplete
 
         await self._run(op)
 

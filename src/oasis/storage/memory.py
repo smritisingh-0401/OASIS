@@ -53,10 +53,14 @@ class MemoryRepository:
         self._explanations: dict[tuple[str, str], str] = {}  # (user_id, turn_id) -> JSON
         self._consent: dict[str, tuple[str, str]] = {}  # user_id -> (version, given_at)
 
+    # SplitRepository asks these on every request, saved or not, so an idle unsaved session
+    # is cleared out by the next request of any kind, not only by another unsaved one.
     def has_session(self, session_hash: str) -> bool:
+        self._expire()
         return session_hash in self._sessions
 
     def has_user(self, user_id: str) -> bool:
+        self._expire()
         return user_id in self._users
 
     def _touch(self, session_hash: str) -> None:

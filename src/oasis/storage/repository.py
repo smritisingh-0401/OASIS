@@ -21,6 +21,11 @@ class StorageBusy(StorageError):
     pass
 
 
+class ErasureIncomplete(StorageError):
+    """The user's rows are deleted, but another program holding the file open stopped their
+    old bytes from being overwritten yet. The store finishes it as soon as it can."""
+
+
 AUDIT_EVENTS = frozenset(
     {"crisis_handoff", "consent_given", "consent_withdrawn", "export", "settings_changed"}
 )
