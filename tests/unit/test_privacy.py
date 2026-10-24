@@ -140,6 +140,19 @@ async def test_idle_ephemeral_sessions_expire() -> None:
 
 
 @pytest.mark.anyio
+async def test_idle_unsaved_sessions_expire_on_any_request() -> None:
+    """Requests from saved sessions also clear out idle unsaved ones (design §11.1)."""
+    clock = Clock()
+    split = SplitRepository(MemoryRepository(), MemoryRepository(idle_timeout_s=7200, clock=clock))
+    temp = await split.create_user_session("temp", ephemeral=True)
+    await split.create_user_session("kept")
+    clock.t += 7201
+    await split.get_session("kept")  # a saved session's request, nothing else
+    assert not split.ephemeral.has_user(temp)
+    assert all(rows == [] for rows in (await split.ephemeral.export_user(temp)).values())
+
+
+@pytest.mark.anyio
 async def test_activity_keeps_an_ephemeral_session_alive() -> None:
     clock = Clock()
     repo = MemoryRepository(idle_timeout_s=7200, clock=clock)

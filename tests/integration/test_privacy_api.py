@@ -18,6 +18,7 @@ from oasis.llm.fake import FakeLLM
 from oasis.safety.handoff import HANDOFF_REPLY
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
+from oasis.storage.repository import ErasureIncomplete
 
 HEADER = "X-OASIS-Session"
 TS = "2026-10-23T10:00:00+05:30"
@@ -140,6 +141,31 @@ def test_delete_needs_confirmation_then_removes_everything(
         assert client.get(path, headers=headers).status_code == 401, path
     assert _chat(client, token).status_code == 401
     assert _chat(client, token, "I want to kill myself").json()["reply"] == HANDOFF_REPLY
+
+
+class StillOpenElsewhere(MemoryRepository):
+    """The rows are deleted but another program keeps the old bytes from being overwritten."""
+
+    async def delete_user(self, user_id: str) -> None:
+        await super().delete_user(user_id)
+        raise ErasureIncomplete
+
+
+def test_a_blocked_overwrite_is_reported_honestly(
+    settings: Settings, start_session: Callable[..., str]
+) -> None:
+    with TestClient(create_app(settings, repo=StillOpenElsewhere())) as c:
+        token = start_session(c)
+        resp = c.request("DELETE", "/account", json={"confirm": "DELETE"}, headers={HEADER: token})
+        assert resp.status_code == 503
+        assert resp.json()["error"]["code"] == "erasure_pending"
+        assert "deleted" in resp.json()["error"]["message"]
+        assert c.get("/session", headers={HEADER: token}).status_code == 401
+
+
+def test_settings_page_explains_a_pending_overwrite(client: TestClient) -> None:
+    js = client.get("/settings.js").text
+    assert "erasure_pending" in js
 
 
 def test_delete_needs_a_session(client: TestClient) -> None:

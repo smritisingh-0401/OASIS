@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import sqlite3
+import time
 from contextlib import closing
 from pathlib import Path
 
 import pytest
 
 import oasis.storage
-from oasis.storage.repository import StorageBusy, StorageUnavailable
+from oasis.storage.repository import ErasureIncomplete, StorageBusy, StorageUnavailable
 from oasis.storage.sqlite import SQLiteRepository
 from oasis.types import TurnFeatures
 
@@ -209,3 +210,64 @@ async def test_delete_truncates_the_wal(tmp_path: Path) -> None:
     wal = path.with_name(path.name + "-wal")
     assert not wal.exists() or wal.stat().st_size == 0
     await repo.close()
+
+
+def _reader(path: Path) -> sqlite3.Connection:
+    """Another program holding the file open mid-read (e.g. a database browser)."""
+    conn = sqlite3.connect(path, isolation_level=None)
+    conn.execute("BEGIN")
+    conn.execute("SELECT COUNT(*) FROM turns").fetchone()
+    return conn
+
+
+def _marker_on_disk(path: Path) -> bool:
+    files = [path, path.with_name(path.name + "-wal")]
+    return any(MARKER.encode() in f.read_bytes() for f in files if f.exists())
+
+
+@pytest.mark.anyio
+async def test_a_blocked_overwrite_is_reported_then_finished(tmp_path: Path) -> None:
+    path = tmp_path / "b.db"
+    repo = SQLiteRepository(path, busy_timeout_ms=100)
+    uid = await _user_with_marker(repo, "h")
+    reader = _reader(path)
+    with pytest.raises(ErasureIncomplete):
+        await repo.delete_user(uid)
+    assert await repo.get_session("h") is None  # the rows are gone at once
+    assert _marker_on_disk(path)  # but the old bytes are still in the files
+    reader.close()
+    await repo.ping()  # any later call finishes the overwrite
+    assert not _marker_on_disk(path)
+    wal = path.with_name(path.name + "-wal")
+    assert not wal.exists() or wal.stat().st_size == 0
+    await repo.close()
+
+
+@pytest.mark.anyio
+async def test_retrying_a_blocked_overwrite_never_waits(tmp_path: Path) -> None:
+    path = tmp_path / "n.db"
+    repo = SQLiteRepository(path, busy_timeout_ms=2000)
+    uid = await _user_with_marker(repo, "h")
+    reader = _reader(path)
+    with pytest.raises(ErasureIncomplete):
+        await repo.delete_user(uid)
+    start = time.monotonic()
+    await repo.ping()  # still blocked: the retry must not hold up the request
+    assert time.monotonic() - start < 0.5
+    reader.close()
+    await repo.close()
+
+
+@pytest.mark.anyio
+async def test_a_pending_overwrite_is_finished_at_startup(tmp_path: Path) -> None:
+    path = tmp_path / "s.db"
+    repo = SQLiteRepository(path, busy_timeout_ms=100)
+    uid = await _user_with_marker(repo, "h")
+    reader = _reader(path)
+    with pytest.raises(ErasureIncomplete):
+        await repo.delete_user(uid)
+    await repo.close()  # e.g. OASIS stopped before the other program let go
+    reader.close()
+    reopened = SQLiteRepository(path)
+    assert not _marker_on_disk(path)
+    await reopened.close()
