@@ -568,3 +568,7 @@ def test_the_why_panel_is_fetched_on_demand() -> None:
     assert "Why this reply?" in js
     assert "See details" in js
     assert "Explanation unavailable for this reply." in js
+    # A connection failure says so and is tried again on the next open; only a definite
+    # answer from the server (the explanation, or none) is kept.
+    assert "Couldn't reach OASIS" in js
+    assert "Close and reopen this to try again." in js
