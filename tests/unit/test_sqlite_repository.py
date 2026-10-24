@@ -259,15 +259,20 @@ async def test_retrying_a_blocked_overwrite_never_waits(tmp_path: Path) -> None:
 
 
 @pytest.mark.anyio
-async def test_a_pending_overwrite_is_finished_at_startup(tmp_path: Path) -> None:
+async def test_a_pending_overwrite_is_finished_after_a_restart(tmp_path: Path) -> None:
+    """OASIS restarts while the other program still has the file open. The startup attempt
+    is blocked too, so the retries carry on once the program lets go. (Had the program let go
+    first, SQLite would finish on its own when the last connection closed.)"""
     path = tmp_path / "s.db"
     repo = SQLiteRepository(path, busy_timeout_ms=100)
     uid = await _user_with_marker(repo, "h")
     reader = _reader(path)
     with pytest.raises(ErasureIncomplete):
         await repo.delete_user(uid)
-    await repo.close()  # e.g. OASIS stopped before the other program let go
+    await repo.close()
+    reopened = SQLiteRepository(path, busy_timeout_ms=100)  # still blocked at startup
+    assert _marker_on_disk(path)
     reader.close()
-    reopened = SQLiteRepository(path)
+    await reopened.ping()
     assert not _marker_on_disk(path)
     await reopened.close()

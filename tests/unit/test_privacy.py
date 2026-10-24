@@ -148,7 +148,8 @@ async def test_idle_unsaved_sessions_expire_on_any_request() -> None:
     await split.create_user_session("kept")
     clock.t += 7201
     await split.get_session("kept")  # a saved session's request, nothing else
-    assert not split.ephemeral.has_user(temp)
+    # Looked up directly: has_user() would run the expiry itself and hide a missing call.
+    assert temp not in split.ephemeral._users
     assert all(rows == [] for rows in (await split.ephemeral.export_user(temp)).values())
 
 
