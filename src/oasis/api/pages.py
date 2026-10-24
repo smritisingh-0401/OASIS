@@ -10,6 +10,7 @@ page loads (rules F1).
 from __future__ import annotations
 
 import functools
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from html import escape
@@ -19,6 +20,7 @@ from oasis.content import load_yaml, require_review
 from oasis.safety.resources import Country, CrisisLine, Resources, dial_string
 
 MARKER = "<!-- CRISIS_RESOURCES -->"
+_ZONE = re.compile(r"[A-Za-z0-9_+\-]+(?:/[A-Za-z0-9_+\-]+)+")  # "Asia/Kolkata"
 NOTICE_MARKER = "<!-- DATA_NOTICE -->"
 
 
@@ -77,6 +79,22 @@ def render_onboarding(d: Disclosure) -> str:
     )
 
 
+def parse_time_zones(raw: Mapping[str, Any]) -> dict[str, str]:
+    """Time zone name -> country code (scripts/time_zones.py, decision 2026-10-24)."""
+    zones = {str(z): str(c) for z, c in (raw.get("zones") or {}).items()}
+    if not raw.get("version") or not zones:
+        raise ValueError("time zone map needs a version and zones")
+    for zone, code in zones.items():
+        if not _ZONE.fullmatch(zone) or not re.fullmatch(r"[A-Z]{2}", code):
+            raise ValueError(f"invalid time zone entry: {zone!r}")
+    return zones
+
+
+@functools.cache
+def load_time_zones() -> dict[str, str]:
+    return parse_time_zones(load_yaml("help", "time_zones.yaml"))
+
+
 def _tel(number: str) -> str:
     return f'<a href="tel:{escape(dial_string(number))}">{escape(number)}</a>'
 
@@ -93,26 +111,33 @@ def _line(line: CrisisLine) -> str:
     return '<li class="line">' + " ".join(parts) + "</li>"
 
 
-def _country(country: Country) -> str:
+def _country(country: Country, zones: str) -> str:
     items = [_line(line) for line in country.lines]
     for e in country.emergency:
         numbers = " or ".join(_tel(n) for n in e.numbers)
         items.append(f'<li class="emergency">{escape(e.service)}: {numbers}</li>')
     if country.emergency_note:
         items.append(f'<li class="emergency">{escape(country.emergency_note)}</li>')
+    zone_attr = f' data-zones="{escape(zones)}"' if zones else ""
     return (
-        f'<details class="country" id="crisis-{escape(country.code)}">'
+        f'<details class="country" id="crisis-{escape(country.code)}"{zone_attr}>'
         f"<summary>{escape(country.name)}</summary><ul>{''.join(items)}</ul></details>"
     )
 
 
-def render_help(resources: Resources) -> str:
+def render_help(resources: Resources, zones: Mapping[str, str]) -> str:
+    """The help card. Each country carries its time zone names, so the page can open the
+    computer's own country first without asking anyone (app.js suggestCountry)."""
+    by_code: dict[str, list[str]] = {}
+    for zone, code in sorted(zones.items()):
+        by_code.setdefault(code, []).append(zone)
     regions = []
     for region in resources.regions:
         countries = [c for c in resources.countries if c.region == region]
         regions.append(
             f'<details class="region"><summary>{escape(region)}</summary>'
-            f"{''.join(_country(c) for c in countries)}</details>"
+            f"{''.join(_country(c, ' '.join(by_code.get(c.code, []))) for c in countries)}"
+            "</details>"
         )
     return (
         '<p class="help-pick">Choose your region and country for crisis lines:</p>'
@@ -125,6 +150,6 @@ def render_help(resources: Resources) -> str:
 def render_index(template: str, resources: Resources, disclosure: Disclosure) -> str:
     if MARKER not in template or NOTICE_MARKER not in template:
         raise ValueError("index.html is missing the crisis resources or data notice marker")
-    return template.replace(MARKER, render_help(resources)).replace(
+    return template.replace(MARKER, render_help(resources, load_time_zones())).replace(
         NOTICE_MARKER, render_onboarding(disclosure)
     )
