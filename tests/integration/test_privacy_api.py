@@ -279,6 +279,28 @@ def test_only_the_session_key_is_stored_in_the_browser() -> None:
         assert "sessionStorage.getItem(SESSION_KEY)" in js, name
 
 
+def test_a_newer_notice_is_accepted_on_the_same_session(
+    client: TestClient, start_session: Callable[..., str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A changed notice must not strand a saved conversation: the page re-consents the session
+    it already has ("Accept and continue") instead of starting a new one."""
+    token = start_session(client)
+    _chat(client, token, MARKER)
+    import oasis.api.routes as routes
+
+    newer = routes.load_disclosure().__class__(**{**routes.load_disclosure().__dict__,
+                                                  "version": "99"})  # fmt: skip
+    monkeypatch.setattr(routes, "load_disclosure", lambda: newer)
+    assert client.get("/session", headers={HEADER: token}).json()["consented"] is False
+    assert _consent(client, token, "99").status_code == 204
+    turns = client.get("/history", headers={HEADER: token}).json()["turns"]
+    assert MARKER in [t["content"] for t in turns]
+    import oasis
+
+    js = (Path(oasis.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
+    assert "Accept and continue" in js
+
+
 def test_chat_page_script_handles_consent() -> None:
     import oasis
 
