@@ -59,7 +59,7 @@ A fresh-machine install guide is verified in Phase 14.
 | 7 — Hypercompliance guard | Approved |
 | 8 — Sentiment tracking | Approved |
 | 9 — Explainability | Approved |
-| 10 — Privacy and autonomy | Built; awaiting approval ([report](docs/reports/phase-10.md)) |
+| 10 — Privacy and autonomy | Approved ([report](docs/reports/phase-10.md)) |
 | 11–14 | Not started |
 
 See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
