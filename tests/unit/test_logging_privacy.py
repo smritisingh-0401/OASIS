@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Callable
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,11 +18,14 @@ MARKER = "MARKER-7731 zebra lantern"
 
 @pytest.mark.parametrize("llm", [FakeLLM(), FakeLLM(fail="down")])
 def test_logs_hold_no_message_text_or_session_id(
-    settings: Settings, caplog: pytest.LogCaptureFixture, llm: FakeLLM
+    settings: Settings,
+    caplog: pytest.LogCaptureFixture,
+    llm: FakeLLM,
+    start_session: Callable[..., str],
 ) -> None:
     caplog.set_level(logging.DEBUG)
     with TestClient(create_app(settings, llm=llm)) as c:
-        token = c.post("/session").json()["session_id"]
+        token = start_session(c)
         c.post(
             "/chat",
             json={"message": MARKER, "client_ts": "2026-10-07T10:00:00Z"},

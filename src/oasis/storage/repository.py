@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from oasis.types import AssessmentRecord, Mode, Role, SignalRecord, TurnFeatures, TurnRecord
 
@@ -21,6 +21,11 @@ class StorageBusy(StorageError):
     pass
 
 
+class ErasureIncomplete(StorageError):
+    """The user's rows are deleted, but another program holding the file open stopped their
+    old bytes from being overwritten yet. The store finishes it as soon as it can."""
+
+
 AUDIT_EVENTS = frozenset(
     {"crisis_handoff", "consent_given", "consent_withdrawn", "export", "settings_changed"}
 )
@@ -31,6 +36,7 @@ class SessionInfo:
     user_id: str
     post_crisis: bool = False
     router_state: str = "{}"  # JSON owned by the router; storage never interprets it
+    consent_version: str | None = None  # the data notice the user accepted, if any
 
 
 @dataclass(frozen=True)
@@ -74,6 +80,10 @@ class Repository(Protocol):
 
     async def set_router_state(self, user_id: str, session_hash: str, state_json: str) -> None: ...
 
+    async def set_consent(self, user_id: str, disclosure_version: str) -> None:
+        """Record acceptance of a data notice, replacing any earlier one."""
+        ...
+
     async def append_audit(self, user_id: str, event: str, detail_json: str) -> None: ...
 
     async def list_audit(self, user_id: str) -> list[AuditRecord]:
@@ -94,6 +104,14 @@ class Repository(Protocol):
 
     async def list_signals(self, user_id: str) -> list[SignalRecord]:
         """This user's per-turn features across all their sessions, oldest first."""
+        ...
+
+    async def export_user(self, user_id: str) -> dict[str, list[dict[str, Any]]]:
+        """Every stored row of this user, by table (rules P9). Empty lists for an unknown user."""
+        ...
+
+    async def delete_user(self, user_id: str) -> None:
+        """Remove the user and everything stored about them; unknown users are a no-op."""
         ...
 
     async def ping(self) -> bool: ...

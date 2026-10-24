@@ -1,10 +1,12 @@
-"""HTTP endpoints: /health, /session, /chat, /history, /trends, /explanations."""
+"""HTTP endpoints: /health, /session, /consent, /chat, /history, /trends, /explanations,
+/export and /account."""
 
 from __future__ import annotations
 
 import asyncio
 import datetime
 import hashlib
+import json
 import logging
 import secrets
 import uuid
@@ -14,12 +16,15 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Header, Query, Response
 
 import oasis
+from oasis.api.pages import load_disclosure
 from oasis.api.schemas import (
     Action,
     AnswerAction,
     AssessmentCardOut,
     ChatRequest,
     ChatResponse,
+    ConsentRequest,
+    DeleteRequest,
     ExerciseCardOut,
     ExerciseConsentAction,
     ExerciseStopAction,
@@ -27,18 +32,21 @@ from oasis.api.schemas import (
     HealthResponse,
     HistoryResponse,
     HistoryTurn,
+    SessionRequest,
     SessionResponse,
+    SessionStatus,
     SessionTrendOut,
     StepAction,
     TrendsResponse,
     TurnPointOut,
 )
 from oasis.assessment import flow
-from oasis.core.engine import ChatEngine, InvalidSession
+from oasis.core.engine import ChatEngine, ConsentRequired, InvalidSession
 from oasis.core.templates import TEMPLATES
 from oasis.router.exercise import card_for
 from oasis.router.router import load_state
-from oasis.storage.repository import StorageError
+from oasis.storage.repository import ErasureIncomplete, SessionInfo, StorageError, utc_now
+from oasis.storage.split import SplitRepository
 from oasis.tracking.aggregate import trend
 from oasis.tracking.features import load_config as load_tracking
 from oasis.types import AssessmentAction, ExerciseAction, ExerciseCard
@@ -58,6 +66,16 @@ class ApiError(Exception):
 INVALID_SESSION = ApiError(401, "invalid_session", "Session not found. Start a new session.")
 STORAGE_DOWN = ApiError(503, "storage_unavailable", "Saved data is unavailable right now.")
 NO_EXPLANATION = ApiError(404, "not_found", "No explanation for this reply.")
+CONSENT_REQUIRED = ApiError(
+    403, "consent_required", "Please review and accept the data notice first."
+)
+OUTDATED_NOTICE = ApiError(422, "invalid_consent", "That is not the current data notice.")
+ERASURE_PENDING = ApiError(
+    503,
+    "erasure_pending",
+    "Your data was deleted, but another program has the data file open, so its old copy "
+    "is not overwritten yet. OASIS finishes this as soon as that program lets go of the file.",
+)
 
 
 def hash_token(token: str | None) -> str:
@@ -85,9 +103,19 @@ def _exercise_out(card: ExerciseCard | None) -> ExerciseCardOut | None:
     return ExerciseCardOut(**asdict(card)) if card else None
 
 
-def build_router(engine: ChatEngine) -> APIRouter:
+def build_router(engine: ChatEngine, repo: SplitRepository) -> APIRouter:
     router = APIRouter()
-    repo = engine.repo
+
+    async def resolve(session: str | None) -> tuple[str, SessionInfo]:
+        """The session's hash and stored state; 401 if unknown, 503 if storage is down."""
+        session_hash = hash_token(session)
+        try:
+            info = await repo.get_session(session_hash)
+        except StorageError:
+            raise STORAGE_DOWN from None
+        if info is None:
+            raise INVALID_SESSION
+        return session_hash, info
 
     @router.get("/health")
     async def health() -> HealthResponse:
@@ -100,13 +128,68 @@ def build_router(engine: ChatEngine) -> APIRouter:
         )
 
     @router.post("/session", status_code=201)
-    async def create_session() -> SessionResponse:
+    async def create_session(body: SessionRequest | None = None) -> SessionResponse:
+        ephemeral = body is not None and body.ephemeral
         token = secrets.token_urlsafe(32)  # 256 bits
         try:
-            await repo.create_user_session(hash_token(token))
+            await repo.create_user_session(hash_token(token), ephemeral=ephemeral)
         except StorageError:
             raise STORAGE_DOWN from None
-        return SessionResponse(session_id=token)
+        return SessionResponse(session_id=token, ephemeral=ephemeral)
+
+    @router.get("/session")
+    async def session_status(session: SessionHeader = None) -> SessionStatus:
+        session_hash, info = await resolve(session)
+        version = load_disclosure().version
+        return SessionStatus(
+            ephemeral=repo.is_ephemeral(session_hash),
+            consented=info.consent_version == version,
+            disclosure_version=version,
+        )
+
+    @router.post("/consent", status_code=204)
+    async def consent(body: ConsentRequest, session: SessionHeader = None) -> Response:
+        session_hash, info = await resolve(session)
+        if body.disclosure_version != load_disclosure().version:
+            raise OUTDATED_NOTICE  # accepted text must be the text shown
+        detail = json.dumps({"disclosure_version": body.disclosure_version})
+        try:
+            await repo.set_consent(info.user_id, body.disclosure_version)
+            await repo.append_audit(info.user_id, "consent_given", detail)
+        except StorageError:
+            raise STORAGE_DOWN from None
+        engine.remember_consent(session_hash)
+        return Response(status_code=204)
+
+    @router.get("/export")
+    async def export(session: SessionHeader = None) -> Response:
+        """Everything stored about the user, as a download (FR-PRV-2, rules P9)."""
+        session_hash, info = await resolve(session)
+        try:
+            tables = await repo.export_user(info.user_id)
+        except StorageError:
+            raise STORAGE_DOWN from None
+        body = {"format": "oasis-export/1", "exported_at": utc_now(),
+                "ephemeral": repo.is_ephemeral(session_hash), "tables": tables}  # fmt: skip
+        return Response(
+            json.dumps(body, ensure_ascii=False, indent=2),
+            media_type="application/json",
+            headers={"Content-Disposition": 'attachment; filename="oasis-export.json"'},
+        )
+
+    @router.delete("/account", status_code=204)
+    async def delete_account(body: DeleteRequest, session: SessionHeader = None) -> Response:
+        """Delete the user and everything about them (FR-PRV-3); cannot be undone."""
+        session_hash, info = await resolve(session)
+        try:
+            await repo.delete_user(info.user_id)
+        except ErasureIncomplete:
+            engine.forget(session_hash)  # the rows are gone, so is the session
+            raise ERASURE_PENDING from None
+        except StorageError:
+            raise STORAGE_DOWN from None
+        engine.forget(session_hash)
+        return Response(status_code=204)
 
     @router.post("/chat")
     async def chat(
@@ -120,6 +203,8 @@ def build_router(engine: ChatEngine) -> APIRouter:
                 )
         except InvalidSession:
             raise INVALID_SESSION from None
+        except ConsentRequired:
+            raise CONSENT_REQUIRED from None
         except Exception as exc:  # last line of defence: the user always gets a reply
             log.error("chat failed: %s", type(exc).__name__)  # type only: messages may hold text
             reason = "request.deadline" if isinstance(exc, TimeoutError) else "internal.error"

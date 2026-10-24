@@ -1,0 +1,35 @@
+# First-use data notice (FR-PRV-1, PRD L5), shown before the first message and accepted by
+# choosing how to start. Raising `version` asks every user to accept again. Plain language;
+# needs legal review before any use outside development (open item O8) and clinician review
+# of the crisis paragraph (CR-23).
+schema: oasis.content/v1
+kind: disclosure
+version: "2"  # 2 (2026-10-24): a saved conversation is reopened from this browser (rules F5)
+review_status: needs_clinician_review
+title: "Before you start"
+# The first sections are always shown; the rest sit under a "Read more" dropdown (a native
+# <details>, so it opens without script). The agreement line stays visible above the buttons.
+visible_sections: 2
+agreement: "Choosing one of the options below means you have read this notice, including the part under \"Read more\", and agree to it."
+sections:
+  - heading: "What OASIS is"
+    paragraphs:
+      - "OASIS is a support tool for everyday stress and low mood. It is not a diagnosis, not a therapist and not an emergency service. If you are in danger or need someone now, open \"Need help now?\" at the top for crisis lines in your country."
+      - "Replies are written by a language model that runs on this computer. OASIS decides what kind of reply to give with fixed rules, and each reply can tell you why."
+  - heading: "Two ways to start"
+    paragraphs:
+      - "Save on this computer: your conversation is kept in a file on this computer, and this browser remembers it, so you can come back to it in a new tab or after a restart, see your mood trend, export it or delete it. Anyone who uses this browser on this computer can open it too, so on a shared computer choose Start without saving."
+      - "Start without saving: nothing is written to disk. The conversation is kept in memory only: closing this tab ends your access, and it is gone after two hours without a message, when you delete it, or when OASIS restarts."
+  - heading: "What is kept"
+    paragraphs:
+      - "Your messages and OASIS's replies; your answers and scores if you take a PHQ-9 or GAD-7 questionnaire; numbers that describe your word choice for the mood trend; the explanation of each reply; and a technical record of each reply (timings and decisions, never your words)."
+      - "OASIS never asks for your name, email or phone number. Your session key is stored only in a scrambled form that cannot be turned back into the key."
+  - heading: "If you mention a crisis"
+    paragraphs:
+      - "If a message is answered with crisis support, the words of that message are not saved. OASIS keeps only a note that crisis support was shown, which kind of phrase was recognised (not your words), and a line in the conversation saying a message was answered this way. These are deleted with everything else."
+  - heading: "Who can see it"
+    paragraphs:
+      - "No one else. Nothing is sent over the internet: the page, the language model and the saved file all stay on this computer, and OASIS's logs never contain your words. Anyone who can open this computer's files could read a saved conversation, so use a computer you trust; turning on disk encryption helps."
+  - heading: "Your choices"
+    paragraphs:
+      - "In Settings you can export everything kept about you as a file, and delete it all at any time. Deleting removes your conversation, answers and trend, overwrites the space they used, and cannot be undone. Saved data is otherwise kept until you delete it."

@@ -11,10 +11,11 @@ from collections.abc import Callable
 from dataclasses import asdict
 from importlib import resources
 from pathlib import Path
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from oasis.storage.repository import (
     AuditRecord,
+    ErasureIncomplete,
     SessionInfo,
     StorageBusy,
     StorageUnavailable,
@@ -31,6 +32,14 @@ def _migrations() -> list[tuple[int, str]]:
     return [(int(f.name.split("_", 1)[0]), f.read_text(encoding="utf-8")) for f in files]
 
 
+def _user_tables(conn: sqlite3.Connection) -> list[str]:
+    names = [r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+        " ORDER BY rowid")]  # fmt: skip
+    return [n for n in names
+            if "user_id" in {c[1] for c in conn.execute(f"PRAGMA table_info({n})")}]  # fmt: skip
+
+
 class SQLiteRepository:
     """One connection, one writer at a time.
 
@@ -44,6 +53,11 @@ class SQLiteRepository:
         # isolation_level=None: autocommit, with explicit BEGIN where atomicity matters.
         self._conn = sqlite3.connect(path, check_same_thread=False, isolation_level=None)
         self._lock = threading.Lock()
+        self._busy_timeout_ms = int(busy_timeout_ms)
+        # Set when another program blocked a delete's overwrite (FR-PRV-3); retried after
+        # every later call. The first attempt is at startup, below, in case OASIS stopped
+        # before an earlier delete could finish.
+        self._erasure_pending = False
         for pragma in (
             "journal_mode=WAL",
             f"busy_timeout={int(busy_timeout_ms)}",
@@ -53,6 +67,7 @@ class SQLiteRepository:
         ):
             self._conn.execute(f"PRAGMA {pragma}")
         self._migrate()
+        self._finish_erasure(self._conn)
 
     def _migrate(self) -> None:
         conn = self._conn
@@ -73,10 +88,24 @@ class SQLiteRepository:
             )
             conn.execute("COMMIT")
 
+    def _finish_erasure(self, conn: sqlite3.Connection) -> bool:
+        """Copy every page into the main file and empty the WAL. Never waits for another
+        program: with a zero busy timeout a blocked attempt just reports busy."""
+        conn.execute("PRAGMA busy_timeout=0")
+        try:
+            (busy, _, _) = conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+        finally:
+            conn.execute(f"PRAGMA busy_timeout={self._busy_timeout_ms}")
+        self._erasure_pending = bool(busy)
+        return not busy
+
     def _call(self, fn: Callable[[sqlite3.Connection], T]) -> T:
         with self._lock:
             try:
-                return fn(self._conn)
+                result = fn(self._conn)
+                if self._erasure_pending:
+                    self._finish_erasure(self._conn)
+                return result
             except sqlite3.OperationalError as exc:
                 if self._in_transaction():
                     self._conn.execute("ROLLBACK")
@@ -117,10 +146,12 @@ class SQLiteRepository:
     async def get_session(self, session_hash: str) -> SessionInfo | None:
         def op(conn: sqlite3.Connection) -> SessionInfo | None:
             row = conn.execute(
-                "SELECT user_id, post_crisis, router_state FROM sessions WHERE session_id_hash = ?",
+                "SELECT s.user_id, s.post_crisis, s.router_state, c.disclosure_version"
+                " FROM sessions s LEFT JOIN consent c ON c.user_id = s.user_id"
+                " WHERE s.session_id_hash = ?",
                 (session_hash,),
             ).fetchone()
-            return SessionInfo(row[0], bool(row[1]), row[2]) if row else None
+            return SessionInfo(row[0], bool(row[1]), row[2], row[3]) if row else None
 
         return await self._run(op)
 
@@ -206,6 +237,49 @@ class SQLiteRepository:
             )
             if cur.rowcount != 1:
                 raise sqlite3.IntegrityError("session not found for user")
+
+        await self._run(op)
+
+    async def set_consent(self, user_id: str, disclosure_version: str) -> None:
+        def op(conn: sqlite3.Connection) -> None:
+            conn.execute(
+                "INSERT INTO consent (user_id, disclosure_version, given_at) VALUES (?, ?, ?)"
+                " ON CONFLICT (user_id) DO UPDATE SET disclosure_version ="
+                " excluded.disclosure_version, given_at = excluded.given_at",
+                (user_id, disclosure_version, utc_now()),
+            )
+
+        await self._run(op)
+
+    async def export_user(self, user_id: str) -> dict[str, list[dict[str, Any]]]:
+        """Every table with a user_id column, found from the schema, so a table added by a
+        later migration is exported without changing this code (rules P9)."""
+
+        def op(conn: sqlite3.Connection) -> dict[str, list[dict[str, Any]]]:
+            out = {}
+            for table in _user_tables(conn):
+                cur = conn.execute(
+                    # Table names come from sqlite_master, never from input (rules CD9).
+                    f"SELECT * FROM {table} WHERE user_id = ? ORDER BY rowid",  # noqa: S608  # nosec B608
+                    (user_id,),
+                )
+                names = [d[0] for d in cur.description]
+                out[table] = [dict(zip(names, row, strict=True)) for row in cur.fetchall()]
+            return out
+
+        return await self._run(op)
+
+    async def delete_user(self, user_id: str) -> None:
+        """One DELETE cascades to every table (design §11). secure_delete zeroes the freed
+        pages; the checkpoint then copies them into the main file and truncates the WAL, so
+        the old text is left in neither (FR-PRV-3)."""
+
+        def op(conn: sqlite3.Connection) -> None:
+            conn.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+            # A checkpoint blocked by another program's open read does not raise; it reports
+            # busy and leaves the old text on disk, so the result is checked.
+            if not self._finish_erasure(conn):
+                raise ErasureIncomplete
 
         await self._run(op)
 

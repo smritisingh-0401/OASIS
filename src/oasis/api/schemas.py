@@ -98,8 +98,33 @@ class ChatResponse(BaseModel):
     explanation_id: str | None = None
 
 
+class SessionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ephemeral: bool = False  # kept in memory only, never written to disk (FR-PRV-4)
+
+
 class SessionResponse(BaseModel):
     session_id: str
+    ephemeral: bool = False
+
+
+class SessionStatus(BaseModel):
+    ephemeral: bool
+    consented: bool  # accepted the current data notice
+    disclosure_version: str
+
+
+class ConsentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    disclosure_version: str = Field(min_length=1, max_length=32)
+
+
+class DeleteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirm: Literal["DELETE"]  # typed by the user on the settings page
 
 
 class HistoryTurn(BaseModel):

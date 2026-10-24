@@ -78,6 +78,10 @@ class InvalidSession(Exception):
     pass
 
 
+class ConsentRequired(Exception):
+    """A non-crisis message from a session that has not accepted the current data notice."""
+
+
 _CLEAR = SafetyVerdict(is_crisis=False)
 
 
@@ -118,6 +122,7 @@ class ChatEngine:
         planner: Planner = plan_turn,
         guard: Guard = check_reply,
         explainer: Explainer = build_explanation,
+        consent_version: str | None = None,
     ) -> None:
         self.safety = safety
         self.llm = llm
@@ -126,6 +131,12 @@ class ChatEngine:
         self.planner = planner
         self.guard = guard
         self.explainer = explainer
+        # The data notice a session must have accepted before a non-crisis reply (FR-PRV-1);
+        # None turns the gate off (engine unit tests). The app always sets it.
+        self.consent_version = consent_version
+        # Sessions known to have accepted it, so the gate holds through a storage outage
+        # without locking them out (architecture §3.3). Same lifetime as _post_crisis.
+        self._consented: set[str] = set()
         # Sessions in post-crisis mode, held in memory so the policy holds even when
         # storage is down (design §2.4). Known limit: grows with crisis sessions only and is
         # lost on restart; the persisted flag covers restarts when storage works.
@@ -169,6 +180,8 @@ class ChatEngine:
             if session is None:
                 raise InvalidSession
             user_id = session.user_id
+            if session.consent_version == self.consent_version:
+                self._consented.add(session_hash)
             post_crisis = post_crisis or session.post_crisis
             router_state = load_state(session.router_state)
             history = await self.repo.recent_turns(
@@ -178,6 +191,9 @@ class ChatEngine:
         except StorageError as exc:
             degraded.add(_storage_code(exc))
         clock.mark("load_state", "degraded" if degraded else "ok")
+        if self.consent_version is not None and session_hash not in self._consented:
+            # After the safety gate, so a crisis is always answered (architecture §3.3).
+            raise ConsentRequired
 
         # Stage 5 — plan.
         state = ConversationState(
@@ -302,6 +318,14 @@ class ChatEngine:
             preface=plan.preface,
             explanation_id=turn_id if persisted else None,
         )
+
+    def remember_consent(self, session_hash: str) -> None:
+        self._consented.add(session_hash)
+
+    def forget(self, session_hash: str) -> None:
+        """Drop what the engine holds in memory about a deleted session."""
+        self._consented.discard(session_hash)
+        self._post_crisis.discard(session_hash)
 
     def _crisis(
         self,

@@ -1,7 +1,8 @@
 "use strict";
 
-// The session token is kept in sessionStorage and sent only in the X-OASIS-Session
-// header, never in a URL (rules P3, F5). All text is rendered with textContent (rules F4).
+// The session token is the only thing kept in the browser (rules F5, see saveToken) and is
+// sent only in the X-OASIS-Session header, never in a URL (rules P3). All text is rendered
+// with textContent (rules F4).
 
 const SESSION_KEY = "oasis.session";
 const SLOW_NOTICE_MS = 8000;
@@ -14,6 +15,7 @@ const status = document.getElementById("status");
 const help = document.getElementById("help");
 const continueButton = document.getElementById("continue");
 const card = document.getElementById("card");
+const onboarding = document.getElementById("onboarding");
 const CONTINUE_TEXT = "I'd like to keep talking.";
 
 // After a crisis reply, open the help card and move focus to it so crisis lines are one
@@ -24,34 +26,156 @@ function showCrisisSupport() {
   continueButton.hidden = false;
 }
 
+// Opens the computer's own country first (decision 2026-10-24). The time zone is read from
+// the browser's own settings, never sent anywhere and never stored, so this works with the
+// backend down. Each country in the server-rendered card lists its zone names in data-zones;
+// a copy of the match goes on top, and the full list folds into a "Not right?" dropdown.
+const ZONE_NAME = /^[A-Za-z0-9_+-]+(\/[A-Za-z0-9_+-]+)+$/;
+
+function suggestCountry() {
+  const helpCard = help.querySelector(".help-card");
+  if (helpCard.querySelector(".suggested")) return;
+  let zone = "";
+  try {
+    zone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  } catch {
+    return;
+  }
+  if (!ZONE_NAME.test(zone)) return;
+  const match = helpCard.querySelector(`.country[data-zones~="${zone}"]`);
+  if (!match) return;
+  const copy = match.cloneNode(true);
+  copy.removeAttribute("id");
+  copy.removeAttribute("data-zones");
+  copy.open = true;
+  const box = document.createElement("div");
+  box.className = "suggested";
+  box.append(line("p", "From this computer's time zone:", "help-pick"), copy);
+  // The full list folds away under "Not right?"; without a suggestion it stays open.
+  const others = helpCard.querySelector(".all-countries");
+  others.open = false;
+  others.querySelector("summary").textContent = "Not right? Choose another country";
+  others.before(box);
+}
+
+help.addEventListener("toggle", () => {
+  if (help.open) suggestCountry();
+});
+
 function readToken() {
   try {
-    return sessionStorage.getItem(SESSION_KEY);
+    return localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
   } catch {
     return null;
   }
 }
 
-function saveToken(token) {
+// A saved session's key goes in localStorage, so the conversation can be reopened in a new
+// tab or after a restart; an unsaved one's in sessionStorage, so it ends with this tab
+// (rules F5). An empty token forgets both.
+function saveToken(token, ephemeral = false) {
   try {
-    sessionStorage.setItem(SESSION_KEY, token);
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    if (token && ephemeral) {
+      sessionStorage.setItem(SESSION_KEY, token);
+    } else if (token) {
+      localStorage.setItem(SESSION_KEY, token);
+    }
   } catch {
     // Storage blocked: the session lasts for this page only.
   }
 }
 
-async function newSession() {
-  const resp = await fetch("/session", { method: "POST" });
-  if (!resp.ok) throw new Error("session");
-  const body = await resp.json();
-  saveToken(body.session_id);
-  return body.session_id;
+async function api(path, options = {}) {
+  const headers = { "X-OASIS-Session": readToken() || "", ...(options.headers || {}) };
+  return fetch(path, { ...options, headers });
 }
 
-async function api(path, options = {}) {
-  const token = readToken() || (await newSession());
-  const headers = { "X-OASIS-Session": token, ...(options.headers || {}) };
-  return fetch(path, { ...options, headers });
+const JSON_HEADERS = { "Content-Type": "application/json" };
+const OFFLINE = "I couldn't reach the server. \"Need help now?\" still works.";
+
+const startSaved = document.getElementById("start-saved");
+const startEphemeral = document.getElementById("start-ephemeral");
+// True when the notice is shown again to a session that already exists (the notice changed):
+// accepting continues that conversation instead of starting a new one, so a saved
+// conversation is never stranded.
+let resuming = false;
+
+// The data notice replaces the conversation until a session has accepted it (FR-PRV-1).
+function showOnboarding(note, resume = false) {
+  resuming = resume;
+  startSaved.textContent = resume ? "Accept and continue" : "Save on this computer";
+  startEphemeral.hidden = resume;
+  onboarding.hidden = false;
+  messages.hidden = true;
+  form.hidden = true;
+  card.hidden = true;
+  status.textContent = note || "";
+  if (!help.contains(document.activeElement)) startSaved.focus();
+}
+
+async function postConsent(token, version) {
+  const resp = await fetch("/consent", {
+    method: "POST",
+    headers: { ...JSON_HEADERS, "X-OASIS-Session": token },
+    body: JSON.stringify({ disclosure_version: version }),
+  });
+  if (!resp.ok) throw new Error("consent");
+}
+
+function showChat() {
+  onboarding.hidden = true;
+  messages.hidden = false;
+  form.hidden = false;
+}
+
+// Choosing how to start creates the session and records consent to the notice shown.
+async function start(ephemeral) {
+  const version = onboarding.querySelector(".notice").dataset.version;
+  try {
+    if (resuming) {
+      await postConsent(readToken(), version);
+      status.textContent = "";
+      showChat();
+      await loadHistory();
+      input.focus();
+      return;
+    }
+    const resp = await fetch("/session", {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ ephemeral }),
+    });
+    if (!resp.ok) throw new Error("session");
+    const token = (await resp.json()).session_id;
+    await postConsent(token, version);
+    saveToken(token, ephemeral);
+    status.textContent = "";
+    showChat();
+    input.focus();
+  } catch {
+    status.textContent = OFFLINE;
+  }
+}
+
+async function init() {
+  if (!readToken()) return showOnboarding();
+  try {
+    const resp = await api("/session");
+    if (resp.status === 401) {
+      saveToken("");
+      return showOnboarding();
+    }
+    // Storage down: the chat may still answer, so let them try.
+    if (resp.ok && !(await resp.json()).consented) {
+      return showOnboarding("The data notice has changed. Please read it and accept to carry on.", true);
+    }
+    showChat();
+    await loadHistory();
+  } catch {
+    showOnboarding(OFFLINE);
+  }
 }
 
 function addMessage(role, text, note, explanationId) {
@@ -72,34 +196,45 @@ function addMessage(role, text, note, explanationId) {
   return item;
 }
 
-// "Why this reply?" (design §10, FR-XAI-3): fetched the first time it is opened. The
-// plain-language bullets come first; "See details" shows the raw record (the debug view).
+// "Why this reply?" (design §10, FR-XAI-3): fetched when opened, the plain-language bullets
+// only. The scope note and the raw record stay out of the page (Smriti, 2026-10-24); both
+// are still in the record served by GET /explanations/{id} and included in the export.
 function whyPanel(explanationId) {
   const panel = document.createElement("details");
   panel.className = "why";
   const summary = document.createElement("summary");
   summary.textContent = "Why this reply?";
   panel.appendChild(summary);
+  let note = null;
   panel.addEventListener("toggle", async () => {
-    if (!panel.open || panel.dataset.loaded) return;
-    panel.dataset.loaded = "1";
-    let body = null;
+    if (!panel.open || panel.dataset.loaded || panel.dataset.loading) return;
+    panel.dataset.loading = "1";
+    if (note) note.remove();
+    let resp = null;
     try {
-      const resp = await api("/explanations/" + encodeURIComponent(explanationId));
-      if (resp.ok) body = await resp.json();
+      resp = await api("/explanations/" + encodeURIComponent(explanationId));
     } catch {
-      // Shown as unavailable below; the reply itself is unaffected.
+      // No connection: said below and tried again on the next open.
     }
+    delete panel.dataset.loading;
+    // No answer, or the server could not load it right now: say which, and fetch again the
+    // next time the panel is opened. Only a definite answer is kept.
+    if (!resp || resp.status >= 500) {
+      note = line("p", resp
+        ? "OASIS couldn't load this right now. Close and reopen this to try again."
+        : "Couldn't reach OASIS. Close and reopen this to try again.", "why-note");
+      panel.appendChild(note);
+      return;
+    }
+    panel.dataset.loaded = "1";
+    const body = resp.ok ? await resp.json().catch(() => null) : null;
     if (!body || body.status === "unavailable") {
       panel.appendChild(line("p", "Explanation unavailable for this reply.", "why-note"));
       return;
     }
     const list = document.createElement("ul");
     for (const text of body.plain_language) list.appendChild(line("li", text));
-    const details = document.createElement("details");
-    details.className = "why-details";
-    details.append(line("summary", "See details"), line("pre", JSON.stringify(body, null, 2)));
-    panel.append(list, line("p", body.scope_note, "why-note"), details);
+    panel.append(list);
   });
   return panel;
 }
@@ -237,6 +372,19 @@ async function sendText(text, action) {
 
   try {
     const resp = await send(text, action);
+    if (resp.status === 401 || resp.status === 403) {
+      // Session gone (deleted, or an unsaved one forgotten) or not consented: back to the
+      // notice. The words go back in the box for after they start again.
+      const body = await resp.json().catch(() => ({}));
+      pending.remove();
+      if (resp.status === 401) saveToken("");
+      // 403: the session still exists, so accepting continues it (a changed notice).
+      const consent = body.error && body.error.code === "consent_required";
+      showOnboarding(consent
+        ? "Please read and accept the data notice first. Your message wasn't sent."
+        : "Please choose how to start again. Your message wasn't sent.", consent);
+      return false;
+    }
     if (!resp.ok) throw new Error("status " + resp.status);
     const body = await resp.json();
     // A crisis turn is never stored by design, so the not-saved note would only alarm.
@@ -278,14 +426,7 @@ async function send(text, action) {
     client_ts: localTimestamp(),
     action: action || null,
   });
-  const request = () =>
-    api("/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
-  let resp = await request();
-  if (resp.status === 401) {
-    await newSession();
-    resp = await request();
-  }
-  return resp;
+  return api("/chat", { method: "POST", headers: JSON_HEADERS, body: payload });
 }
 
 form.addEventListener("submit", async (event) => {
@@ -299,6 +440,8 @@ form.addEventListener("submit", async (event) => {
 });
 
 continueButton.addEventListener("click", () => sendText(CONTINUE_TEXT));
+document.getElementById("start-saved").addEventListener("click", () => start(false));
+document.getElementById("start-ephemeral").addEventListener("click", () => start(true));
 
 input.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey) {
@@ -307,4 +450,4 @@ input.addEventListener("keydown", (event) => {
   }
 });
 
-loadHistory();
+init();

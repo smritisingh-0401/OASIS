@@ -20,16 +20,35 @@
       <summary>Need help now?</summary>
       <div class="help-card" role="region" aria-label="Crisis help" tabindex="-1">
         <h2>Talk to someone now</h2>
-        <p>If you feel like talking to someone in person, pick your country below. You do not
-          have to go through this alone.</p>
+        <p>If you feel like talking to someone in person, you do not have to go through this
+          alone.</p>
         <!-- CRISIS_RESOURCES -->
       </div>
     </details>
+    <!-- Gear drawn inline (no icon font or image request, rules F1): dashed outer ring for
+         the teeth, solid inner ring for the body. -->
+    <a class="pill icon-pill" href="settings.html" aria-label="Settings" title="Settings">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"
+           fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="8.2" stroke-width="3.2" stroke-dasharray="3.2 3.24"/>
+        <circle cx="12" cy="12" r="5.6" stroke-width="3"/>
+      </svg>
+    </a>
     </div>
   </header>
 
   <main class="chat">
-    <ol id="messages" class="messages" aria-live="polite" aria-label="Conversation">
+    <!-- First-use data notice (FR-PRV-1): shown until the session has accepted the current
+         version; choosing how to start is the consent. "Need help now?" stays above it. -->
+    <section id="onboarding" class="onboarding" aria-labelledby="notice-title" hidden>
+      <!-- DATA_NOTICE -->
+      <div class="card-options onboarding-actions">
+        <button type="button" id="start-saved">Save on this computer</button>
+        <button type="button" id="start-ephemeral">Start without saving</button>
+      </div>
+    </section>
+
+    <ol id="messages" class="messages" aria-live="polite" aria-label="Conversation" hidden>
       <li class="msg bot empty-state">
         Hi. This is a quiet place to talk about how you're feeling. What's on your mind?
       </li>
@@ -42,7 +61,7 @@
     <!-- Assessment card: buttons for the current questionnaire step (design §15.1). -->
     <div id="card" class="card" role="group" aria-label="Questionnaire" hidden></div>
 
-    <form id="composer" class="composer">
+    <form id="composer" class="composer" hidden>
       <label for="input" class="visually-hidden">Your message</label>
       <textarea id="input" rows="2" maxlength="2000" required
                 placeholder="Type how you're feeling&hellip;"></textarea>

@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
 from oasis.api.middleware import error_response, security_middleware
-from oasis.api.pages import render_index
+from oasis.api.pages import load_disclosure, render_index
 from oasis.api.routes import ApiError, build_router
 from oasis.assessment.instruments import load_all as load_assessment_content
 from oasis.core.engine import ChatEngine
@@ -31,6 +31,7 @@ from oasis.safety.rules import load_ruleset
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import Repository
+from oasis.storage.split import SplitRepository
 from oasis.storage.sqlite import SQLiteRepository
 from oasis.tracking.features import load_config as load_tracking
 
@@ -80,9 +81,11 @@ def create_app(
     load_psychoed()
     load_reply_checks()
     load_tracking()
+    disclosure = load_disclosure()
     index_html = render_index(
         (WEB_DIR / "index.html").read_text(encoding="utf-8"),
         crisis_resources or load_resources(),
+        disclosure,
     )
 
     bounded = BoundedLLM(
@@ -90,8 +93,11 @@ def create_app(
         max_concurrency=settings.llm_max_concurrency,
         queue_limit=settings.llm_queue_limit,
     )
-    store = repo or _default_repo(settings)
-    engine = ChatEngine(safety=safety, llm=bounded, repo=store, settings=settings)
+    # Each session is saved or ephemeral, chosen when it starts (FR-PRV-4).
+    ephemeral = MemoryRepository(idle_timeout_s=settings.ephemeral_idle_timeout_s)
+    store = SplitRepository(repo or _default_repo(settings), ephemeral)
+    engine = ChatEngine(safety=safety, llm=bounded, repo=store, settings=settings,
+                        consent_version=disclosure.version)  # fmt: skip
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -124,7 +130,7 @@ def create_app(
         code = {404: "not_found", 405: "method_not_allowed"}.get(exc.status_code, "http_error")
         return error_response(exc.status_code, code, str(exc.detail))
 
-    app.include_router(build_router(engine))
+    app.include_router(build_router(engine, store))
 
     @app.get("/", include_in_schema=False)
     @app.get("/index.html", include_in_schema=False)
