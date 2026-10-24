@@ -188,3 +188,25 @@ def test_the_suggestion_is_shown_once_and_links_to_settings() -> None:
     assert "style_suggestion" in js
     assert "settings.html" in js
     assert "styleSuggested" in js
+
+
+def test_settings_say_when_storage_is_down(
+    settings: Settings, start_session: Callable[..., str]
+) -> None:
+    class Down(MemoryRepository):
+        async def get_settings(self, user_id: str) -> Any:
+            from oasis.storage.repository import StorageUnavailable
+
+            raise StorageUnavailable
+
+    with TestClient(create_app(settings, repo=Down())) as c:
+        token = start_session(c)
+        assert c.get("/settings", headers={HEADER: token}).status_code == 503
+        assert _put(c, token, directness="direct").status_code == 503
+
+
+def test_settings_template_without_the_marker_is_rejected() -> None:
+    from oasis.api.pages import render_settings
+
+    with pytest.raises(ValueError, match="country options"):
+        render_settings("<select></select>", load_resources())

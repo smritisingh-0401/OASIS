@@ -95,7 +95,7 @@ def test_the_framing_file_needs_every_value_and_a_review_flag() -> None:
         {**good, "suggest": {**good["suggest"], "min_hedged": 4}},  # more than the window
         {**good, "suggest": {**good["suggest"], "hedges": []}},
     ):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=r"style|framing"):
             parse_framing(broken)
 
 
@@ -104,8 +104,13 @@ def test_the_framing_file_needs_every_value_and_a_review_flag() -> None:
 
 @pytest.mark.parametrize(
     "message",
-    ["maybe it's nothing", "I guess I'm a bit tired", "it's sort of hard to say",
-     "I’m not sure it matters", "Perhaps I overreacted"],  # fmt: skip
+    [
+        "maybe it's nothing",
+        "I guess I'm a bit tired",
+        "it's sort of hard to say",
+        "I\u2019m not sure it matters",  # a curly apostrophe
+        "Perhaps I overreacted",
+    ],
 )
 def test_hedged_phrasing_is_noticed(message: str) -> None:
     assert hedged(message)
@@ -157,7 +162,9 @@ class NoWritesRepo(MemoryRepository):
         raise AssertionError("the engine must never change the settings")
 
 
-def _engine(settings: Settings, llm: FakeLLM, repo: MemoryRepository, seen: list[Any]) -> ChatEngine:
+def _engine(
+    settings: Settings, llm: FakeLLM, repo: MemoryRepository, seen: list[Any]
+) -> ChatEngine:
     def guard(text: str, plan: Plan) -> GuardVerdict:
         seen.append(dataclasses.replace(plan, style=StyleProfile()))
         return check_reply(text, plan)
@@ -180,7 +187,9 @@ async def test_the_engine_reads_the_users_style_into_the_prompt(settings: Settin
     await engine.handle_turn("h", "work was long today")
     system = llm.prompts[-1][0].content
     assert framing(StyleProfile("indirect", "casual")) in system
-    assert "India" not in system and "IN" not in system.split()  # the country is for help only
+    # The country is for the help card only.
+    assert "India" not in system
+    assert "IN" not in system.split()
 
 
 @pytest.mark.anyio
