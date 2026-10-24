@@ -129,6 +129,17 @@ body {
   font-weight: 600;
   text-decoration: none;
 }
+/* Icon-only pill: a circle as tall as the text pills beside it. Two classes, so the
+   narrow-screen .pill padding below does not squeeze the icon. */
+.pill.icon-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+.icon-pill svg { display: block; }
 
 .help { position: relative; }
 .help summary {

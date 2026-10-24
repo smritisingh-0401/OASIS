@@ -14,7 +14,6 @@
     <h1 class="brand">OASIS</h1>
     <div class="top-actions">
     <a class="pill" href="trends.html">Mood trend</a>
-    <a class="pill" href="settings.html">Settings</a>
     <!-- Native <details>: opens with no script and no server, so help works even when the
          backend is down (rules S12, F2). -->
     <details class="help" id="help">
@@ -26,6 +25,15 @@
         <!-- CRISIS_RESOURCES -->
       </div>
     </details>
+    <!-- Gear drawn inline (no icon font or image request, rules F1): dashed outer ring for
+         the teeth, solid inner ring for the body. -->
+    <a class="pill icon-pill" href="settings.html" aria-label="Settings" title="Settings">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"
+           fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="8.2" stroke-width="3.2" stroke-dasharray="3.2 3.24"/>
+        <circle cx="12" cy="12" r="5.6" stroke-width="3"/>
+      </svg>
+    </a>
     </div>
   </header>
 
