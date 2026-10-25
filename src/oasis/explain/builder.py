@@ -131,7 +131,10 @@ def _detectors(message: str) -> tuple[list[DetectorExplanation], bool]:
     out, consistent = [], True
     for file in LEXICONS:
         for name, lex in load(file).items():
-            e = explain_lexicon(f"{file}.{name}", lex, norm, n)
+            # The scorer's value comes from one segment of the message (Phase 12), so the
+            # explanation decomposes that segment.
+            part = lex.segment(norm)
+            e = explain_lexicon(f"{file}.{name}", lex, part, len(part.split()))
             linear = e.output  # Lexicon.linear: the scorer's own value, before any rule
             if file == "distortions" and name == "labelling":
                 rule = harsh_label_score(norm, n)
