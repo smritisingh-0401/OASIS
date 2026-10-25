@@ -415,3 +415,27 @@ async def test_same_turn_twice_gives_the_same_explanation(settings: Settings) ->
         stored.append(await engine.repo.get_explanation(uid, result.turn_id))
     assert stored[0] is not None
     assert stored[0] == stored[1]
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "As a Muslim woman, I'm so angry I can't control it. My husband and I live in Leeds.",
+        "I had lunch. Everything is too much, I can't breathe - Wei",
+        "I always mess everything up. I'm a complete failure and so lonely.",
+    ],
+)
+def test_a_longer_message_explains_the_sentence_that_was_scored(message: str) -> None:
+    """Scores come from the message's highest-scoring sentence (Phase 12); the explanation
+    decomposes that sentence, so its output is the score the router used and still adds up."""
+    from oasis.core.signals import extract
+
+    signals = extract(message)
+    used = {f"emotions.{e}": v for e, v in signals.emotions.items()}
+    used |= {"cues.dysregulation": signals.dysregulation, "cues.overwhelm": signals.overwhelm}
+    record = _record(message)
+    assert record["status"] == "ok"
+    explained = {d["detector"]: d for d in record["detectors"]}
+    for name, value in used.items():
+        d = explained.get(name)
+        assert (min(1.0, max(0.0, d["output"])) if d else 0.0) == pytest.approx(value, abs=1e-9)
