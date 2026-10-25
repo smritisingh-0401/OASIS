@@ -98,6 +98,7 @@ def test_negation_never_suppresses(phrase: str) -> None:
         "patay ako kay mama pag nalaman niya",
         "pagod na ako, gusto ko nang matulog",
         "estoy cortando el pelo de mi hermano",
+        "me corto el pelo cada mes",
     ],
 )
 def test_designed_non_triggers(phrase: str) -> None:

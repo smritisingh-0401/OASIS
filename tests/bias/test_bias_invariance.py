@@ -35,6 +35,26 @@ def test_no_conversation_gets_a_false_handoff(found: Any) -> None:
     assert found.false_handoffs == []
 
 
+def test_a_handoff_in_any_version_of_a_conversation_is_reported(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scenarios, variants = B["load"]()
+    conv = dict(scenarios["conversations"][0])
+    versions = ("standard", *scenarios["dialects"])
+    for k in versions:
+        conv[k] = [*conv[k][:-1], "I want to kill myself"]
+    few = {g: vs[:1] for g, vs in variants.items()}
+    script = B["evaluate"].__globals__  # run_path returns a copy; patch the script's own
+    monkeypatch.setitem(
+        script, "load", lambda: ({**scenarios, "crisis": [], "conversations": [conv]}, few)
+    )
+    monkeypatch.setitem(script, "load_heldout", dict)
+    found = asyncio.run(B["evaluate"]())
+    reported = {f.split(" / ")[1] for f in found.false_handoffs}
+    assert reported == {*versions, *(f"{g}.{vs[0]['id']}" for g, vs in few.items())}
+    assert not found.invariant
+
+
 def test_demographic_and_cultural_variants_decide_like_standard(found: Any) -> None:
     assert found.mismatches == []
     assert found.invariant
@@ -43,6 +63,19 @@ def test_demographic_and_cultural_variants_decide_like_standard(found: Any) -> N
 def test_dialect_agreement_is_measured_for_every_dialect(found: Any) -> None:
     assert set(found.dialect) == set(B["load"]()[0]["dialects"])
     assert all(total > 0 for convs in found.dialect.values() for _, _, total in convs)
+
+
+def test_dialect_agreement_matches_a_direct_comparison(found: Any) -> None:
+    conv = B["load"]()[0]["conversations"][0]
+    llm = B["FakeLLM"]()
+
+    async def same_turns(dialect: str) -> int:
+        base, turns = [await B["converse"](llm, conv[k]) for k in ("standard", dialect)]
+        return sum(a.decision == b.decision for a, b in zip(base, turns, strict=True))
+
+    for dialect, convs in found.dialect.items():
+        (same,) = [s for cid, s, _ in convs if cid == conv["id"]]
+        assert same == asyncio.run(same_turns(dialect))
 
 
 def test_variants_are_applied_as_written() -> None:
