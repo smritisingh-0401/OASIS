@@ -9,14 +9,14 @@
 # - ANY match triggers the handoff. No negation handling, by design (rules S6).
 # - Not allowed: named groups, inline flags, unbounded nested quantifiers.
 # - Every pattern lists examples; each example must trigger, or the app refuses to start.
-version: "2026.10.0"
+version: "2026.10.1"
 review_status: needs_clinician_review
 patterns:
   # --- explicit intent -----------------------------------------------------------
   - id: explicit.kill_self
     tier: explicit
-    pattern: '\bkill(?:ing|ed|s)? ?(?:my ?self|me ?self)\b'
-    examples: ["i am going to kill myself", "i want to kill my self", "thinking of killing myself"]
+    pattern: '\bkill(?:ing|ed|s)? ?(?:my ?self|me ?self|myslef|mysefl|myslf)\b'
+    examples: ["i am going to kill myself", "i want to kill my self", "thinking of killing myself", "i want to kil myslef"]
   - id: explicit.kms
     tier: explicit
     pattern: '\bkms\b'
@@ -59,8 +59,8 @@ patterns:
   # --- passive ideation ----------------------------------------------------------
   - id: passive.want_die
     tier: passive
-    pattern: '\b(?:want|wnat|wanna|wana|wish|ready|deserve|need|hope|like|longing|prefer) (?:to )?die\b'
-    examples: ["i just want to die", "i wanna die", "ready to die", "i deserve to die"]
+    pattern: '\b(?:want|wnat|wanna|wana|wan|wanting|wish|ready|deserve|need|hope|like|longing|prefer) (?:to |2 )?die\b'
+    examples: ["i just want to die", "i wanna die", "ready to die", "i deserve to die", "i jus want 2 die", "i just wan die", "i am wanting to die"]
   - id: passive.be_dead
     tier: passive
     pattern: '\b(?:want|wanna|wish|rather|prefer|better off|better) (?:to )?be dead\b|\bwish(?:ing)? (?:that )?i (?:was|were|could be|would be|could just be|was just) dead\b|\bbetter of{2} dead\b|\brather (?:be )?dead\b|\b(?:id|i would) rather die\b'
@@ -71,11 +71,13 @@ patterns:
     examples: ["i hope i never wake up", "i wish i would not wake up tomorrow", "i want to fall asleep and never wake up"]
   - id: passive.not_live
     tier: passive
-    pattern: '\b(?:dont|do not|no longer|dont even|dont really) (?:want|wanna|wish)(?: to)? (?:live|go on|keep living|continue living)(?: ?(?:anymore|any more|any longer|no more))?\s*(?:[.!?,]|$)|\b(?:dont|do not|no longer|dont even|ion) (?:want|wanna|wish)(?: to)? (?:be alive|exist|be here anymore|be here any more|be on this earth)\b'
-    examples: ["i dont want to live anymore", "i dont want to be alive", "i dont wanna exist", "i no longer want to live."]
+    # Phase 12: anything may follow "anymore" ("... anymore - Aisha" was missed); a bare
+    # "live" may be followed by anything except words that make it about where or how to live.
+    pattern: '\b(?:dont|do not|no longer|dont even|dont really|no) (?:want|wanna|wish|wan)(?: to)? (?:l(?:ive|iev)|keep living|continue living)(?: ?(?:anymore|any more|any longer|no more|again)\b|(?! (?:with|in|at|near|there|here|like|on|alone|together|without|by|next|far|close|abroad|somewhere|anywhere|where|so|for|under|over|up|down|out|off|back|a|an|the)\b))|\b(?:dont|do not|no longer|dont even|dont really) (?:want|wanna|wish)(?: to)? go on(?: ?(?:anymore|any more|any longer|no more)\b|\s*(?:[.!?,;:\-–—]|$))|\b(?:dont|do not|no longer|dont even|ion) (?:want|wanna|wish)(?: to)? (?:be alive|exist|be here anymore|be here any more|be on this earth)\b'
+    examples: ["i dont want to live anymore", "i dont want to be alive", "i dont wanna exist", "i no longer want to live.", "i dont want to live anymore - aisha", "i dont want to liev anymore", "i no wan live again"]
   - id: passive.no_point
     tier: passive
-    pattern: '\b(?:no|nothing|no reason|no point|whats the point|what is the point|no purpose|why)(?: \w+){0,3} (?:to live|living|in living|of living|being alive|of being alive|to keep living|to keep going|to go on|in going on)\b|\b(?:not|isnt|aint|no longer) worth living\b|\blife (?:is |s )?(?:not|isnt|no longer|aint) worth (?:it|living)\b'
+    pattern: '\b(?:no|nothing|no reason|no point|whats the point|what is the point|no purpose|why)(?: \w+){0,3} (?:to live|livin|living|in livin|in living|of living|being alive|of being alive|to keep living|to keep going|to go on|in going on)\b|\b(?:not|isnt|aint|no longer) worth living\b|\blife (?:is |s )?(?:not|isnt|no longer|aint) worth (?:it|living)\b'
     examples: ["there is no reason to keep living", "i have nothing to live for", "life is not worth living", "why bother living"]
   - id: passive.tired_of_life
     tier: passive
@@ -102,7 +104,7 @@ patterns:
     examples: ["i am going to overdose", "thinking of ODing on my meds"]
   - id: plan.pills
     tier: plan_method
-    pattern: '\b(?:take|took|taking|swallow\w*|down) (?:all|a bunch of|a lot of|all of|all the|every|the whole bottle of|a handful of|enough|a whole bottle of) (?:my |the |these |those |of my )?(?:pills|tablets|meds|medication|sleeping pills|painkillers|paracetamol|tylenol)\b|\b(?:saving|saved|stockpil\w*|hoard\w*|collecting) (?:up )?(?:\w+ )?(?:pills|tablets|meds)\b|\bhow many (?:\w+ )?(?:pills|tablets|paracetamol|tylenol)\b|\b(?:lethal|fatal|deadly) dose\b'
+    pattern: '\b(?:take|took|taking|swallow\w*|down) (?:all|a bunch of|a lot of|all of|all the|every|the whole bottle of|a handful of|enough|a whole bottle of) (?:my |the |these |those |of my )?(?:pills|tablets|meds|medication|sleeping pills|painkillers|paracetamol|tylenol)\b|\b(?:saving|savin|saved|stockpil\w*|hoard\w*|collecting|collected|gather|gathered|gathering) (?:up )?(?:\w+ )?(?:pills|tablets|meds)\b|\bhow many (?:\w+ )?(?:pills|tablets|paracetamol|tylenol)\b|\b(?:lethal|fatal|deadly) dose\b'
     examples: ["i want to take all my pills", "ive been stockpiling pills", "what is a lethal dose", "how many sleeping pills would kill me"]
   - id: plan.jump
     tier: plan_method
@@ -154,9 +156,68 @@ patterns:
   # --- self-harm -------------------------------------------------------------------
   - id: self_harm.explicit
     tier: self_harm
-    pattern: '\bself ?-?(?:harm|injur)\w*|\b(?:cut|cutting|cuts|carve|carving|harm|harmed|harming) ?(?:my ?self|me ?self)\b'
+    pattern: '\bself ?-?(?:harm|injur)\w*|\b(?:cut|cutting|cuttin|cuts|carve|carving|harm|harmed|harming) ?(?:my ?self|me ?self)\b'
     examples: ["i have been self harming", "i cut myself", "i keep cutting myself", "self-harm again"]
   - id: self_harm.intent
     tier: self_harm
     pattern: '\b(?:want|wanna|going|gonna|need|urge|urges|feel like|tempted|thinking about|thinking of|keep|keeps|started|start|trying not)\w* (?:to )?(?:hurt|hurting|hit|hitting|punch|punching|burn|burning|starve|starving|scratch|scratching) ?(?:my ?self)\b|\bburn(?:ed|t|ing)? (?:my ?self) (?:on purpose|deliberately|intentionally|again)\b'
     examples: ["i want to hurt myself", "i have the urge to burn myself", "i burned myself on purpose"]
+
+  # --- Phase 12 bias evaluation: dialect and code-mixed phrasing (CR-01, CR-26) ----------
+  # Written from the tests/bias crisis versions after their first run was recorded; native
+  # speakers have not reviewed them. Idioms next to them are designed non-triggers.
+  - id: passive.cant_be_bothered
+    tier: passive
+    pattern: '\bcant be (?:arsed|bothered) (?:living|to live|with living|being alive)\b'
+    examples: ["i cant be arsed living anymore", "i cant be bothered to live"]
+  - id: explicit.code_mixed_es
+    tier: explicit
+    # Spanish: matarme (kill myself), suicidarme, quitarme la vida, acabar con todo / mi vida.
+    pattern: '\b(?:matarme|suicidarme|quitarme la vida|acabar con mi vida)\b|\bacabar con todo\b(?! (?:el|la|los|las|lo|esto|eso)\b)'
+    examples: ["im going to matarme", "quiero suicidarme", "voy a acabar con todo tonight"]
+  - id: passive.code_mixed_es
+    tier: passive
+    # Spanish: quiero morir(me) (I want to die), no quiero vivir, no tiene sentido vivir.
+    pattern: '\bquiero morir(?:me)?\b|\bno quiero (?:vivir|seguir viviendo)\b|\bno tiene sentido (?:seguir )?viv(?:ir|iendo)\b'
+    examples: ["solo quiero morirme", "ya no quiero vivir", "no tiene sentido seguir viviendo"]
+  - id: explicit.code_mixed_tl
+    tier: explicit
+    # Tagalog: papatayin ko ang sarili ko (I will kill myself), magpakamatay, tatapusin ko na
+    # lahat (I will end it all).
+    pattern: '\b(?:papatayin|patayin) ko (?:na )?(?:ang )?sarili ko\b|\bmagpa(?:pa)?kamatay\b|\btatapusin ko na (?:ang )?lahat\b(?! ng\b)'
+    examples: ["papatayin ko na sarili ko", "gusto kong magpakamatay", "tatapusin ko na lahat tonight"]
+  - id: passive.code_mixed_tl
+    tier: passive
+    # Tagalog: gusto ko nang mamatay (I want to die), ayoko nang mabuhay (I don't want to
+    # live), wala nang silbi mabuhay (no point living).
+    pattern: '\bgusto ko (?:na |nang |na lang |nalang )?mamatay\b|\bayoko (?:na |nang )?mabuhay\b|\bwala(?:ng| nang) (?:silbi|kwenta) (?:ang )?(?:mabuhay|buhay ko)\b'
+    examples: ["gusto ko nang mamatay", "ayoko nang mabuhay", "wala nang silbi mabuhay"]
+  - id: explicit.code_mixed_hi_end
+    tier: explicit
+    # Hindi: sab khatam kar dunga (I will finish everything, i.e. end it all). Also fires on
+    # "homework sab khatam kar dunga"; failing toward the handoff is accepted here.
+    pattern: '\bsab (?:kuch )?khatam kar (?:dunga|dungi|deta|deti|lunga|lungi|du|doon)\b'
+    examples: ["aaj raat sab khatam kar dunga", "sab kuch khatam kar dungi"]
+  - id: passive.code_mixed_hi_point
+    tier: passive
+    # Hindi: jeene ka koi point / matlab nahi (no point in living).
+    pattern: '\bjeene ka (?:koi )?(?:point|matlab|fayda|maksad|reason) nahi\b'
+    examples: ["jeene ka koi point nahi hai", "jeene ka matlab nahi"]
+  - id: burden.code_mixed
+    tier: burden
+    # Better off without me: Hindi (mere bina), Spanish (mejor sin mi), Tagalog (mas okay
+    # sila kung wala na ako), Nigerian Pidgin (better pass if I no dey).
+    pattern: '\b(?:mere|meri) bina (?:sab )?(?:better|behtar|khush)\b|\bmejor sin m[ií]\b|\b(?:mas okay|mas ok|mas masaya|mas mabuti|mas maayos) (?:sila |kayo )?(?:kung|pag) wala na ako\b|\bbetter (?:pass )?if i no dey\b'
+    examples: ["sab mere bina better rahenge", "todos estarian mejor sin mi", "mas okay sila kung wala na ako", "everybody go better pass if i no dey"]
+  - id: self_harm.code_mixed
+    tier: self_harm
+    # Hindi: khud ko cut kiya (cut myself); Tagalog: laslas (slashing the wrist); Spanish: me
+    # (he estado) cortando (cutting myself), but not "me corto el pelo" (my hair).
+    pattern: '\bkhud ko (?:cut|kaat|kaata|chot|hurt)\w*|\b(?:nag|mag)?(?:la)?laslas\w*|\bme (?:he estado |estoy |sigo )?cort(?:ando|o|ado)\b(?! (?:el|la|las|los|un|una|mi|mis)\b)'
+    examples: ["maine phir se khud ko cut kiya", "naglalaslas na naman ako", "me he estado cortando otra vez"]
+  - id: plan.code_mixed
+    tier: plan_method
+    # Pills taken all together: Hindi (ek saath), Spanish (todas juntas), Tagalog (nang sabay);
+    # saving pills: guardando pastillas, nag-ipon ng gamot.
+    pattern: '\b(?:pills|goliyan|goliyaan|tablets|dawai|pastillas|gamot)\b[^.!?]{0,60}\b(?:ek saath|todas juntas|todas de una|nang sabay)\b|\bguardando pastillas\b|\bnag ?-?ipon ako ng (?:pills|gamot|tabletas)\b'
+    examples: ["maine bahut saari pills jama ki hain, sab ek saath le lunga", "he estado guardando pastillas", "nag-ipon ako ng pills para inumin lahat nang sabay"]
