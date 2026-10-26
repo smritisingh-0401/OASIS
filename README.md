@@ -42,7 +42,7 @@ Run every check (lint, types, import rules, security scan, dependency audit, tes
 uv run python scripts/verify.py
 ```
 
-**Real model (optional):** start a pinned llama.cpp `llama-server` with `--jinja`, set `OASIS_LLM_BACKEND=llama_server`, then run `uv run python scripts/model_smoke_test.py`. Compare candidate models with `scripts/model_bakeoff.py`.
+**Real model (optional):** start a pinned llama.cpp `llama-server` with `--jinja`, set `OASIS_LLM_BACKEND=llama_server`, then run `uv run python scripts/model_smoke_test.py`. Compare candidate models with `scripts/model_bakeoff.py`. `scripts/bias_eval.py` runs the bias evaluation (`--fake` for the decision plane only).
 
 A fresh-machine install guide is verified in Phase 14.
 
@@ -61,7 +61,9 @@ A fresh-machine install guide is verified in Phase 14.
 | 8 — Sentiment tracking | Approved |
 | 9 — Explainability | Approved |
 | 10 — Privacy and autonomy | Approved ([report](docs/reports/phase-10.md)) |
-| 11–14 | Not started |
+| 11 — Cultural adaptation | Approved ([report](docs/reports/phase-11.md)) |
+| 12 — Bias evaluation | In progress |
+| 13–14 | Not started |
 
 See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 

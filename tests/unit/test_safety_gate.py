@@ -89,10 +89,28 @@ def test_negation_never_suppresses(phrase: str) -> None:
         "I'm so proud of myself",
         "I'm drowning in work",
         "my phone is dead",
+        # Code-mixed idioms next to the Phase 12 phrases: dying of laughter or hunger,
+        # "in trouble", wanting to sleep.
+        "me muero de risa",
+        "me muero de hambre",
+        "hasi se mar gaya yaar",
+        "bhookh se mar raha hoon",
+        "patay ako kay mama pag nalaman niya",
+        "pagod na ako, gusto ko nang matulog",
+        "estoy cortando el pelo de mi hermano",
+        "me corto el pelo cada mes",
     ],
 )
 def test_designed_non_triggers(phrase: str) -> None:
     assert not GATE.check(phrase).is_crisis
+
+
+@pytest.mark.parametrize("after", [" - Aisha", " My wife and I live in Lagos.", " lol", " :("])
+def test_words_after_a_disclosure_never_hide_it(after: str) -> None:
+    """Phase 12 bias evaluation: "I don't want to live anymore - Aisha" was missed, because
+    the rule wanted the phrase to end the message or a clause."""
+    for phrase in ("I don't want to live anymore", "I don't want to live", "I just want to die"):
+        assert GATE.check(phrase + after).is_crisis, phrase + after
 
 
 # --- robustness properties ---------------------------------------------------------

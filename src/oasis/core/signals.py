@@ -48,19 +48,19 @@ def extract(message: str) -> Signals:
     norm = base_form(message)
     n = len(norm.split())
     emotions, cues, distortions = load("emotions"), load("cues"), load("distortions")
-    by_type = {name: lex.score(norm, n) for name, lex in distortions.items()}
+    by_type = {name: lex.score(norm) for name, lex in distortions.items()}
     by_type["labelling"] = max(by_type["labelling"], harsh_label_score(norm, n))
     return Signals(
         valence=valence(message),
-        emotions={e: emotions[e].score(norm, n) for e in EMOTIONS},
-        dysregulation=cues["dysregulation"].score(norm, n),
+        emotions={e: emotions[e].score(norm) for e in EMOTIONS},
+        dysregulation=cues["dysregulation"].score(norm),
         # Sum, not max: several categories in one message add up, and the sum is still a
         # linear model before the clip, so its explanation stays exact.
         distortion=min(1.0, sum(by_type.values())),
         distortion_types=frozenset(t for t, v in by_type.items() if v > 0),
-        overwhelm=cues["overwhelm"].score(norm, n),
-        wants_to_talk=cues["wants_to_talk"].score(norm, n),
-        opt_out=cues["opt_out"].score(norm, n) > 0,
-        psychoed_cue=cues["psychoed"].score(norm, n) > 0,
-        asks_advice=cues["asks_advice"].score(norm, n) > 0,
+        overwhelm=cues["overwhelm"].score(norm),
+        wants_to_talk=cues["wants_to_talk"].score(norm),
+        opt_out=cues["opt_out"].score(norm) > 0,
+        psychoed_cue=cues["psychoed"].score(norm) > 0,
+        asks_advice=cues["asks_advice"].score(norm) > 0,
     )

@@ -11,7 +11,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from oasis.core.detectors.lexicon import ContentError, load, parse
+from oasis.core.detectors.lexicon import ContentError, load, parse, segments
 from oasis.core.signals import EMOTIONS, extract, valence
 from oasis.router.weights import config
 
@@ -172,3 +172,40 @@ def test_invalid_lexicon_content_is_rejected(bad: dict[str, Any]) -> None:
 
 def test_valid_lexicon_content_parses() -> None:
     assert set(parse(_raw())) == {"x"}
+
+
+# --- per-sentence scoring (Phase 12 bias evaluation) -----------------------------------
+
+
+def test_sentences_dashes_and_a_leading_identity_clause_are_scored_apart() -> None:
+    assert segments("im so angry. i live in leeds") == ("im so angry", " i live in leeds")
+    assert segments("im so angry - aisha") == ("im so angry", "aisha")
+    assert segments("as a muslim woman, im so angry") == ("as a muslim woman,", " im so angry")
+    assert segments("at 68, work is hard") == ("at 68,", " work is hard")
+    # Any other comma stays inside its sentence, so a single sentence scores as before.
+    assert segments("im so angry, i cant control it") == ("im so angry, i cant control it",)
+    assert segments("...") == ("...",)
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [". My husband and I live in Leeds.", " - Aisha", ". It's Diwali this week."],
+)
+def test_who_someone_is_does_not_water_down_how_they_feel(extra: str) -> None:
+    plain = extract("I'm so angry I can't control it")
+    for framed in (extract("I'm so angry I can't control it" + extra),
+                   extract("As a Muslim woman, I'm so angry I can't control it")):  # fmt: skip
+        assert framed.emotions == plain.emotions
+        assert framed.dysregulation == plain.dysregulation
+        assert framed.overwhelm == plain.overwhelm
+
+
+def test_a_single_sentence_scores_exactly_as_before() -> None:
+    lex = load("emotions")["anger"]
+    norm = "im so angry and furious, i cant control it"
+    assert lex.score(norm) == min(1.0, max(0.0, lex.linear(norm, len(norm.split()))))
+
+
+def test_the_highest_sentence_counts() -> None:
+    lex = load("emotions")["anger"]
+    assert lex.score("i had lunch. im so angry") == lex.score("im so angry")

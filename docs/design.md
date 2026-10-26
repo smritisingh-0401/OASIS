@@ -277,6 +277,12 @@ Features are term-count rates, so the pre-clip value is a linear model — SHAP 
 - `Signals` holds only the fields used so far; `screening_cues` and `continue_request` stay inside the trigger and the planner (Phase 3), and `behaviour` arrives with Phase 8.
 - `psychoed_cue` (Phase 5) is true when any phrase of the `psychoed` scorer in `cues.yaml` matches, like `opt_out`.
 
+### 5b. As built (Phase 12: per-sentence scoring)
+- The bias evaluation found that rates per word let words about *who* someone is water down *how* they feel: "As a Muslim woman, I'm so angry I can't control it" delayed the DBT offer, and "Everything is too much, I can't breathe. My husband and I live in Leeds." skipped grounding.
+- Each scorer is now computed on its **highest-scoring segment** of the message (`Lexicon.segment`, `segments()` in `core/detectors/lexicon.py`): sentences (split at `. ! ? ;`, line breaks and a spaced dash), and a leading "As a/an …," or "At 68," clause on its own. Other commas stay inside the sentence, so a one-sentence message scores exactly as before; no weight or threshold changed. VADER valence and the harsh-label rule still read the whole message.
+- The explanation decomposes the scored segment, so its output is the value the router used and stays additive (design §10).
+- Known limit: identity stated inside the sentence in other ways ("I'm a Sikh man and I'm so angry…", "Being a single mum, …") still dilutes; the held-out phrasings in `tests/bias/variants.yaml` measure it (docs/reports/bias_eval.md).
+
 ---
 
 ## 6. Planner precedence
