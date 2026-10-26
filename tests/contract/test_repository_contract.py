@@ -5,6 +5,8 @@ A new backend is added to BACKENDS and must pass unchanged.
 
 from __future__ import annotations
 
+import asyncio
+import datetime
 import json
 from collections.abc import AsyncIterator, Callable
 from dataclasses import replace
@@ -435,3 +437,17 @@ async def test_deleting_an_unknown_user_is_a_no_op(repo: Repository) -> None:
     await repo.create_user_session("a")
     await repo.delete_user("nobody")
     assert await repo.get_session("a") is not None
+
+
+@pytest.mark.anyio
+async def test_idle_users_are_those_with_no_message_since_the_cutoff(repo: Repository) -> None:
+    quiet = await repo.create_user_session("quiet")
+    talking = await repo.create_user_session("talking")
+    await asyncio.sleep(0.02)
+    cutoff = datetime.datetime.now(datetime.UTC)
+    await asyncio.sleep(0.02)
+    await _append(repo, talking, "talking", "t1", "hello")
+    assert await repo.idle_users(cutoff) == [quiet]
+    later = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=1)
+    assert sorted(await repo.idle_users(later)) == sorted([quiet, talking])
+    assert await repo.idle_users(cutoff - datetime.timedelta(days=1)) == []

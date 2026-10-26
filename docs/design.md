@@ -635,7 +635,7 @@ Tables are introduced by the phase that needs them (`0001_init.sql` in Phase 1 c
 
 **Connection setup (every connection):** `journal_mode=WAL`, `foreign_keys=ON`, `busy_timeout=2000`, `synchronous=NORMAL`, `secure_delete=ON`.
 
-**Retention:** saved-mode data is kept until the user deletes it. No automatic expiry in v1 (documented). Crisis audit entries are deleted with the account.
+**Retention:** saved-mode data is kept until the user deletes it, or until `saved_idle_expiry_days` (90) pass without a message in any of their sessions (Phase 13, Smriti 2026-10-26): OASIS then deletes it through the same erasure as the Delete button, at startup and once a day, and logs only the count. This bounds how long a conversation stranded by cleared site data stays on disk. The data notice (version 3) says so. Crisis audit entries are deleted with the account.
 
 ### 11.1 Ephemeral in-memory twin
 `MemoryRepository` implements the same `Repository` protocol with dicts keyed by `user_id`, guarded by an `asyncio.Lock`. Ephemeral sessions expire after 2 h idle or on process restart. Nothing is written to disk: no SQLite, no temp files, no content in logs. Ephemeral mode is chosen at onboarding and cannot be switched to saved mode mid-session without starting a new session (prevents partial persistence).
@@ -864,3 +864,11 @@ Enter sends, Shift+Enter newline; Tab order: help button → messages → input 
 | Request deadline exceeded | engine deadline | Templated reply | Templated reply | `request.deadline` |
 | Invalid content at startup | schema validation | Refuse to start | — (operator log) | — |
 | Frontend cannot reach server | fetch error | Offline state; help card still works | "I couldn't reach the server…" | — |
+
+### 16.1 As built (Phase 13: fault-injection matrix)
+
+Every row is a test over HTTP in `tests/fault_injection/test_matrix.py` (plus `test_degradation.py`), asserting the reply, the request timeout and the trace code. Model failures use the real `LlamaServerClient` against a local stub server, so its own timeouts and parsing are exercised: no listener, a stall, a stream of single bytes (each read succeeds, so only the generation deadline ends it), empty content, a think-only reply, HTTP 500, malformed JSON and no choices. Departures:
+- **LLM down** includes a connect *timeout*: on Windows a refused connection is retried for about two seconds, so the 1 s connect timeout fires before the refusal. Both are `llm.down`.
+- **Detector error** has no separate code: signals are computed inside the planner, so a detector bug is `planner.error` (companion template). Detectors are pure lexicon scorers validated at startup; per-detector isolation would add code for a failure with no known cause.
+- **Crisis bookkeeping** after the handoff (audit, post-crisis flag, placeholder) is bounded by the request timeout, so storage that never answers cannot hold the task.
+- Combined rows: model stalled with the database locked; model stalled with storage dead (crisis handed off in under a second, an ordinary message refused at once).

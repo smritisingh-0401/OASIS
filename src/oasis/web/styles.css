@@ -19,8 +19,10 @@
   --glass-shadow: 0 12px 32px rgba(40, 80, 170, 0.14);
   --blur: blur(18px) saturate(150%);
   --text: #1c2a3d;
-  --muted: #36435a;
-  --accent: #2a5cc0;
+  /* Text colours stay AA over the darkest orb under the clear glass (scripts/contrast_check.py). */
+  --muted: #283244;
+  --accent: #1e4aa8;
+  --accent-deep: #1e3f8f;  /* accent text on the blue OASIS bubble */
   --cta: linear-gradient(145deg, #3a6fd8, #2a55c4);
   --focus: #1a56c4;
   --radius: 16px;
@@ -185,7 +187,15 @@ body {
 .help-card li { margin: 4px 0; }
 .help-card .hours { color: var(--muted); font-size: 15px; }
 /* Darker than --accent: stays AA on the translucent card even over an orb. */
-.help-card a { color: #1e4aa8; font-weight: 600; }
+/* Phone numbers as 24 px targets (WCAG 2.2 2.5.8), even "15" or "112". */
+.help-card a {
+  color: #1e4aa8;
+  font-weight: 600;
+  display: inline-block;
+  min-width: 24px;
+  min-height: 24px;
+  text-align: center;
+}
 .help-fallback { font-weight: 600; }
 /* The full list: a plain link-like dropdown, its regions not indented a level further. */
 .help-card .all-countries > summary {
@@ -214,7 +224,8 @@ body {
   margin: 0 auto;
   padding: 12px 18px 0;
   /* Clear glass: a thin tint and a light blur, so the orbs behind stay visible; the bright
-     edge and top highlight give it its shape. Text on it stays AA over the darkest orb. */
+     edge and top highlight give it its shape. Text on it stays AA over the darkest orb
+     (checked by scripts/contrast_check.py). */
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
   -webkit-backdrop-filter: blur(2px) saturate(120%);
   backdrop-filter: blur(2px) saturate(120%);
@@ -241,7 +252,13 @@ body {
 
 /* "Why this reply?" under each bot message: closed by default, text in --muted for AA. */
 .why { margin-top: 8px; font-size: 14px; color: var(--muted); }
-.why summary { cursor: pointer; font-weight: 600; color: var(--accent); width: fit-content; }
+.why summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent-deep);
+  width: fit-content;
+  min-height: 24px;
+}
 .why ul { margin: 6px 0 0; padding-left: 20px; }
 .why li { margin: 2px 0; }
 .why .why-note { margin-top: 6px; font-style: italic; }
@@ -453,8 +470,12 @@ body {
 }
 
 @media (max-width: 520px) {
-  .top { flex-wrap: wrap; }
+  .top { flex-wrap: wrap; position: relative; }
   .pill, .help summary { padding: 7px 14px; }
+  /* The header wraps and "Need help now?" no longer sits at the right edge, so the card
+     spans the header instead of hanging off the pill (it ran off-screen at 375 px). */
+  .help { position: static; }
+  .help-card { left: 16px; right: 16px; width: auto; top: 100%; margin-top: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

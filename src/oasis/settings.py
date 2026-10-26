@@ -40,3 +40,6 @@ class Settings(BaseSettings):
 
     # Privacy: an ephemeral (unsaved) session is forgotten after this long without a message
     ephemeral_idle_timeout_s: float = Field(2 * 3600, gt=0)
+    # ...and a saved conversation is deleted after this many days without a message (Phase 13;
+    # the data notice states the number)
+    saved_idle_expiry_days: int = Field(90, gt=0)

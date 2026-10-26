@@ -27,7 +27,7 @@ from oasis.explain.builder import unavailable
 from oasis.guard.checks import SOFT_RULES
 from oasis.guard.checks import check as check_reply
 from oasis.guard.socratic import socratic_question
-from oasis.llm.client import LLMClient, LLMFailure, clean_reply
+from oasis.llm.client import BoundedLLM, LLMClient, LLMFailure, clean_reply
 from oasis.llm.prompt import build_messages
 from oasis.router.router import dump_state, load_state
 from oasis.safety.gate import SafetyGate, check_fail_closed
@@ -130,7 +130,10 @@ class ChatEngine:
         consent_version: str | None = None,
     ) -> None:
         self.safety = safety
-        self.llm = llm
+        # The generation timeout lives in BoundedLLM (it starts once the model is free).
+        self.llm = BoundedLLM(
+            llm, max_concurrency=settings.llm_max_concurrency, queue_limit=settings.llm_queue_limit
+        )
         self.repo = repo
         self.settings = settings
         self.planner = planner
@@ -395,6 +398,16 @@ class ChatEngine:
         type only; it can never affect the reply, which has already gone out.
         """
         try:
+            # Bounded, so storage that never answers cannot hold this task forever.
+            async with asyncio.timeout(self.settings.request_timeout_s):
+                await self._record_crisis(session_hash, verdict, escalated)
+        except TimeoutError:
+            log.error("crisis record timed out")
+
+    async def _record_crisis(
+        self, session_hash: str, verdict: SafetyVerdict, escalated: AssessmentRecord | None
+    ) -> None:
+        try:
             session = await self.repo.get_session(session_hash)
             if session is None:
                 return
@@ -444,7 +457,9 @@ class ChatEngine:
             )
             budget = max(0.0, min(remaining, self.settings.llm_generate_timeout_s))
             try:
-                async with asyncio.timeout(budget):
+                # The request deadline; the model client applies `budget` to the generation
+                # itself, after any wait for the model (BoundedLLM).
+                async with asyncio.timeout(max(0.0, remaining)):
                     raw = await self.llm.generate(
                         messages, max_tokens=self.settings.llm_max_tokens, timeout_s=budget
                     )

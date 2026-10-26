@@ -7,6 +7,7 @@ idle for `idle_timeout_s` (design §11.1) and everything on restart.
 
 from __future__ import annotations
 
+import datetime
 import json
 import time
 import uuid
@@ -21,6 +22,7 @@ from oasis.storage.repository import (
     StorageUnavailable,
     UserSettings,
     utc_now,
+    utc_stamp,
 )
 from oasis.types import (
     AssessmentRecord,
@@ -219,6 +221,13 @@ class MemoryRepository:
 
     async def list_signals(self, user_id: str) -> list[SignalRecord]:
         return [record for _, record in self._signals.get(user_id, [])]
+
+    async def idle_users(self, before: datetime.datetime) -> list[str]:
+        last: dict[str, str] = {}
+        for session_hash, user_id in self._sessions.items():
+            last[user_id] = max(last.get(user_id, ""), self._session_times[session_hash][1])
+        cutoff = utc_stamp(before)
+        return [u for u, at in sorted(last.items(), key=lambda kv: kv[1]) if at < cutoff]
 
     async def export_user(self, user_id: str) -> dict[str, list[dict[str, Any]]]:
         """The same tables and columns as the SQLite export (contract test)."""

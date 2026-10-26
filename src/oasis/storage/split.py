@@ -8,6 +8,7 @@ working while the database is down.
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
 
 from oasis.storage.memory import MemoryRepository
@@ -103,6 +104,10 @@ class SplitRepository:
 
     async def delete_user(self, user_id: str) -> None:
         await self._by_user(user_id).delete_user(user_id)
+
+    async def idle_users(self, before: datetime.datetime) -> list[str]:
+        # Unsaved sessions have their own, shorter expiry (MemoryRepository idle_timeout_s).
+        return await self.saved.idle_users(before)
 
     async def ping(self) -> bool:
         return await self.saved.ping()

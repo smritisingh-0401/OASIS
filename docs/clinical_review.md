@@ -50,6 +50,7 @@ Reviewer: _not yet assigned (open item O3)._
 | 2026-10-24 | CR-24 added: help card country suggested from the time zone | Smriti |
 | 2026-10-24 | Phase 10: CR-23 added (first-use data notice) | Smriti |
 | 2026-10-24 | Phase 11: CR-25 added (style framing, examples and the indirect-phrasing suggestion) | Smriti |
+| 2026-10-26 | Phase 13: CR-23 data notice version 3: a saved conversation with no message for 90 days is deleted automatically (owner's decision) | Smriti |
 | 2026-10-25 | Phase 12: CR-26 added; CR-01: "I don't want to live anymore" followed by anything (a name, another sentence) is caught again, plus dialect, typo and code-mixed phrasing (ruleset 2026.10.1); held-out recall 71/71, benign false positives unchanged. CR-11/CR-20: lexicon scores now come from the highest-scoring sentence; one-sentence messages score as before | Smriti |
 | 2026-10-24 | CR-14: validating phrases widened from the per-style tone check ("I understand", "I acknowledge", "You mentioned", "I am glad to hear", "I hear that/how", "It is natural/common to", "It seems", "It might be that you feel", "…wonderful news", "It is wonderful that you"); "That is wonderful news" no longer counts as praise (owner's decision) | Smriti |
 | 2026-10-24 | CR-03: the help card's opening line loses "pick your country below" and now reads "If you feel like talking to someone in person, you do not have to go through this alone." (owner's decision) | Smriti |

@@ -75,7 +75,9 @@ class BoundedLLM:
             raise LLMFailure("busy")
         self._pending += 1
         try:
-            async with self._slots:
+            # The wait for a slot is bounded by the caller's request deadline; the generation
+            # timeout starts once the model is free, so a queued message is not cut short.
+            async with self._slots, asyncio.timeout(timeout_s):
                 return await self._inner.generate(
                     messages, max_tokens=max_tokens, timeout_s=timeout_s
                 )

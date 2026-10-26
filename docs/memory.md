@@ -10,10 +10,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 12 — bias evaluation** |
-| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5). 2026-10-13: Phase 7 approved by Smriti, including the manual-testing changes (DBT anger, exact exercise steps, companion after an exercise) and the closed known limits; merged (PR #6). 2026-10-22: Phase 8 approved by Smriti; merged (PR #7). 2026-10-23: Phase 9 approved by Smriti; merged (PR #8). 2026-10-24: Phase 10 approved by Smriti; merged (PR #9). 2026-10-25: Phase 11 approved by Smriti; merged (PR #10) |
-| In progress | Phase 12 on `phase-12-bias-eval` (from `main` at the Phase 11 merge) |
-| Next | Phase 13 (engagement and reliability), after Phase 12 approval |
+| Current phase | **Phase 13 — engagement and reliability** |
+| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5). 2026-10-13: Phase 7 approved by Smriti, including the manual-testing changes (DBT anger, exact exercise steps, companion after an exercise) and the closed known limits; merged (PR #6). 2026-10-22: Phase 8 approved by Smriti; merged (PR #7). 2026-10-23: Phase 9 approved by Smriti; merged (PR #8). 2026-10-24: Phase 10 approved by Smriti; merged (PR #9). 2026-10-25: Phase 11 approved by Smriti; merged (PR #10). 2026-10-26: Phase 12 approved by Smriti; merged (PR #11) |
+| In progress | Phase 13 on `phase-13-reliability` (from `main` at the Phase 12 merge) |
+| Next | Phase 14 (cost and access docs), after Phase 13 approval |
 | Blocked on | Nothing; open items 8-10 need Smriti but do not block Phase 5 |
 
 ### Environment notes (development machine, 2026-10-07)
@@ -144,6 +144,13 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-25 | Lexicon scores come from the highest-scoring sentence, with a leading "As a ...," / "At 68," clause scored apart (Smriti); explanations decompose that sentence | Rates per word let identity, family and festival words dilute scores: 63 demographic turn mismatches (anger, overwhelm). Sentence scoring keeps one-sentence messages unchanged (full suite passed untouched); a comma split changed calibration and broke a router test | Comma-level clauses; a fixed denominator; reporting only |
 | 2026-10-25 | Quality disparity thresholds (Smriti): words ±15% relative, VADER sentiment ±0.10, first drafts passing ±10 points, fallbacks ±5 points; help surfaced: any difference | Moderate: a 4B model's sampling noise alone moves these | Strict (±10%, ±0.05, ±5, ±2) |
 | 2026-10-25 | The decision plane is evaluated on the fake model only; the real model runs only the quality groups (standard, 7 dialects, 2 variants per demographic group) | Decisions never read the model's wording; the full grid would take hours on the laptop | Running every variant on the real model |
+| 2026-10-26 | Phase 12 squash-merged (PR #11) by request; Phase 13 branched from `main` (Smriti) | Same as Phases 4-11 | Branching from `phase-12-bias-eval` |
+| 2026-10-26 | Reference laptop for Phase 13 measurements: the development machine, AMD Ryzen 5 5500U (6 cores / 12 threads), 5.8 GB RAM, Windows 11, CPU only (Smriti; closes open item 7) | Every earlier measurement was made here, so the numbers compare | A separate machine |
+| 2026-10-26 | A saved conversation with no message for 90 days is deleted automatically through the existing erasure path; the notice says so (Smriti) | Bounds how long a conversation stranded by cleared site data stays on disk | A recovery code; documenting only |
+| 2026-10-26 | Usability checklist: heuristic review (Nielsen's 10, WCAG 2.2 AA) in the browser, small failures fixed in Phase 13, larger ones listed; no participants (O4) (Smriti) | Ethics approval is needed for participant testing | Report only |
+| 2026-10-26 | Load and latency are reported on the reference laptop with Chrome and other heavy apps closed (Smriti); the first runs with everything open had 0.2 GB free and the model paged to disk | A clean, repeatable figure for the cost profile | Reporting the busy desktop too |
+| 2026-10-26 | The generation timeout starts once the model is free; the wait for it is bounded by the request deadline (`BoundedLLM`); the app passes the bare client and the engine always wraps it | Load test: with one model slot, a message queued behind another lost most of its 20 s budget waiting; two sessions at once timed out | Raising the generation timeout |
+| 2026-10-26 | Sentence streaming stays out of v1 after measurement | First sentence 2.0 s sooner at the median, but the guard rejected 4 of 20 first drafts, which streaming would already have shown (`reliability.md`) | Streaming the first sentence |
 | 2026-10-13 | A companion reply to a thinking-trap message that fails twice gets the Socratic bank question for that trap, not the companion fallback (Smriti) | The design's reroute: validate the feeling, then one Socratic question | Companion fallback in every companion turn |
 | 2026-10-11 | Psychoeducation cue is a `psychoed` scorer in `cues.yaml` (no `psychoed/cues.py`); reading level is a stdlib Flesch-Kincaid check at startup (no `scripts/readability.py`) | Reuses the Phase 4 scorer; bad content fails at boot | Separate cue module; a printing script |
 | 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
@@ -162,7 +169,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 4. **Clinician reviewer** for `clinical_review.md`.
 5. **Ethics approval** route for any future usability testing with participants.
 6. **Optional PostgreSQL adapter** (Phase 14) — only if requested.
-7. **Reference laptop specs** (CPU, RAM, OS) for performance targets.
+7. ~~Reference laptop specs~~: resolved 2026-10-26, the development machine (Ryzen 5 5500U, 5.8 GB RAM).
 
 ---
 
@@ -170,7 +177,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | Item | Status |
 |---|---|
-| Real-model speed (first-token time, tokens/sec, RAM) | Not verified here — `scripts/model_bakeoff.py` to be run on the reference laptop |
+| Real-model speed (first-token time, tokens/sec, RAM) | Measured 2026-10-26 on the reference laptop (`docs/reports/reliability.md`): one session 8.8 s median warm, 20 s cold; first token 0.8 s; llama-server commits 4.1 GB but only 0.25 GB stays in RAM next to a desktop app |
 | Real-model reply + thinking disabled | Not verified here — `scripts/model_smoke_test.py` |
 | llama.cpp build pin | Pending the first bake-off run (record `llama-server --version`) |
 | Real-model tone (companion, guard, bias quality) | Not verified here |
@@ -190,7 +197,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | English-only; no fine-tuning; WEIRD-data caveat | By design for v1 |
 | Explanations with real-model replies | Not verified here (browser check ran with llama-server down, so replies were fallbacks); the explanation does not read the reply text |
 | Which words drove VADER valence | Not explained; valence enters the router explanation as one exact contribution |
-| Saved conversation in the browser | Key in localStorage (rules F5, 2026-10-24): anyone using the browser can open it; clearing site data strands it on disk until Phase 13 |
+| Saved conversation in the browser | Key in localStorage (rules F5, 2026-10-24): anyone using the browser can open it; clearing site data strands it on disk until it expires, 90 days after the last message (Phase 13) |
 | Erasure beyond SQLite | OS swap, SSD wear levelling and backups are outside OASIS; disk encryption recommended in the notice |
 | Real-model effect of each style | Measured 2026-10-24 (4 styles x 70 turns, `docs/reports/phase-11-tone-*.md`): gentle and formal followed, direct and casual weakly; formal fails `validate_first` more (phrase list) and good news under a style hits `no_praise` ("That is wonderful news"); both await Smriti |
 | Hedge list recall | Not measured (no labelled hedged set); fires on 2/104 labelled conversation turns, 0 suggestions in 24 conversations |
@@ -198,6 +205,8 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Dialect non-crisis decisions | Not invariant by decision (Smriti, 2026-10-25): 19-23 of 25 turns match standard English; screening offers missed (docs/reports/bias_eval.md) |
 | Identity stated mid-sentence | Still dilutes scores ("I'm a Sikh man and ...", "Being a single mum, ..."): 15 held-out turns differ |
 | Reply quality by group | One real-model run of 25 turns per group; standard English alone varied 50-68% first drafts passing and +0.08 to +0.20 sentiment over four runs, so gaps under about 20 points are not detectable here |
+| Queue depth | `llm_queue_limit` 4 is deeper than the 27 s deadline allows (about 9 s per warm reply): at 4+ sessions extra messages wait and time out instead of getting "busy" at once; 2 would fail faster, unconfirmed |
+| Timing tests on battery | The explanation latency test (20 ms) measured 33-39 ms unplugged on 2026-10-26, `main` included; it passes plugged in |
 | Guard checks outside English | `validate_first` lists English acknowledgements only: Spanglish first drafts 4-12% pass (retried, 0% fallbacks, longer waits) |
 
 ---
@@ -267,6 +276,12 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-25 | 12 | Safety evaluation after ruleset 2026.10.1 | Held-out 71/71, train 72/72, benign false positives unchanged; gate p99 5.6 ms (4.7 ms before) |
 | 2026-10-25 | 12 | Reply quality (real model, 25 turns per dialect, 50 per demographic group) | Demographic groups within standard's run-to-run spread (standard first drafts 68/59/50/55%, sentiment +0.08 to +0.20 over four runs); Spanglish first drafts 4% and 12% (`validate_first`, English-only), Taglish 32% and 24% shorter; help surfaced 0-16% in dialects vs 24% (decision plane) |
 | 2026-10-25 | 12 | Mutation spot-check | 10/14 at first (false handoffs in variant runs, conversations not compared, Spanish hair-cut exclusion; one equivalent); three tests added; 13/13 non-equivalent |
+| 2026-10-26 | 13 | Tests / coverage | 1619 passed, 0 skipped; 98.42% overall; safety 97.7%, assessment 97.8%, router 100%; verify all 8 steps pass |
+| 2026-10-26 | 13 | Everything except the model (fake model, 600 requests) | 10 / 12 / 18 ms p50 / p95 / p99 (target 150 ms p95) |
+| 2026-10-26 | 13 | Concurrent sessions, real model, quiet machine | Warm: 3 at once with every request served (slowest 26 s); cold: 2. Busy desktop after the queue fix: 2 / 3 / 4 sessions served 6/6, 8/9, 9/12 (5/6, 3/9, 2/12 before) |
+| 2026-10-26 | 13 | Streaming (measured, not built) | First token 0.8 s, first sentence 2.7 s, whole reply 5.1 s (p50); 4/20 first drafts rejected by the guard |
+| 2026-10-26 | 13 | Usability | 10 Nielsen heuristics and 9 WCAG 2.2 AA checks pass after five fixes; contrast 33/33 pairs (26 before) |
+| 2026-10-26 | 13 | Mutation spot-check | 14/15 at first (bare client not bounded: the app always passed it wrapped); the app now passes it bare; 15/15 |
 | 2026-10-22 | 9 | Mutation spot-check | 15/20 at first (negative score not clipped, button-turn test vacuous, unsorted keys, ID for an unsaved reply; one redundant ID check); four tests added, the check removed; 19/19 |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |
