@@ -17,3 +17,12 @@ def test_enter_does_not_send_while_a_reply_is_pending() -> None:
     handler = re.search(r'form\.addEventListener\("submit".*?\n\}\);', JS, re.DOTALL)
     assert handler is not None
     assert "sendButton.disabled" in handler.group(0)
+
+
+def test_escape_closes_the_help_card_and_returns_focus() -> None:
+    """The help card opens over the chat; Escape closes it and puts focus back on
+    "Need help now?" (WAI-ARIA disclosure used as a pop-up)."""
+    handler = re.search(r'"Escape".*?\n\}\);', JS, re.DOTALL)
+    assert handler is not None
+    assert "help.open = false" in handler.group(0)
+    assert 'help.querySelector("summary").focus()' in handler.group(0)
