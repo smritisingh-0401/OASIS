@@ -470,8 +470,12 @@ body {
 }
 
 @media (max-width: 520px) {
-  .top { flex-wrap: wrap; }
+  .top { flex-wrap: wrap; position: relative; }
   .pill, .help summary { padding: 7px 14px; }
+  /* The header wraps and "Need help now?" no longer sits at the right edge, so the card
+     spans the header instead of hanging off the pill (it ran off-screen at 375 px). */
+  .help { position: static; }
+  .help-card { left: 16px; right: 16px; width: auto; top: 100%; margin-top: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
