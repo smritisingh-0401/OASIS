@@ -194,6 +194,30 @@ def test_a_healthy_stub_gives_a_generated_reply(
 
 
 @pytest.mark.anyio
+async def test_waiting_for_the_model_does_not_eat_the_generation_budget(
+    settings: Settings, start_session: Callable[..., str]
+) -> None:
+    """Behind one other reply, a message still gets the whole generation timeout once the
+    model is free; only the request deadline bounds the wait (load test, Phase 13)."""
+    one = settings.model_copy(
+        update={"llm_max_concurrency": 1, "llm_queue_limit": 1, "llm_generate_timeout_s": 2.0,
+                "request_timeout_s": 6.0}
+    )  # fmt: skip
+    app = create_app(one, llm=FakeLLM(replies=[GOOD], delay_s=1.4))
+    with TestClient(app) as sync:
+        tokens = [start_session(sync), start_session(sync)]
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
+            body = {"message": "work has been rough this week", "client_ts": TS}
+            replies = await asyncio.gather(
+                *(c.post("/chat", json=body, headers={HEADER: t}) for t in tokens)
+            )
+    # The second waited ~1.4 s for the slot, then generated for ~1.4 s: 2.8 s in all, past
+    # the 2 s generation timeout but well inside the request deadline.
+    assert [r.json()["reply"] for r in replies] == [GOOD, GOOD]
+
+
+@pytest.mark.anyio
 async def test_queue_full_gets_the_busy_reply_at_once(
     settings: Settings, start_session: Callable[..., str]
 ) -> None:
