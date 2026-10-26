@@ -471,7 +471,8 @@ async function send(text, action) {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = input.value.trim();
-  if (!text) return;
+  // Enter submits even while Send is disabled; wait for the reply, keeping the text.
+  if (!text || sendButton.disabled) return;
   input.value = "";
   if (!(await sendText(text))) input.value = text;
   // Leave focus on the help card when a crisis reply has just moved it there.
