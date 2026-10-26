@@ -44,3 +44,19 @@ def test_small_controls_meet_the_24px_target_size() -> None:
     phone = _rule(".help-card a")
     assert "min-height: 24px" in phone
     assert "min-width: 24px" in phone
+
+
+def test_the_help_card_fits_a_phone_screen() -> None:
+    """At 375 px the card was anchored to the "Need help now?" pill, which sits left of the
+    settings button, so it ran 55 px off the left edge: the crisis lines were cut off.
+    On narrow screens it spans the header instead, 16 px from each side."""
+    narrow = re.search(r"@media \(max-width: 520px\) \{(.*?)\n\}", CSS, re.DOTALL)
+    assert narrow is not None
+    block = narrow.group(1)
+    card = re.search(r"\.help-card \{([^}]*)\}", block)
+    assert card is not None
+    assert "left: 16px" in card.group(1)
+    assert "right: 16px" in card.group(1)
+    assert "width: auto" in card.group(1)
+    assert re.search(r"\.help \{[^}]*position: static", block)
+    assert re.search(r"\.top \{[^}]*position: relative", block)
