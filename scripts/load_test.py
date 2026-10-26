@@ -14,8 +14,9 @@ overrides OASIS_LLM_URL. `--out FILE` writes the markdown as well as printing it
 - load: N sessions at once (N from `--levels`), each sending `--turns` messages one after
   another, the way people type. A request is served when it gets the model's reply, or a
   guard fallback, inside the request timeout; busy and timeout replies are not. The
-  concurrency limit reported is the largest N with every request served. RAM is the peak
-  resident memory of llama-server and of this process (the app) during the level.
+  concurrency limit reported is the largest N with every request served. RAM: llama-server's
+  peak resident and committed memory, this process's (the app's) peak, and the lowest free
+  system RAM during the level.
 - stream: the same pipeline with the model asked to stream; records when the first sentence
   arrived against the whole reply, and how often the guard rejected a first draft, which is
   text sentence streaming would already have shown.
