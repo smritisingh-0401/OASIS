@@ -73,6 +73,13 @@ help.addEventListener("toggle", () => {
   if (help.open) suggestCountry();
 });
 
+// The card opens over the chat: Escape closes it and returns focus to "Need help now?".
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || !help.open) return;
+  help.open = false;
+  help.querySelector("summary").focus();
+});
+
 function readToken() {
   try {
     return localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
