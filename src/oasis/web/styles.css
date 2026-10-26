@@ -187,7 +187,15 @@ body {
 .help-card li { margin: 4px 0; }
 .help-card .hours { color: var(--muted); font-size: 15px; }
 /* Darker than --accent: stays AA on the translucent card even over an orb. */
-.help-card a { color: #1e4aa8; font-weight: 600; }
+/* Phone numbers as 24 px targets (WCAG 2.2 2.5.8), even "15" or "112". */
+.help-card a {
+  color: #1e4aa8;
+  font-weight: 600;
+  display: inline-block;
+  min-width: 24px;
+  min-height: 24px;
+  text-align: center;
+}
 .help-fallback { font-weight: 600; }
 /* The full list: a plain link-like dropdown, its regions not indented a level further. */
 .help-card .all-countries > summary {
@@ -244,7 +252,13 @@ body {
 
 /* "Why this reply?" under each bot message: closed by default, text in --muted for AA. */
 .why { margin-top: 8px; font-size: 14px; color: var(--muted); }
-.why summary { cursor: pointer; font-weight: 600; color: var(--accent-deep); width: fit-content; }
+.why summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent-deep);
+  width: fit-content;
+  min-height: 24px;
+}
 .why ul { margin: 6px 0 0; padding-left: 20px; }
 .why li { margin: 2px 0; }
 .why .why-note { margin-top: 6px; font-style: italic; }
