@@ -22,7 +22,7 @@ from oasis.assessment.instruments import load_all as load_assessment_content
 from oasis.core.engine import ChatEngine
 from oasis.core.signals import load_all as load_signal_content
 from oasis.guard.checks import load_rules as load_reply_checks
-from oasis.llm.client import BoundedLLM, LLMClient
+from oasis.llm.client import LLMClient
 from oasis.llm.fake import FakeLLM
 from oasis.llm.llama_server import LlamaServerClient
 from oasis.psychoed.selector import load_all as load_psychoed
@@ -120,16 +120,12 @@ def create_app(
         (WEB_DIR / "settings.html").read_text(encoding="utf-8"), resources
     )
 
-    bounded = BoundedLLM(
-        llm or _default_llm(settings),
-        max_concurrency=settings.llm_max_concurrency,
-        queue_limit=settings.llm_queue_limit,
-    )
     # Each session is saved or ephemeral, chosen when it starts (FR-PRV-4).
     ephemeral = MemoryRepository(idle_timeout_s=settings.ephemeral_idle_timeout_s)
     store = SplitRepository(repo or _default_repo(settings), ephemeral)
-    engine = ChatEngine(safety=safety, llm=bounded, repo=store, settings=settings,
-                        consent_version=disclosure.version)  # fmt: skip
+    # The engine bounds the model client itself (BoundedLLM).
+    engine = ChatEngine(safety=safety, llm=llm or _default_llm(settings), repo=store,
+                        settings=settings, consent_version=disclosure.version)  # fmt: skip
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -139,7 +135,7 @@ def create_app(
         daily.cancel()
         with suppress(asyncio.CancelledError):
             await daily
-        await bounded.aclose()
+        await engine.llm.aclose()
         await store.close()
 
     app = FastAPI(

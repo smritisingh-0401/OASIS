@@ -130,16 +130,9 @@ class ChatEngine:
         consent_version: str | None = None,
     ) -> None:
         self.safety = safety
-        # Always bounded: the generation timeout lives in BoundedLLM (it starts once the
-        # model is free), so a bare client from a test or a script gets one too.
-        self.llm = (
-            llm
-            if isinstance(llm, BoundedLLM)
-            else BoundedLLM(
-                llm,
-                max_concurrency=settings.llm_max_concurrency,
-                queue_limit=settings.llm_queue_limit,
-            )
+        # The generation timeout lives in BoundedLLM (it starts once the model is free).
+        self.llm = BoundedLLM(
+            llm, max_concurrency=settings.llm_max_concurrency, queue_limit=settings.llm_queue_limit
         )
         self.repo = repo
         self.settings = settings
