@@ -27,7 +27,7 @@ from oasis.explain.builder import unavailable
 from oasis.guard.checks import SOFT_RULES
 from oasis.guard.checks import check as check_reply
 from oasis.guard.socratic import socratic_question
-from oasis.llm.client import LLMClient, LLMFailure, clean_reply
+from oasis.llm.client import BoundedLLM, LLMClient, LLMFailure, clean_reply
 from oasis.llm.prompt import build_messages
 from oasis.router.router import dump_state, load_state
 from oasis.safety.gate import SafetyGate, check_fail_closed
@@ -130,7 +130,17 @@ class ChatEngine:
         consent_version: str | None = None,
     ) -> None:
         self.safety = safety
-        self.llm = llm
+        # Always bounded: the generation timeout lives in BoundedLLM (it starts once the
+        # model is free), so a bare client from a test or a script gets one too.
+        self.llm = (
+            llm
+            if isinstance(llm, BoundedLLM)
+            else BoundedLLM(
+                llm,
+                max_concurrency=settings.llm_max_concurrency,
+                queue_limit=settings.llm_queue_limit,
+            )
+        )
         self.repo = repo
         self.settings = settings
         self.planner = planner
@@ -454,7 +464,9 @@ class ChatEngine:
             )
             budget = max(0.0, min(remaining, self.settings.llm_generate_timeout_s))
             try:
-                async with asyncio.timeout(budget):
+                # The request deadline; the model client applies `budget` to the generation
+                # itself, after any wait for the model (BoundedLLM).
+                async with asyncio.timeout(max(0.0, remaining)):
                     raw = await self.llm.generate(
                         messages, max_tokens=self.settings.llm_max_tokens, timeout_s=budget
                     )
