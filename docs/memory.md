@@ -145,6 +145,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-25 | Quality disparity thresholds (Smriti): words ±15% relative, VADER sentiment ±0.10, first drafts passing ±10 points, fallbacks ±5 points; help surfaced: any difference | Moderate: a 4B model's sampling noise alone moves these | Strict (±10%, ±0.05, ±5, ±2) |
 | 2026-10-25 | The decision plane is evaluated on the fake model only; the real model runs only the quality groups (standard, 7 dialects, 2 variants per demographic group) | Decisions never read the model's wording; the full grid would take hours on the laptop | Running every variant on the real model |
 | 2026-10-26 | Phase 12 squash-merged (PR #11) by request; Phase 13 branched from `main` (Smriti) | Same as Phases 4-11 | Branching from `phase-12-bias-eval` |
+| 2026-10-26 | Reference laptop for Phase 13 measurements: the development machine, AMD Ryzen 5 5500U (6 cores / 12 threads), 5.8 GB RAM, Windows 11, CPU only (Smriti; closes open item 7) | Every earlier measurement was made here, so the numbers compare | A separate machine |
+| 2026-10-26 | A saved conversation with no message for 90 days is deleted automatically through the existing erasure path; the notice says so (Smriti) | Bounds how long a conversation stranded by cleared site data stays on disk | A recovery code; documenting only |
+| 2026-10-26 | Usability checklist: heuristic review (Nielsen's 10, WCAG 2.2 AA) in the browser, small failures fixed in Phase 13, larger ones listed; no participants (O4) (Smriti) | Ethics approval is needed for participant testing | Report only |
+| 2026-10-26 | Load and latency are reported on the reference laptop with Chrome and other heavy apps closed (Smriti); the first runs with everything open had 0.2 GB free and the model paged to disk | A clean, repeatable figure for the cost profile | Reporting the busy desktop too |
+| 2026-10-26 | The generation timeout starts once the model is free; the wait for it is bounded by the request deadline (`BoundedLLM`), and the engine wraps any bare client | Load test: with one model slot, a message queued behind another lost most of its 20 s budget waiting; two sessions at once timed out | Raising the generation timeout |
 | 2026-10-13 | A companion reply to a thinking-trap message that fails twice gets the Socratic bank question for that trap, not the companion fallback (Smriti) | The design's reroute: validate the feeling, then one Socratic question | Companion fallback in every companion turn |
 | 2026-10-11 | Psychoeducation cue is a `psychoed` scorer in `cues.yaml` (no `psychoed/cues.py`); reading level is a stdlib Flesch-Kincaid check at startup (no `scripts/readability.py`) | Reuses the Phase 4 scorer; bad content fails at boot | Separate cue module; a printing script |
 | 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
@@ -163,7 +168,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 4. **Clinician reviewer** for `clinical_review.md`.
 5. **Ethics approval** route for any future usability testing with participants.
 6. **Optional PostgreSQL adapter** (Phase 14) — only if requested.
-7. **Reference laptop specs** (CPU, RAM, OS) for performance targets.
+7. ~~Reference laptop specs~~: resolved 2026-10-26, the development machine (Ryzen 5 5500U, 5.8 GB RAM).
 
 ---
 
