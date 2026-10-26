@@ -62,8 +62,9 @@ A fresh-machine install guide is verified in Phase 14.
 | 9 — Explainability | Approved |
 | 10 — Privacy and autonomy | Approved ([report](docs/reports/phase-10.md)) |
 | 11 — Cultural adaptation | Approved ([report](docs/reports/phase-11.md)) |
-| 12 — Bias evaluation | In progress |
-| 13–14 | Not started |
+| 12 — Bias evaluation | Approved ([report](docs/reports/phase-12.md)) |
+| 13 — Engagement and reliability | In progress |
+| 14 | Not started |
 
 See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 
