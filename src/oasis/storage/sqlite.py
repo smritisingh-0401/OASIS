@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 import sqlite3
 import threading
@@ -21,6 +22,7 @@ from oasis.storage.repository import (
     StorageUnavailable,
     UserSettings,
     utc_now,
+    utc_stamp,
 )
 from oasis.types import (
     AssessmentRecord,
@@ -384,6 +386,17 @@ class SQLiteRepository:
                 raise sqlite3.IntegrityError("session not found for user")
 
         await self._run(op)
+
+    async def idle_users(self, before: datetime.datetime) -> list[str]:
+        def op(conn: sqlite3.Connection) -> list[str]:
+            rows = conn.execute(
+                "SELECT user_id FROM sessions GROUP BY user_id HAVING MAX(last_seen_at) < ?"
+                " ORDER BY MAX(last_seen_at)",
+                (utc_stamp(before),),
+            ).fetchall()
+            return [user_id for (user_id,) in rows]
+
+        return await self._run(op)
 
     async def list_signals(self, user_id: str) -> list[SignalRecord]:
         def op(conn: sqlite3.Connection) -> list[SignalRecord]:

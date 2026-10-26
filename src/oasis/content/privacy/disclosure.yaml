@@ -4,7 +4,7 @@
 # of the crisis paragraph (CR-23).
 schema: oasis.content/v1
 kind: disclosure
-version: "2"  # 2 (2026-10-24): a saved conversation is reopened from this browser (rules F5)
+version: "3"  # 2 (2026-10-24): reopened from this browser (rules F5); 3 (2026-10-26): 90-day expiry
 review_status: needs_clinician_review
 title: "Before you start"
 # The first sections are always shown; the rest sit under a "Read more" dropdown (a native
@@ -32,4 +32,4 @@ sections:
       - "No one else. Nothing is sent over the internet: the page, the language model and the saved file all stay on this computer, and OASIS's logs never contain your words. Anyone who can open this computer's files could read a saved conversation, so use a computer you trust; turning on disk encryption helps."
   - heading: "Your choices"
     paragraphs:
-      - "In Settings you can export everything kept about you as a file, and delete it all at any time. Deleting removes your conversation, answers and trend, overwrites the space they used, and cannot be undone. Saved data is otherwise kept until you delete it."
+      - "In Settings you can export everything kept about you as a file, and delete it all at any time. Deleting removes your conversation, answers and trend, overwrites the space they used, and cannot be undone. Otherwise a saved conversation is kept until you delete it, or until 90 days without a message, when OASIS deletes it the same way."

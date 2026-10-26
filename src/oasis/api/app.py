@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
+import datetime
+import logging
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -30,11 +33,13 @@ from oasis.safety.resources import Resources, load_resources
 from oasis.safety.rules import load_ruleset
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
-from oasis.storage.repository import Repository
+from oasis.storage.repository import Repository, StorageError
 from oasis.storage.split import SplitRepository
 from oasis.storage.sqlite import SQLiteRepository
 from oasis.style.framing import load_framing
 from oasis.tracking.features import load_config as load_tracking
+
+log = logging.getLogger("oasis.app")
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
@@ -59,6 +64,29 @@ def _default_repo(settings: Settings) -> Repository:
     if settings.storage_backend == "memory":
         return MemoryRepository()
     return SQLiteRepository(settings.db_path, busy_timeout_ms=settings.sqlite_busy_timeout_ms)
+
+
+async def expire_idle(repo: Repository, days: int) -> int:
+    """Delete saved conversations with no message for `days` days, through the same erasure
+    as the Delete button (Phase 13, data notice). Storage trouble is logged and retried on
+    the next run; it never stops OASIS starting. Returns how many were deleted."""
+    cutoff = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=days)
+    deleted = 0
+    try:
+        for user_id in await repo.idle_users(cutoff):
+            await repo.delete_user(user_id)
+            deleted += 1
+    except StorageError as exc:
+        log.error("expiry incomplete: %s", type(exc).__name__)
+    if deleted:
+        log.info("expired %d saved conversations", deleted)  # a count, never an ID
+    return deleted
+
+
+async def _every_day(repo: Repository, days: int) -> None:
+    while True:
+        await asyncio.sleep(24 * 3600)
+        await expire_idle(repo, days)
 
 
 def create_app(
@@ -105,7 +133,12 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        await expire_idle(store, settings.saved_idle_expiry_days)
+        daily = asyncio.create_task(_every_day(store, settings.saved_idle_expiry_days))
         yield
+        daily.cancel()
+        with suppress(asyncio.CancelledError):
+            await daily
         await bounded.aclose()
         await store.close()
 

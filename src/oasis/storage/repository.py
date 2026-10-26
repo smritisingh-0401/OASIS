@@ -139,10 +139,20 @@ class Repository(Protocol):
         """Remove the user and everything stored about them; unknown users are a no-op."""
         ...
 
+    async def idle_users(self, before: datetime) -> list[str]:
+        """Users with no message in any session since `before`, least recent first (saved
+        conversations expire after a quiet spell, Phase 13)."""
+        ...
+
     async def ping(self) -> bool: ...
 
     async def close(self) -> None: ...
 
 
+def utc_stamp(at: datetime) -> str:
+    """The stored timestamp format: UTC, milliseconds, "Z"; ordered like the times."""
+    return at.astimezone(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
 def utc_now() -> str:
-    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return utc_stamp(datetime.now(UTC))

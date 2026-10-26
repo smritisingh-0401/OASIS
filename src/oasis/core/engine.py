@@ -395,6 +395,16 @@ class ChatEngine:
         type only; it can never affect the reply, which has already gone out.
         """
         try:
+            # Bounded, so storage that never answers cannot hold this task forever.
+            async with asyncio.timeout(self.settings.request_timeout_s):
+                await self._record_crisis(session_hash, verdict, escalated)
+        except TimeoutError:
+            log.error("crisis record timed out")
+
+    async def _record_crisis(
+        self, session_hash: str, verdict: SafetyVerdict, escalated: AssessmentRecord | None
+    ) -> None:
+        try:
             session = await self.repo.get_session(session_hash)
             if session is None:
                 return

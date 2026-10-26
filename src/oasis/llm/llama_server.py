@@ -42,7 +42,9 @@ class LlamaServerClient:
         timeout = httpx.Timeout(timeout_s, connect=self._connect_timeout_s)
         try:
             resp = await self._http.post("/v1/chat/completions", json=payload, timeout=timeout)
-        except httpx.ConnectError:
+        # A refused connection can surface as a connect timeout (Windows retries before it
+        # gives up): either way the model process is not there.
+        except (httpx.ConnectError, httpx.ConnectTimeout):
             raise LLMFailure("down") from None
         except httpx.TimeoutException:
             raise LLMFailure("timeout") from None

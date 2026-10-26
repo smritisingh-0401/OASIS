@@ -387,7 +387,10 @@ def test_a_stuck_turn_still_hands_off_a_crisis(settings: Settings) -> None:
     fast = settings.model_copy(update={"request_timeout_s": 1.0})
     with TestClient(create_app(fast, llm=FakeLLM(), repo=StuckRepo())) as c:
         resp, elapsed = _turn(c, "any-token", "I want to kill myself")
-    assert _assert_answered(resp, elapsed, fast)["reply"] == HANDOFF_REPLY
+    # The test client also waits for the bookkeeping that runs after the handoff is sent,
+    # which gives up after the request timeout; a real server sends the handoff first.
+    bound = fast.model_copy(update={"request_timeout_s": 2 * fast.request_timeout_s + 1.0})
+    assert _assert_answered(resp, elapsed, bound)["reply"] == HANDOFF_REPLY
 
 
 @pytest.mark.anyio
