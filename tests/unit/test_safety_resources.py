@@ -47,6 +47,14 @@ def test_well_known_emergency_numbers(code: str, number: str) -> None:
     assert any(number in e.numbers for e in BY_CODE[code].emergency)
 
 
+def test_sweden_line_states_its_hours_from_its_own_site() -> None:
+    """Open item 8: hours confirmed on mind.se on 2026-10-27."""
+    (line,) = BY_CODE["SE"].lines
+    assert line.phones == ("90101",)
+    assert line.hours == "24/7, free"
+    assert line.source.startswith("https://mind.se/")
+
+
 @pytest.mark.parametrize(
     ("raw", "dial"),
     [("13 11 14", "131114"), ("+603-7627 2929", "+60376272929"), ("16000 (option 4)", "16000"),
