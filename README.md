@@ -140,7 +140,7 @@ Compare candidate models with `scripts/model_bakeoff.py`. `scripts/bias_eval.py`
 | 11 — Cultural adaptation | Approved ([report](docs/reports/phase-11.md)) |
 | 12 — Bias evaluation | Approved ([report](docs/reports/phase-12.md)) |
 | 13 — Engagement and reliability | Approved ([report](docs/reports/phase-13.md)) |
-| 14 — Cost and access | In progress ([report](docs/reports/phase-14.md)) |
+| 14 — Cost and access | Approved ([report](docs/reports/phase-14.md)) |
 
 See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 

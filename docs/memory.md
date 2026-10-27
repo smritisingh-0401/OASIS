@@ -10,10 +10,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 14 — cost and access** |
-| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5). 2026-10-13: Phase 7 approved by Smriti, including the manual-testing changes (DBT anger, exact exercise steps, companion after an exercise) and the closed known limits; merged (PR #6). 2026-10-22: Phase 8 approved by Smriti; merged (PR #7). 2026-10-23: Phase 9 approved by Smriti; merged (PR #8). 2026-10-24: Phase 10 approved by Smriti; merged (PR #9). 2026-10-25: Phase 11 approved by Smriti; merged (PR #10). 2026-10-26: Phase 12 approved by Smriti; merged (PR #11). 2026-10-26: Phase 13 merged (PR #12) |
-| In progress | Phase 14 on `phase-14-cost-access` (from `main` at the Phase 13 merge) |
-| Next | Smriti's approval of Phase 14; it is the last phase of the build plan |
+| Current phase | **Build plan complete** (Phases 1-14) |
+| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5). 2026-10-13: Phase 7 approved by Smriti, including the manual-testing changes (DBT anger, exact exercise steps, companion after an exercise) and the closed known limits; merged (PR #6). 2026-10-22: Phase 8 approved by Smriti; merged (PR #7). 2026-10-23: Phase 9 approved by Smriti; merged (PR #8). 2026-10-24: Phase 10 approved by Smriti; merged (PR #9). 2026-10-25: Phase 11 approved by Smriti; merged (PR #10). 2026-10-26: Phase 12 approved by Smriti; merged (PR #11). 2026-10-26: Phase 13 merged (PR #12). 2026-10-27: Phase 14 approved by Smriti; merged (PR #13) |
+| In progress | Nothing |
+| Next | No phase planned; open items 3-5 and 8-10 before any real use |
 | Blocked on | Nothing; open items 3-5 and 8-10 need Smriti before any real use |
 
 ### Environment notes (development machine, 2026-10-07)
