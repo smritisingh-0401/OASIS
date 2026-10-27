@@ -156,6 +156,9 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-27 | `llm_queue_limit` default 4 → 2 (Smriti) | Second load run: at 4-8 sessions, 26/54 served and 1 timeout against 20/54 and 22; the extra messages get "busy" at once instead of a 27 s wait (`docs/reports/phase-14.md`) | Keeping 4 |
 | 2026-10-27 | Diagram exports by a pinned mermaid-cli (11.17.0) through `npx`, rendered with the installed Chrome or Edge; SVG and PNG committed in `docs/images/` (Smriti) | A docs-only Node tool, not a Python dependency; skipping puppeteer's browser download keeps it to the npm package | A Python renderer; a web rendering service (sends the diagrams out) |
 | 2026-10-27 | Install guide runs llama-server with `-hf unsloth/Qwen3.5-4B-GGUF:Q4_K_M --no-mmproj -ngl 0` | `-hf` downloads the model in one line; without `--no-mmproj` it also fetches a 0.68 GB vision projector OASIS never uses; the Vulkan build failed to load the model on the integrated graphics | A separate download step; GPU offload |
+| 2026-10-27 | Repository licence MIT, copyright Smriti Singh (Smriti; closes open item 3 and PRD O1) | Shortest permissive licence; reuse is the point of a public portfolio project | Apache-2.0 (patent grant, NOTICE); AGPL-3.0 |
+| 2026-10-27 | Self-harm without suicidal intent keeps the full crisis handoff and post-crisis mode (Smriti; closes open item 9) | Safe default until clinician review: over-referring costs less than a miss | A softer self-harm reply without post-crisis mode |
+| 2026-10-27 | Fresh held-out crisis set in two stages: phrases written blind by people outside the project, then a published research dataset under a data-use agreement and ethics approval (Smriti) | People are free and quick; a research dataset is more realistic but needs approvals | Waiting for the clinician |
 | 2026-10-13 | A companion reply to a thinking-trap message that fails twice gets the Socratic bank question for that trap, not the companion fallback (Smriti) | The design's reroute: validate the feeling, then one Socratic question | Companion fallback in every companion turn |
 | 2026-10-11 | Psychoeducation cue is a `psychoed` scorer in `cues.yaml` (no `psychoed/cues.py`); reading level is a stdlib Flesch-Kincaid check at startup (no `scripts/readability.py`) | Reuses the Phase 4 scorer; bad content fails at boot | Separate cue module; a printing script |
 | 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
@@ -165,12 +168,12 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 ## Open items / questions for Smriti
 
-8. **Browser check of crisis lines** that could not be fetched here, to promote them to Tier 1: Philippines NCMH 1553, Chile *4141, Colombia 192 option 4, Pakistan Umang, and Sweden's Mind line hours.
-9. **Confirm the `self_harm` tier** (CR-01).
-10. **A fresh external held-out phrase set**: the Phase 2 held-out set was used for tuning and is now consumed.
+8. **Browser check of crisis lines** that could not be fetched here, to promote them to Tier 1: Philippines NCMH 1553, Chile *4141, Colombia 192 option 4, Pakistan Umang, and Sweden's Mind line hours. 2026-10-27: NCMH 1553, 24/7, confirmed on a DOH page (caro.doh.gov.ph), but as toll-free by landline, Luzon-wide; the nationwide and mobile numbers are on the NCMH contact page. Sweden: already Tier 1 (90 101); its hours, 24/7 every day, free apart from the operator's connection fee, confirmed on mind.se and added (resources 2026.10.1, CR-04). Chile *4141: minsal.cl blocks this network outright and gob.cl, pia.gov.ph and ncmh.gov.ph stay on a bot check, even in a normal Chrome; needs another network or someone in-country. Colombia 192 option 4: official sources only from 2020-21, current status unconfirmed. Umang: sources disagree on the number and umang.com.pk did not resolve; keep Tier 2.
+9. ~~Confirm the `self_harm` tier~~: resolved 2026-10-27, kept: self-harm gets the full handoff; still flagged for the clinician (CR-01).
+10. **A fresh external held-out phrase set**: the Phase 2 held-out set was used for tuning and is now consumed. Plan (2026-10-27): first, 2-3 people outside the project write crisis and everyday messages blind (about 100 each), run once and never tuned on; second, a published research dataset once a data-use agreement and ethics approval (item 5) allow it.
 11. ~~Saved conversations after the tab closes~~: resolved 2026-10-24, the saved session's key is kept in `localStorage` (rules F5 changed).
 2. **Python 3.12 and uv** need installing on the development machine.
-3. **Repository licence** (e.g. MIT, Apache-2.0).
+3. ~~Repository licence~~: resolved 2026-10-27, MIT (`LICENSE`).
 4. **Clinician reviewer** for `clinical_review.md`.
 5. **Ethics approval** route for any future usability testing with participants.
 6. ~~Optional PostgreSQL adapter~~: resolved 2026-10-27, not built.

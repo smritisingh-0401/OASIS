@@ -160,4 +160,4 @@ See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 
 ## Licence
 
-_To be decided._
+MIT ([LICENSE](LICENSE)). The licence covers the code; it does not make OASIS fit for clinical use (see Limitations).

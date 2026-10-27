@@ -234,7 +234,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 ## 11. Open items
 | # | Item | Owner | Needed by |
 |---|---|---|---|
-| O1 | Open-source licence choice for the repository | Smriti | Before first public push |
+| O1 | Open-source licence choice for the repository: MIT (2026-10-27) | Smriti | Done |
 | O2 | Crisis resource list — two tiers decided 2026-10-07; built in Phase 2 as 40 Tier 1 countries with a verified crisis line and 184 Tier 2 countries and territories with the emergency number (target was 64 Tier 1; the rest could not be verified on an official site); originally India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia); numbers verified against official sources at build time | Build | Phase 2 |
 | O3 | Qualified clinician reviewer for [clinical_review.md](clinical_review.md) | Smriti | Before any real use |
 | O4 | Institutional ethics approval for any human-participant testing | Smriti | Before usability testing with participants |
