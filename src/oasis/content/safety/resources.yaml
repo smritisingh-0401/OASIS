@@ -8,7 +8,7 @@
 # carry an `emergency_note` instead. No unverified number is ever shipped (design §2.4).
 schema: oasis.content/v1
 kind: crisis_resources
-version: 2026.10.0
+version: 2026.10.1
 review_status: needs_clinician_review
 regions:
 - South Asia
@@ -1475,9 +1475,10 @@ countries:
   - name: Mind Självmordslinjen
     phones:
     - '90101'
+    hours: 24/7, free
     url: https://mind.se/
-    source: https://www.1177.se/sjukdomar--besvar/psykiska-sjukdomar-och-besvar/sjalvmordstankar/till-dig-som-har-sjalvmordstankar/
-    verified_on: 2026-10-08
+    source: https://mind.se/stod-kunskap/prata-eller-chatta-med-volontar/sjalvmordslinjen/
+    verified_on: 2026-10-27
 - code: CH
   name: Switzerland
   region: Europe
