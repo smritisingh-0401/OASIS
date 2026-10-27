@@ -5,6 +5,7 @@
 | Status | Approved design, documented in Step A |
 | Last updated | 2026-10-07 |
 | Source diagrams | [images/architecture_v2.png](images/architecture_v2.png), [images/data_flow.png](images/data_flow.png) |
+| Report exports | SVG and PNG of each Mermaid diagram in `images/architecture-*` and `images/design-*`, made by `scripts/export_diagrams.py` |
 
 **Principle:** *a rule-based decision plane plans each reply; the LLM only phrases it.* Safety decides before the LLM ever runs; any failure falls back to a templated reply.
 
@@ -243,7 +244,7 @@ flowchart LR
 | `llm_connect_timeout_s` | 1.0 | Fast detection of a dead model process |
 | `llm_generate_timeout_s` | 20 | Per-generation read timeout |
 | `llm_max_concurrency` | 1 | Requests in flight to `llama-server` |
-| `llm_queue_limit` | 4 | Waiting requests; beyond this → immediate "busy" templated reply |
+| `llm_queue_limit` | 2 | Waiting requests; beyond this → immediate "busy" templated reply |
 | `llm_max_tokens` | 160 | ~150-token reply cap |
 | `guard_retry_min_budget_s` | 8 | Skip the retry if less time remains; use the fallback |
 | `safety_budget_ms` | 10 | p99 target (measured, not enforced) |

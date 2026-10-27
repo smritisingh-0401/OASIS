@@ -20,21 +20,89 @@ A review of 97 studies (16,620 participants) on mental health chatbots identifie
 - **Your style** — Settings sets how direct and how formal replies are; it changes the wording only, never what OASIS does, and is never guessed from how you write.
 - **Free to run** — quantised open model on a CPU laptop; no paid API.
 
-## Quick start (development)
+## Install
 
 > Development only. The safety content, clinical wording and data notice await clinician and legal review ([docs/clinical_review.md](docs/clinical_review.md)). Use test messages only.
 
-Requires [uv](https://docs.astral.sh/uv/). uv installs Python 3.12 itself.
+### What you need
+
+| | Minimum | Measured on |
+|---|---|---|
+| Computer | Any 64-bit Windows, macOS or Linux laptop; no GPU | AMD Ryzen 5 5500U (6 cores), Windows 11 |
+| Memory | 8 GB RAM for the real model; 6 GB works with no other large app open, but slowly | 5.8 GB |
+| Disk | 3.2 GB: model 2.7 GB, Python and packages about 0.4 GB | |
+| Network | Only to install; OASIS makes no network request while it runs | |
+| Cost | Nothing: free software and an open model, no account, no paid API | |
+
+Measured cost and speed: [docs/reports/phase-14.md](docs/reports/phase-14.md).
+
+### 1. Install the tools
+
+[uv](https://docs.astral.sh/uv/) installs Python 3.12 and every package. Install [Git](https://git-scm.com/downloads) too if it is missing.
+
+Windows (PowerShell):
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+macOS or Linux:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Open a new terminal afterwards so `uv` is on the path.
+
+### 2. Get OASIS and run it with the stand-in model
+
+```bash
+git clone https://github.com/smritisingh-0401/OASIS.git
+```
+
+```bash
+cd OASIS
+```
 
 ```bash
 uv sync
+```
+
+```bash
 cp .env.example .env
+```
+
+```bash
 uv run uvicorn oasis.api.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Open http://127.0.0.1:8000, read the data notice and choose **Save on this computer** or **Start without saving**. With `OASIS_LLM_BACKEND=fake` (the `.env.example` default), replies come from a deterministic stand-in model.
+Open http://127.0.0.1:8000, read the data notice and choose **Save on this computer** or **Start without saving**. With `OASIS_LLM_BACKEND=fake` (the `.env.example` default), replies come from a deterministic stand-in model, so everything except the wording of replies works without the model.
 
 Saved conversations live in `data/oasis.db` (`OASIS_DB_PATH`); the browser keeps only the session key, so anyone using the same browser can reopen a saved conversation. Unsaved conversations stay in memory and are forgotten after two hours idle or on restart. Export and delete are under the gear icon (Settings).
+
+### 3. Add the real model
+
+Install llama.cpp (built and tested with build 11552, commit `23b0202a1`):
+
+```bash
+winget install ggml.llamacpp
+```
+
+On macOS or Linux, `brew install llama.cpp` instead. Then start the model server in its own terminal. The first start downloads the model (2.7 GB) from Hugging Face; later starts use the copy on disk:
+
+```bash
+llama-server -hf unsloth/Qwen3.5-4B-GGUF:Q4_K_M --no-mmproj --jinja -c 4096 -np 1 -ngl 0 --host 127.0.0.1 --port 8080
+```
+
+`-ngl 0` keeps the model on the CPU; integrated graphics on small laptops run out of memory loading it. In `.env`, set `OASIS_LLM_BACKEND=llama_server`, restart OASIS, and check the model with:
+
+```bash
+uv run python scripts/model_smoke_test.py
+```
+
+A reply takes about 5-10 s with the model warm, and about 20 s for the first one after the model has been idle or other apps have pushed it out of memory. Close large apps such as a web browser with many tabs for the best speed.
+
+### Developer checks
 
 Run every check (lint, types, import rules, security scan, dependency audit, tests with coverage):
 
@@ -42,9 +110,17 @@ Run every check (lint, types, import rules, security scan, dependency audit, tes
 uv run python scripts/verify.py
 ```
 
-**Real model (optional):** start a pinned llama.cpp `llama-server` with `--jinja`, set `OASIS_LLM_BACKEND=llama_server`, then run `uv run python scripts/model_smoke_test.py`. Compare candidate models with `scripts/model_bakeoff.py`. `scripts/bias_eval.py` runs the bias evaluation (`--fake` for the decision plane only).
+Compare candidate models with `scripts/model_bakeoff.py`. `scripts/bias_eval.py` runs the bias evaluation (`--fake` for the decision plane only). `scripts/load_test.py` measures speed and concurrency. `scripts/licences.py` regenerates [docs/licences.md](docs/licences.md); `scripts/export_diagrams.py` exports the diagrams for reports (needs Node.js).
 
-A fresh-machine install guide is verified in Phase 14.
+## Limitations
+
+- **Not a clinical tool.** No diagnosis, no medication advice, not an emergency service. The safety patterns, crisis policy and clinical wording await review by a qualified clinician ([docs/clinical_review.md](docs/clinical_review.md)); the data notice awaits legal review.
+- **English only.** Safety patterns, questionnaires, exercises and prompts are English. Crisis detection is tested on English varieties (British, AAVE, Indian English, Nigerian Pidgin, Hinglish, Spanglish, Taglish), but a crisis written in another language is not detected.
+- **No fine-tuning.** OASIS uses an off-the-shelf model. Its style setting changes how replies are framed, not what the model learnt.
+- **WEIRD-data caveat.** The techniques, questionnaires, detector word lists and the model's training data come mostly from Western, educated, industrialised, rich, democratic populations. The style setting adjusts directness and formality only, and the bias evaluation checks that decisions do not change with dialect, names or identity ([docs/reports/bias_eval.md](docs/reports/bias_eval.md)); neither makes OASIS culturally validated anywhere.
+- **One person at a time.** It is built for one person on their own laptop. On the reference laptop two or three people at once still get every reply, but slowly; beyond that, messages time out and get a templated reply ([docs/reports/phase-14.md](docs/reports/phase-14.md)).
+- **Crisis numbers** were verified in October 2026 and need re-checking before any real use.
+- **Saved conversations** are as private as the computer: anyone using the same browser can reopen one, and full-disk encryption is recommended.
 
 ## Project status
 
@@ -63,8 +139,8 @@ A fresh-machine install guide is verified in Phase 14.
 | 10 — Privacy and autonomy | Approved ([report](docs/reports/phase-10.md)) |
 | 11 — Cultural adaptation | Approved ([report](docs/reports/phase-11.md)) |
 | 12 — Bias evaluation | Approved ([report](docs/reports/phase-12.md)) |
-| 13 — Engagement and reliability | In progress |
-| 14 | Not started |
+| 13 — Engagement and reliability | Approved ([report](docs/reports/phase-13.md)) |
+| 14 — Cost and access | Approved ([report](docs/reports/phase-14.md)) |
 
 See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 
@@ -80,6 +156,7 @@ See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 | [docs/memory.md](docs/memory.md) | Project memory and decision log |
 | [docs/clinical_review.md](docs/clinical_review.md) | Items awaiting clinician review |
 | [docs/reports/](docs/reports/) | Per-phase reports: design, evaluation, measured results, known limits |
+| [docs/licences.md](docs/licences.md) | Licences of everything OASIS runs |
 
 ## Licence
 

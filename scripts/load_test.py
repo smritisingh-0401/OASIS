@@ -126,16 +126,6 @@ def settings_for(args: argparse.Namespace, db: pathlib.Path) -> Settings:
     return s.model_copy(update={"llm_url": args.url}) if args.url else s
 
 
-def real_llm(s: Settings) -> LlamaServerClient:
-    return LlamaServerClient(
-        base_url=s.llm_url,
-        model=s.llm_model,
-        connect_timeout_s=s.llm_connect_timeout_s,
-        sampling={"temperature": s.llm_temperature, "top_p": s.llm_top_p,
-                  "top_k": s.llm_top_k, "min_p": s.llm_min_p},
-    )  # fmt: skip
-
-
 def machine() -> str:
     mem = psutil.virtual_memory().total / 2**30
     return (
@@ -210,7 +200,7 @@ async def load(args: argparse.Namespace, traces: Traces, db: pathlib.Path) -> li
         "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     limit = 0
-    async with client(s, real_llm(s)) as c:
+    async with client(s, LlamaServerClient.from_settings(s)) as c:
         await send(c, await session(c), MESSAGES[0], traces)  # load the model, not counted
         for n in args.levels:
             rss = RSS()

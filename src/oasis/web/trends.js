@@ -4,7 +4,6 @@
 // sent only in the X-OASIS-Session header (rules P3, F5). All text goes in with textContent
 // (rules F4); the charts are plain SVG built here, with no outside requests.
 
-const SESSION_KEY = "oasis.session";
 // The SVG namespace, read from an <svg> the HTML parser already made, so no URL-like
 // string appears in the page's code (see the no-external-requests test).
 const SVG = document.querySelector(".chart svg").namespaceURI;
@@ -28,15 +27,6 @@ const NAMES = {
 };
 
 const status = document.getElementById("trend-status");
-
-// A saved session's key is in localStorage, an unsaved one's in sessionStorage (rules F5).
-function readToken() {
-  try {
-    return localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
-  } catch {
-    return null;
-  }
-}
 
 function svg(tag, attrs) {
   const node = document.createElementNS(SVG, tag);
@@ -141,7 +131,7 @@ async function load() {
     return;
   }
   try {
-    const resp = await fetch("/trends", { headers: { "X-OASIS-Session": token } });
+    const resp = await api("/trends");
     if (resp.status === 401) {
       status.textContent = "Start a conversation first, then come back here.";
       return;

@@ -361,17 +361,7 @@ async def main(url: str, fake: bool, per_group: int) -> list[str] | None:
     model = "decision plane only (fake model)"
     if not fake:
         s = Settings()
-        llm = LlamaServerClient(
-            base_url=url,
-            model=s.llm_model,
-            connect_timeout_s=s.llm_connect_timeout_s,
-            sampling={
-                "temperature": s.llm_temperature,
-                "top_p": s.llm_top_p,
-                "top_k": s.llm_top_k,
-                "min_p": s.llm_min_p,
-            },
-        )
+        llm = LlamaServerClient.from_settings(s, url)
         if not await llm.health():
             print(f"FAIL: llama-server not healthy at {url}")
             await llm.aclose()

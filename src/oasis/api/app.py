@@ -47,17 +47,7 @@ WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 def _default_llm(settings: Settings) -> LLMClient:
     if settings.llm_backend == "fake":
         return FakeLLM()
-    return LlamaServerClient(
-        base_url=settings.llm_url,
-        model=settings.llm_model,
-        connect_timeout_s=settings.llm_connect_timeout_s,
-        sampling={
-            "temperature": settings.llm_temperature,
-            "top_p": settings.llm_top_p,
-            "top_k": settings.llm_top_k,
-            "min_p": settings.llm_min_p,
-        },
-    )
+    return LlamaServerClient.from_settings(settings)
 
 
 def _default_repo(settings: Settings) -> Repository:

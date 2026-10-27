@@ -10,11 +10,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 
 | | |
 |---|---|
-| Current phase | **Phase 13 — engagement and reliability** |
-| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5). 2026-10-13: Phase 7 approved by Smriti, including the manual-testing changes (DBT anger, exact exercise steps, companion after an exercise) and the closed known limits; merged (PR #6). 2026-10-22: Phase 8 approved by Smriti; merged (PR #7). 2026-10-23: Phase 9 approved by Smriti; merged (PR #8). 2026-10-24: Phase 10 approved by Smriti; merged (PR #9). 2026-10-25: Phase 11 approved by Smriti; merged (PR #10). 2026-10-26: Phase 12 approved by Smriti; merged (PR #11) |
-| In progress | Phase 13 on `phase-13-reliability` (from `main` at the Phase 12 merge) |
-| Next | Phase 14 (cost and access docs), after Phase 13 approval |
-| Blocked on | Nothing; open items 8-10 need Smriti but do not block Phase 5 |
+| Current phase | **Build plan complete** (Phases 1-14) |
+| Done | Step A and Phases 1-4. 2026-10-09: glassmorphism UI redesign, questionnaire flow fixes and the post-crisis explicit-request rule merged to `main` (PR #1); manual CI trigger (PR #2); `main` protected (both `verify` checks required). 2026-10-11: Phase 4 approved and merged (PR #3). 2026-10-12: Phase 5 merged (PR #4). 2026-10-13: Phase 6 approved by Smriti, including the manual-testing changes of 2026-10-12 (tone, crisis wording, screening and router timing); merged (PR #5). 2026-10-13: Phase 7 approved by Smriti, including the manual-testing changes (DBT anger, exact exercise steps, companion after an exercise) and the closed known limits; merged (PR #6). 2026-10-22: Phase 8 approved by Smriti; merged (PR #7). 2026-10-23: Phase 9 approved by Smriti; merged (PR #8). 2026-10-24: Phase 10 approved by Smriti; merged (PR #9). 2026-10-25: Phase 11 approved by Smriti; merged (PR #10). 2026-10-26: Phase 12 approved by Smriti; merged (PR #11). 2026-10-26: Phase 13 merged (PR #12). 2026-10-27: Phase 14 approved by Smriti; merged (PR #13) |
+| In progress | Nothing |
+| Next | No phase planned; open items 3-5 and 8-10 before any real use |
+| Blocked on | Nothing; open items 3-5 and 8-10 need Smriti before any real use |
 
 ### Environment notes (development machine, 2026-10-07)
 - Windows 11. Python 3.12.15 managed by uv (system Python 3.11.9 is not used); uv 0.12.23 installed with `python -m pip install --user uv` and invoked as `python -m uv`.
@@ -151,6 +151,11 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-26 | Load and latency are reported on the reference laptop with Chrome and other heavy apps closed (Smriti); the first runs with everything open had 0.2 GB free and the model paged to disk | A clean, repeatable figure for the cost profile | Reporting the busy desktop too |
 | 2026-10-26 | The generation timeout starts once the model is free; the wait for it is bounded by the request deadline (`BoundedLLM`); the app passes the bare client and the engine always wraps it | Load test: with one model slot, a message queued behind another lost most of its 20 s budget waiting; two sessions at once timed out | Raising the generation timeout |
 | 2026-10-26 | Sentence streaming stays out of v1 after measurement | First sentence 2.0 s sooner at the median, but the guard rejected 4 of 20 first drafts, which streaming would already have shown (`reliability.md`) | Streaming the first sentence |
+| 2026-10-27 | Phase 13 squash-merged (PR #12); Phase 14 branched from `main` | Same as Phases 4-12 | Branching from `phase-13-reliability` |
+| 2026-10-27 | No PostgreSQL adapter (Smriti; closes open item 6 and PRD O5) | One person per laptop, one process, one SQLite file to export and delete | Building it against the contract suite |
+| 2026-10-27 | `llm_queue_limit` default 4 → 2 (Smriti) | Second load run: at 4-8 sessions, 26/54 served and 1 timeout against 20/54 and 22; the extra messages get "busy" at once instead of a 27 s wait (`docs/reports/phase-14.md`) | Keeping 4 |
+| 2026-10-27 | Diagram exports by a pinned mermaid-cli (11.17.0) through `npx`, rendered with the installed Chrome or Edge; SVG and PNG committed in `docs/images/` (Smriti) | A docs-only Node tool, not a Python dependency; skipping puppeteer's browser download keeps it to the npm package | A Python renderer; a web rendering service (sends the diagrams out) |
+| 2026-10-27 | Install guide runs llama-server with `-hf unsloth/Qwen3.5-4B-GGUF:Q4_K_M --no-mmproj -ngl 0` | `-hf` downloads the model in one line; without `--no-mmproj` it also fetches a 0.68 GB vision projector OASIS never uses; the Vulkan build failed to load the model on the integrated graphics | A separate download step; GPU offload |
 | 2026-10-13 | A companion reply to a thinking-trap message that fails twice gets the Socratic bank question for that trap, not the companion fallback (Smriti) | The design's reroute: validate the feeling, then one Socratic question | Companion fallback in every companion turn |
 | 2026-10-11 | Psychoeducation cue is a `psychoed` scorer in `cues.yaml` (no `psychoed/cues.py`); reading level is a stdlib Flesch-Kincaid check at startup (no `scripts/readability.py`) | Reuses the Phase 4 scorer; bad content fails at boot | Separate cue module; a printing script |
 | 2026-10-09 | `main` branch protection: both `verify` CI jobs required; admins exempt; force-push and deletion blocked; auto-merge allowed | Nothing merges without CI; emergency direct pushes still possible | Required reviews (a solo owner cannot approve own PRs) |
@@ -168,7 +173,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 3. **Repository licence** (e.g. MIT, Apache-2.0).
 4. **Clinician reviewer** for `clinical_review.md`.
 5. **Ethics approval** route for any future usability testing with participants.
-6. **Optional PostgreSQL adapter** (Phase 14) — only if requested.
+6. ~~Optional PostgreSQL adapter~~: resolved 2026-10-27, not built.
 7. ~~Reference laptop specs~~: resolved 2026-10-26, the development machine (Ryzen 5 5500U, 5.8 GB RAM).
 
 ---
@@ -179,10 +184,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 |---|---|
 | Real-model speed (first-token time, tokens/sec, RAM) | Measured 2026-10-26 on the reference laptop (`docs/reports/reliability.md`): one session 8.8 s median warm, 20 s cold; first token 0.8 s; llama-server commits 4.1 GB but only 0.25 GB stays in RAM next to a desktop app |
 | Real-model reply + thinking disabled | Not verified here — `scripts/model_smoke_test.py` |
-| llama.cpp build pin | Pending the first bake-off run (record `llama-server --version`) |
+| llama.cpp build pin | Build 11552 (commit `23b0202a1`), winget, recorded 2026-10-27 |
 | Real-model tone (companion, guard, bias quality) | Not verified here |
 | Qwen3.5 thinking-disable mechanism and sampling settings | To be re-verified against the current model card in Phase 1 |
-| Model licences (Qwen3.5, Gemma 4, Phi-4-mini) | To be re-verified in Phase 1 |
+| Model licences (Qwen3.5, Gemma 4, Phi-4-mini) | Qwen3.5-4B (and the unsloth GGUF) Apache-2.0 on the Hugging Face card, 2026-10-27; Gemma 4 and Phi-4-mini not re-checked (not shipped) |
 | PHQ-9 / GAD-7 item wording | Verified 2026-10-08 against the official phqscreeners.com forms and instruction manual |
 | Router detector accuracy on natural messages | Not measured; scenario table and golden phrases only — needs a labelled set |
 | Psychoeducation cue recall on unseen phrasing | Not measured; trigger set written by the same author as the cues — needs a fresh labelled set |
@@ -194,7 +199,8 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Post-crisis flag after an app restart with storage down | Falls back to normal mode (documented, CR-05) |
 | Gate latency on dense 2 000-character input | 10–35 ms on battery, over the 10 ms target; realistic messages p99 0.55 ms; combined pre-filter is the upgrade path |
 | Crisis detection recall on unseen phrasing | 88.7% on the held-out set before tuning; needs a fresh external set |
-| English-only; no fine-tuning; WEIRD-data caveat | By design for v1 |
+| English-only; no fine-tuning; WEIRD-data caveat | By design for v1; stated in the README's Limitations (Phase 14) |
+| Install on a second computer, macOS, Linux | Not verified here: the Phase 14 check was a clean clone with empty uv caches on the reference laptop (Windows) |
 | Explanations with real-model replies | Not verified here (browser check ran with llama-server down, so replies were fallbacks); the explanation does not read the reply text |
 | Which words drove VADER valence | Not explained; valence enters the router explanation as one exact contribution |
 | Saved conversation in the browser | Key in localStorage (rules F5, 2026-10-24): anyone using the browser can open it; clearing site data strands it on disk until it expires, 90 days after the last message (Phase 13) |
@@ -205,7 +211,7 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | Dialect non-crisis decisions | Not invariant by decision (Smriti, 2026-10-25): 19-23 of 25 turns match standard English; screening offers missed (docs/reports/bias_eval.md) |
 | Identity stated mid-sentence | Still dilutes scores ("I'm a Sikh man and ...", "Being a single mum, ..."): 15 held-out turns differ |
 | Reply quality by group | One real-model run of 25 turns per group; standard English alone varied 50-68% first drafts passing and +0.08 to +0.20 sentiment over four runs, so gaps under about 20 points are not detectable here |
-| Queue depth | `llm_queue_limit` 4 is deeper than the 27 s deadline allows (about 9 s per warm reply): at 4+ sessions extra messages wait and time out instead of getting "busy" at once; 2 would fail faster, unconfirmed |
+| Queue depth | Resolved 2026-10-27: `llm_queue_limit` 2 after a second load run (one run per limit, small samples) |
 | Timing tests on battery | The explanation latency test (20 ms) measured 33-39 ms unplugged on 2026-10-26, `main` included; it passes plugged in |
 | Guard checks outside English | `validate_first` lists English acknowledgements only: Spanglish first drafts 4-12% pass (retried, 0% fallbacks, longer waits) |
 
@@ -282,6 +288,10 @@ Handover log so any session can resume without re-explaining. Neutral engineerin
 | 2026-10-26 | 13 | Streaming (measured, not built) | First token 0.8 s, first sentence 2.7 s, whole reply 5.1 s (p50); 4/20 first drafts rejected by the guard |
 | 2026-10-26 | 13 | Usability | 10 Nielsen heuristics and 9 WCAG 2.2 AA checks pass after five fixes; contrast 33/33 pairs (26 before) |
 | 2026-10-26 | 13 | Mutation spot-check | 14/15 at first (bare client not bounded: the app always passed it wrapped); the app now passes it bare; 15/15 |
+| 2026-10-27 | 14 | Tests / coverage | 1623 passed, 0 skipped; 98% overall; safety 97.7%, assessment 97.8%, router 100%; verify all 8 steps pass |
+| 2026-10-27 | 14 | Install from a clean clone (empty uv caches, reference laptop) | Clone 15 s; `uv sync` 295 s (Python 3.12.15 and 88 packages); 352 MB packages + 68 MB Python + 2.74 GB model; app serves, one message answered; verify passes in the clone (1619 tests, `main`) |
+| 2026-10-27 | 14 | Real model from the README line | Loaded from cache in 8 s with `--no-mmproj -ngl 0`; smoke test PASS, 21 / 13 / 11 s cold |
+| 2026-10-27 | 14 | Queue limit 4 against 2, 4-8 sessions | Served 20/54 against 26/54; timed out 22 against 1; busy 12 against 27 (median 0.1 s); every request served up to 2 sessions in both, 3 with queue 4 |
 | 2026-10-22 | 9 | Mutation spot-check | 15/20 at first (negative score not clipped, button-turn test vacuous, unsorted keys, ID for an unsaved reply; one redundant ID check); four tests added, the check removed; 19/19 |
 | 2026-10-09 | UI | Tests / coverage | 594 passed; 97.6% overall (safety 97.1%, assessment 98.6%); first CI runs green on Ubuntu and Windows |
 | 2026-10-08 | 2 | Mutation spot-check | 12/12 caught after adding the help card escaping test (11/12 before) |

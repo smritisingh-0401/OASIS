@@ -173,7 +173,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 | End-to-end | Every request ends in a real or fallback reply inside a hard timeout (default 30 s, configurable) |
 | Reply length | ~150 tokens cap; returned whole, not streamed (guard must see the full draft) |
 | Prompt | Token-budgeted (system text, plan, short history, one snippet) |
-| Concurrency | Measured and published in Phase 14 |
+| Concurrency | Measured in Phase 14: 2 people at once with every message served on the reference laptop; beyond that "busy" at once ([phase-14.md](reports/phase-14.md)) |
 
 ### 6.2 Reliability
 - No silent hang: every failure path maps to a defined user-facing message ([design.md §12](design.md)).
