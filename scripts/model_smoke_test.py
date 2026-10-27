@@ -32,17 +32,7 @@ PROMPTS = [
 
 async def main(url: str) -> int:
     s = Settings()
-    client = LlamaServerClient(
-        base_url=url,
-        model=s.llm_model,
-        connect_timeout_s=s.llm_connect_timeout_s,
-        sampling={
-            "temperature": s.llm_temperature,
-            "top_p": s.llm_top_p,
-            "top_k": s.llm_top_k,
-            "min_p": s.llm_min_p,
-        },
-    )
+    client = LlamaServerClient.from_settings(s, url)
     if not await client.health():
         print(f"FAIL: llama-server not healthy at {url}")
         await client.aclose()

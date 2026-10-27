@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 
 from oasis.llm.client import LLMFailure
+from oasis.settings import Settings
 from oasis.types import ChatMessage
 
 
@@ -25,6 +26,21 @@ class LlamaServerClient:
         self._connect_timeout_s = connect_timeout_s
         self._sampling = dict(sampling)
         self._http = httpx.AsyncClient(base_url=base_url, transport=transport)
+
+    @classmethod
+    def from_settings(cls, settings: Settings, url: str | None = None) -> LlamaServerClient:
+        """The client as configured; `url` overrides `llm_url` (the scripts' --url)."""
+        return cls(
+            base_url=url or settings.llm_url,
+            model=settings.llm_model,
+            connect_timeout_s=settings.llm_connect_timeout_s,
+            sampling={
+                "temperature": settings.llm_temperature,
+                "top_p": settings.llm_top_p,
+                "top_k": settings.llm_top_k,
+                "min_p": settings.llm_min_p,
+            },
+        )
 
     async def generate(
         self, messages: Sequence[ChatMessage], *, max_tokens: int, timeout_s: float
