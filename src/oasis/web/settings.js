@@ -4,7 +4,6 @@
 // card's country, whether this conversation is saved, export and delete. Uses the chat's session token from browser storage, sent only in the X-OASIS-Session
 // header (rules P3, F5). All text goes in with textContent (rules F4).
 
-const SESSION_KEY = "oasis.session";
 const CONFIRM = "DELETE";
 
 const mode = document.getElementById("mode");
@@ -18,20 +17,6 @@ const styleStatus = document.getElementById("style-status");
 const country = document.getElementById("country");
 const styleInputs = [...styleForm.querySelectorAll("input"), country];
 let saved = null; // the settings as last stored, put back if a change does not save
-
-// A saved session's key is in localStorage, an unsaved one's in sessionStorage (rules F5).
-function readToken() {
-  try {
-    return localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function api(path, options = {}) {
-  const headers = { "X-OASIS-Session": readToken() || "", ...(options.headers || {}) };
-  return fetch(path, { ...options, headers });
-}
 
 async function load() {
   try {

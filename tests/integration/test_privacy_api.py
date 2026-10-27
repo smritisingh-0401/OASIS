@@ -266,17 +266,20 @@ def test_only_the_session_key_is_stored_in_the_browser() -> None:
     import oasis
 
     web = Path(oasis.__file__).parent / "web"
-    for name in ("app.js", "settings.js", "trends.js"):
+    for name in ("session.js", "app.js", "settings.js", "trends.js"):
         js = (web / name).read_text(encoding="utf-8")
         for call in re.findall(r"(?:local|session)Storage\.setItem\(([^,]+),", js):
             assert call.strip() == "SESSION_KEY", name
     app = (web / "app.js").read_text(encoding="utf-8")
     assert "localStorage.setItem(SESSION_KEY" in app
     assert "sessionStorage.setItem(SESSION_KEY" in app
-    for name in ("settings.js", "trends.js"):  # both read either place
-        js = (web / name).read_text(encoding="utf-8")
-        assert "localStorage.getItem(SESSION_KEY)" in js, name
-        assert "sessionStorage.getItem(SESSION_KEY)" in js, name
+    shared = (web / "session.js").read_text(encoding="utf-8")  # every page reads either place
+    assert "localStorage.getItem(SESSION_KEY)" in shared
+    assert "sessionStorage.getItem(SESSION_KEY)" in shared
+    for page, script in (("index.html", "app.js"), ("settings.html", "settings.js"),
+                         ("trends.html", "trends.js")):  # fmt: skip
+        html = (web / page).read_text(encoding="utf-8")
+        assert 0 <= html.find('src="session.js"') < html.find(f'src="{script}"'), page
 
 
 def test_a_newer_notice_is_accepted_on_the_same_session(

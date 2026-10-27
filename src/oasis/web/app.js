@@ -4,7 +4,6 @@
 // sent only in the X-OASIS-Session header, never in a URL (rules P3). All text is rendered
 // with textContent (rules F4).
 
-const SESSION_KEY = "oasis.session";
 const SLOW_NOTICE_MS = 8000;
 
 const messages = document.getElementById("messages");
@@ -80,14 +79,6 @@ document.addEventListener("keydown", (event) => {
   help.querySelector("summary").focus();
 });
 
-function readToken() {
-  try {
-    return localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
-  } catch {
-    return null;
-  }
-}
-
 // A saved session's key goes in localStorage, so the conversation can be reopened in a new
 // tab or after a restart; an unsaved one's in sessionStorage, so it ends with this tab
 // (rules F5). An empty token forgets both.
@@ -103,11 +94,6 @@ function saveToken(token, ephemeral = false) {
   } catch {
     // Storage blocked: the session lasts for this page only.
   }
-}
-
-async function api(path, options = {}) {
-  const headers = { "X-OASIS-Session": readToken() || "", ...(options.headers || {}) };
-  return fetch(path, { ...options, headers });
 }
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
