@@ -7,7 +7,7 @@ Reviewer: _not yet assigned (open item O3)._
 
 | ID | Item | Where it lives | Phase | Status | Notes |
 |---|---|---|---|---|---|
-| CR-01 | Crisis phrase lists (explicit intent, passive ideation, plan/method, burden, self-harm) | `content/safety/patterns.yaml` | 2 | pending | Recall/FPR reported in `docs/reports/phase-02.md`. The `self_harm` tier (non-suicidal self-injury gets the full handoff) was added in Phase 2 and needs confirmation |
+| CR-01 | Crisis phrase lists (explicit intent, passive ideation, plan/method, burden, self-harm) | `content/safety/patterns.yaml` | 2 | pending | Recall/FPR reported in `docs/reports/phase-02.md`. The `self_harm` tier (non-suicidal self-injury gets the full handoff) was added in Phase 2; the owner confirmed it on 2026-10-27 as the safe default, for the clinician to review |
 | CR-02 | Idiom allow-list | `content/safety/allowlist.yaml` | 2 | pending | Each entry has its own test |
 | CR-03 | Crisis handoff wording, and the help card's opening lines | `safety/handoff.py` (compiled-in constant), `web/index.html` | 2 | pending | Points to the "Need help now?" card. 2026-10-12, owner's decision: the reply and the card open with "If you feel like talking to someone in person…" and no longer tell the user to call the emergency number. Flagged for the clinician: safe-messaging guidance favours a route to immediate help. Country emergency numbers are still listed in the card, which still ends with the local-emergency-number line |
 | CR-04 | Crisis resource list: Tier 1 (40 countries, verified crisis line + emergency number) and Tier 2 (184 countries and territories, emergency number from FCDO travel advice) | `content/safety/resources.yaml` | 2 | pending | Verification date and source stored per entry; countries whose official sites could not be fetched are Tier 2 (list in `docs/reports/phase-02.md`) |
@@ -51,6 +51,7 @@ Reviewer: _not yet assigned (open item O3)._
 | 2026-10-24 | Phase 10: CR-23 added (first-use data notice) | Smriti |
 | 2026-10-24 | Phase 11: CR-25 added (style framing, examples and the indirect-phrasing suggestion) | Smriti |
 | 2026-10-26 | Phase 13: CR-23 data notice version 3: a saved conversation with no message for 90 days is deleted automatically (owner's decision) | Smriti |
+| 2026-10-27 | CR-01: the owner confirmed the `self_harm` tier (full handoff) as the safe default until clinician review | Smriti |
 | 2026-10-25 | Phase 12: CR-26 added; CR-01: "I don't want to live anymore" followed by anything (a name, another sentence) is caught again, plus dialect, typo and code-mixed phrasing (ruleset 2026.10.1); held-out recall 71/71, benign false positives unchanged. CR-11/CR-20: lexicon scores now come from the highest-scoring sentence; one-sentence messages score as before | Smriti |
 | 2026-10-24 | CR-14: validating phrases widened from the per-style tone check ("I understand", "I acknowledge", "You mentioned", "I am glad to hear", "I hear that/how", "It is natural/common to", "It seems", "It might be that you feel", "…wonderful news", "It is wonderful that you"); "That is wonderful news" no longer counts as praise (owner's decision) | Smriti |
 | 2026-10-24 | CR-03: the help card's opening line loses "pick your country below" and now reads "If you feel like talking to someone in person, you do not have to go through this alone." (owner's decision) | Smriti |
