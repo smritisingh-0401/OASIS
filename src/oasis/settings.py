@@ -24,7 +24,9 @@ class Settings(BaseSettings):
     llm_connect_timeout_s: float = Field(1.0, gt=0)
     llm_generate_timeout_s: float = Field(20.0, gt=0)
     llm_max_concurrency: int = Field(1, ge=1)
-    llm_queue_limit: int = Field(4, ge=0)
+    # Two waiting: a warm reply takes about 9 s, so a third waiter cannot finish inside the
+    # 27 s deadline; it gets "busy" at once instead (Phase 14 load run).
+    llm_queue_limit: int = Field(2, ge=0)
     llm_max_tokens: int = Field(160, ge=1)
     # Non-thinking sampling starting values; re-verify against the current model card.
     llm_temperature: float = 0.7
