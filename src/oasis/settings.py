@@ -45,3 +45,9 @@ class Settings(BaseSettings):
     # ...and a saved conversation is deleted after this many days without a message (Phase 13;
     # the data notice states the number)
     saved_idle_expiry_days: int = Field(90, gt=0)
+    # Unsaved conversations held at once; beyond this a new one gets "busy" (bounds memory).
+    max_ephemeral_sessions: int = Field(1000, ge=1)
+
+    # Online demo (decision 2026-10-28): every conversation in memory, never on disk; the demo
+    # data notice and a "made-up messages only" banner on every page.
+    demo: bool = False

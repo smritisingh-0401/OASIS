@@ -15,8 +15,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
-from oasis.api.middleware import error_response, security_middleware
-from oasis.api.pages import load_disclosure, render_index, render_settings
+from oasis.api.middleware import BodyLimit, BodyTooLarge, error_response, security_middleware
+from oasis.api.pages import load_disclosure, render_demo, render_index, render_settings
 from oasis.api.routes import ApiError, build_router
 from oasis.assessment.instruments import load_all as load_assessment_content
 from oasis.core.engine import ChatEngine
@@ -51,7 +51,8 @@ def _default_llm(settings: Settings) -> LLMClient:
 
 
 def _default_repo(settings: Settings) -> Repository:
-    if settings.storage_backend == "memory":
+    # The online demo never touches disk, whatever the storage setting says.
+    if settings.demo or settings.storage_backend == "memory":
         return MemoryRepository()
     return SQLiteRepository(settings.db_path, busy_timeout_ms=settings.sqlite_busy_timeout_ms)
 
@@ -101,17 +102,21 @@ def create_app(
     load_reply_checks()
     load_tracking()
     load_framing()
-    disclosure = load_disclosure()
+    disclosure = load_disclosure(settings.demo)
     resources = crisis_resources or load_resources()
-    index_html = render_index(
-        (WEB_DIR / "index.html").read_text(encoding="utf-8"), resources, disclosure
-    )
-    settings_html = render_settings(
-        (WEB_DIR / "settings.html").read_text(encoding="utf-8"), resources
-    )
+
+    def page(name: str) -> str:
+        return render_demo((WEB_DIR / name).read_text(encoding="utf-8"), settings.demo)
+
+    index_html = render_index(page("index.html"), resources, disclosure)
+    settings_html = render_settings(page("settings.html"), resources)
+    trends_html = page("trends.html")
 
     # Each session is saved or ephemeral, chosen when it starts (FR-PRV-4).
-    ephemeral = MemoryRepository(idle_timeout_s=settings.ephemeral_idle_timeout_s)
+    ephemeral = MemoryRepository(
+        idle_timeout_s=settings.ephemeral_idle_timeout_s,
+        max_sessions=settings.max_ephemeral_sessions,
+    )
     store = SplitRepository(repo or _default_repo(settings), ephemeral)
     # The engine bounds the model client itself (BoundedLLM).
     engine = ChatEngine(safety=safety, llm=llm or _default_llm(settings), repo=store,
@@ -136,7 +141,14 @@ def create_app(
         redoc_url=None,
         openapi_url=None,
     )
+    # Added first, so it sits inside the security middleware (the last added is outermost) and
+    # a refused body still gets the security headers.
+    app.add_middleware(BodyLimit, max_bytes=settings.max_body_bytes)
     app.middleware("http")(security_middleware(settings.max_body_bytes))
+
+    @app.exception_handler(BodyTooLarge)
+    async def too_large(request: Request, exc: BodyTooLarge) -> JSONResponse:
+        return error_response(413, "body_too_large", "Request is too large.")
 
     @app.exception_handler(ApiError)
     async def api_error(request: Request, exc: ApiError) -> JSONResponse:
@@ -163,6 +175,10 @@ def create_app(
     @app.get("/settings.html", include_in_schema=False)
     async def settings_page() -> HTMLResponse:
         return HTMLResponse(settings_html)
+
+    @app.get("/trends.html", include_in_schema=False)
+    async def trends_page() -> HTMLResponse:
+        return HTMLResponse(trends_html)
 
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app
