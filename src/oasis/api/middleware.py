@@ -6,6 +6,8 @@ from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 SECURITY_HEADERS = {
     "Cache-Control": "no-store",
@@ -31,8 +33,7 @@ def security_middleware(
     async def middleware(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        # Known limit: trusts Content-Length; uvicorn's h11 limits cover chunked bodies, and
-        # the schema caps message length. Add a streaming byte counter if exposed publicly.
+        # Fast path for an honest Content-Length; BodyLimit counts the bytes themselves.
         length = request.headers.get("content-length")
         if length is not None and (not length.isdigit() or int(length) > max_body_bytes):
             response: Response = error_response(413, "body_too_large", "Request is too large.")
@@ -42,3 +43,35 @@ def security_middleware(
         return response
 
     return middleware
+
+
+class BodyTooLarge(HTTPException):
+    """An HTTP error, so FastAPI passes it through body parsing instead of turning it into a 400."""
+
+    def __init__(self) -> None:
+        super().__init__(413)
+
+
+class BodyLimit:
+    """Counts request body bytes as they arrive, so a chunked body without a Content-Length
+    cannot exceed the limit either. The app maps BodyTooLarge to a 413."""
+
+    def __init__(self, app: ASGIApp, max_bytes: int) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        seen = 0
+
+        async def counted() -> Message:
+            nonlocal seen
+            message = await receive()
+            seen += len(message.get("body", b""))
+            if seen > self.max_bytes:
+                raise BodyTooLarge
+            return message
+
+        await self.app(scope, counted, send)

@@ -1,0 +1,34 @@
+# Data notice for the online demo (OASIS_DEMO=1, decision 2026-10-28), shown instead of
+# disclosure.yaml. The demo runs on the computer of the person running the test and is reached
+# through a Cloudflare tunnel link, so messages do leave the tester's computer; this notice says
+# so. Same structure and rules as disclosure.yaml; needs legal review before any use beyond
+# testing with made-up messages (O8) and clinician review (CR-23).
+schema: oasis.content/v1
+kind: disclosure
+version: "demo-1"
+review_status: needs_clinician_review
+title: "Before you start: test version"
+visible_sections: 2
+agreement: "Choosing \"Start without saving\" below means you have read this notice, including the part under \"Read more\", and agree to it."
+sections:
+  - heading: "What this is"
+    paragraphs:
+      - "This is a test version of OASIS, a support tool for everyday stress and low mood, shared by link so people can try it. Please use made-up messages only: not your real feelings, and nothing that could identify you or anyone else."
+      - "OASIS is not a diagnosis, not a therapist and not an emergency service. If you are in danger or need someone now, open \"Need help now?\" at the top for crisis lines in your country."
+  - heading: "Where your messages go"
+    paragraphs:
+      - "Your messages travel over the internet, encrypted, to the computer of the person running this test, which runs OASIS and its language model. The link is provided by Cloudflare, whose network carries the messages on the way."
+      - "Replies are written by that language model. OASIS decides what kind of reply to give with fixed rules, and each reply can tell you why. A reply can take several seconds, longer when several people are talking to it."
+  - heading: "What is kept, and for how long"
+    paragraphs:
+      - "Your conversation is kept in that computer's memory only, never written to disk. It is gone after two hours without a message, when you delete it in Settings, or when OASIS restarts."
+      - "Closing this tab also ends your access. OASIS never asks for your name, email or phone number, and its logs never contain your words."
+  - heading: "If you mention a crisis"
+    paragraphs:
+      - "If a message is answered with crisis support, the words of that message are not kept. OASIS keeps only a note that crisis support was shown and which kind of phrase was recognised, and these go with everything else."
+  - heading: "Who can see it"
+    paragraphs:
+      - "OASIS does not show your conversation to anyone else. The person running this test controls the computer it runs on, so do not type anything private."
+  - heading: "Your choices"
+    paragraphs:
+      - "In Settings you can export everything kept about you as a file, and delete it all at any time."
