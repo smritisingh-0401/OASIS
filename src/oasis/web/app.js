@@ -101,6 +101,8 @@ const OFFLINE = "I couldn't reach the server. \"Need help now?\" still works.";
 
 const startSaved = document.getElementById("start-saved");
 const startEphemeral = document.getElementById("start-ephemeral");
+// The online demo never saves (the server enforces it), so it offers only "Start without saving".
+const DEMO = document.querySelector(".demo-banner") !== null;
 // True when the notice is shown again to a session that already exists (the notice changed):
 // accepting continues that conversation instead of starting a new one, so a saved
 // conversation is never stranded.
@@ -111,12 +113,13 @@ function showOnboarding(note, resume = false) {
   resuming = resume;
   startSaved.textContent = resume ? "Accept and continue" : "Save on this computer";
   startEphemeral.hidden = resume;
+  startSaved.hidden = DEMO && !resume;
   onboarding.hidden = false;
   messages.hidden = true;
   form.hidden = true;
   card.hidden = true;
   status.textContent = note || "";
-  if (!help.contains(document.activeElement)) startSaved.focus();
+  if (!help.contains(document.activeElement)) (startSaved.hidden ? startEphemeral : startSaved).focus();
 }
 
 async function postConsent(token, version) {
@@ -152,9 +155,11 @@ async function start(ephemeral) {
       body: JSON.stringify({ ephemeral }),
     });
     if (!resp.ok) throw new Error("session");
-    const token = (await resp.json()).session_id;
+    // The server decides whether the session is saved (the online demo never is).
+    const session = await resp.json();
+    const token = session.session_id;
     await postConsent(token, version);
-    saveToken(token, ephemeral);
+    saveToken(token, session.ephemeral);
     status.textContent = "";
     showChat();
     input.focus();
