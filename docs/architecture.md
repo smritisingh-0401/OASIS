@@ -235,7 +235,7 @@ flowchart LR
 
 - **Two OS processes.** The FastAPI app and `llama-server` run separately. A crash, hang or OOM in the model process cannot take down the app or the safety layer.
 - **One uvicorn worker.** Required because ephemeral sessions live in process memory and SQLite has a single writer. Multi-worker deployment would need a shared ephemeral store and is out of scope for v1 (documented trigger for PostgreSQL in §6).
-- **Bind to loopback** (`127.0.0.1`) by default for both processes.
+- **Bind to loopback** (`127.0.0.1`) by default for both processes. The test version shared by link keeps this: a Cloudflare tunnel connects out from the host computer and forwards to `127.0.0.1:8000`, with `OASIS_DEMO=1` ([demo_host.md](demo_host.md)).
 
 ### 4.1 Timeouts and limits (defaults; all in the typed settings object)
 | Setting | Default | Purpose |
