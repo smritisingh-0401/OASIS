@@ -20,40 +20,14 @@ _CLAUSE = re.compile(r"[,.;:!?]+|\b(?:and|but)\b")
 
 
 # "like" is a positive verb only after one of these ("I like", "would like", "don't like").
-_LIKE_SUBJECTS = frozenset(
-    [
-        "i",
-        "you",
-        "we",
-        "they",
-        "he",
-        "she",
-        "people",
-        "everyone",
-        "really",
-        "would",
-        "do",
-        "does",
-        "did",
-        "dont",
-        "doesnt",
-        "didnt",
-        "don't",
-        "doesn't",
-        "didn't",
-        "to",
-        "also",
-        "still",
-        "actually",
-        "i'd",
-        "id",
-        "we'd",
-        "you'd",
-    ]
-)
+_LIKE_SUBJECTS = frozenset({
+    "i", "you", "we", "they", "he", "she", "people", "everyone", "really", "would", "do",
+    "does", "did", "dont", "doesnt", "didnt", "don't", "doesn't", "didn't", "to", "also",
+    "still", "actually", "i'd", "id", "we'd", "you'd",
+})  # fmt: skip
 
 
-class _MoodVader(SentimentIntensityAnalyzer):
+class _MoodVader(SentimentIntensityAnalyzer):  # type: ignore[misc]  # VADER ships no types
     """VADER with the fixes from demo testing (2026-10-29, CR-21): "like" as a comparison
     ("feels like") and "hand" score nothing, a negated bad word ("not to die", "no horrible")
     and a good word after "over" or "too" are neutral instead of positive."""
