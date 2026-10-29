@@ -250,11 +250,12 @@ def test_asking_for_no_questions_gets_a_listening_reply(message: str) -> None:
 
 def test_after_two_questions_in_a_row_the_next_reply_listens() -> None:
     asked = _said("That sounds hard. What happened?", "That must hurt. How are you coping?")
-    plan = plan_turn("work again", state(history=asked))
+    message = "work was busy again today too"  # over BRIEF_WORDS, so not a short reply
+    plan = plan_turn(message, state(history=asked))
     assert "no_question" in plan.constraints
     assert "listen.two_questions" in plan.reason_codes
     listened = _said("That sounds hard. What happened?", "That must hurt. I'm here.")
-    assert "one_question" in plan_turn("work again", state(history=listened)).constraints
+    assert "one_question" in plan_turn(message, state(history=listened)).constraints
 
 
 def test_a_long_outpouring_gets_a_listening_reply() -> None:

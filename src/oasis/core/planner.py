@@ -63,6 +63,11 @@ _IDENTITY = re.compile(
 )
 LISTEN_AFTER = 2  # replies ending in a question in a row before one that only listens
 LONG_MESSAGE_WORDS = 40  # an outpouring this long gets a listening reply
+BRIEF_WORDS = 5  # a statement this short gets a one-sentence acknowledgement
+_QUESTION_WORDS = frozenset({
+    "who", "what", "why", "how", "when", "where", "which", "can", "could", "should", "would",
+    "is", "are", "am", "do", "does", "did", "will", "was", "were",
+})  # fmt: skip
 
 # Plan constraints per mode (design §13.2); the prompt builder turns them into rules.
 CONSTRAINTS: dict[str, tuple[str, ...]] = {
@@ -119,6 +124,11 @@ def _listening(plan: Plan, message: str, state: ConversationState) -> Plan:
     last = replies[-LISTEN_AFTER:]
     if _JUST_LISTEN.search(base_form(message)):
         why = "asked"
+    elif replies and _short_statement(message):
+        # "food", "ok thanks": one sentence back, not a paragraph (demo testing, 2026-10-29).
+        rules = ("brief", *(c for c in plan.constraints if c in ("no_advice", "no_praise")))
+        return replace(plan, constraints=rules,
+                       reason_codes=(*plan.reason_codes, "brief.short_message"))  # fmt: skip
     elif len(last) == LISTEN_AFTER and all(r.endswith("?") for r in last):
         why = "two_questions"
     elif len(message.split()) >= LONG_MESSAGE_WORDS:
@@ -127,6 +137,12 @@ def _listening(plan: Plan, message: str, state: ConversationState) -> Plan:
         return plan
     rules = tuple("no_question" if c == "one_question" else c for c in plan.constraints)
     return replace(plan, constraints=rules, reason_codes=(*plan.reason_codes, f"listen.{why}"))
+
+
+def _short_statement(message: str) -> bool:
+    words = base_form(message).split()
+    question = message.rstrip().endswith("?") or (bool(words) and words[0] in _QUESTION_WORDS)
+    return 0 < len(words) <= BRIEF_WORDS and not question
 
 
 def _plan(message: str, state: ConversationState, action: Action | None) -> Plan:

@@ -688,7 +688,7 @@ async def test_a_repeated_opener_is_retried_with_a_fresh_one(settings: Settings)
     engine = _engine(settings, llm=llm)
     await _session(engine)
     await engine.handle_turn("h", "I had a long day at work")
-    result = await engine.handle_turn("h", "and the bus was late")
+    result = await engine.handle_turn("h", "and then the bus was really late")
     assert result.reply == fresh
     assert llm.calls == 3
     assert '"it sounds like"' in llm.last_messages[0].content
@@ -700,7 +700,7 @@ async def test_a_repeated_opener_alone_never_costs_the_reply(settings: Settings)
     engine = _engine(settings, llm=llm)
     await _session(engine)
     await engine.handle_turn("h", "I had a long day at work")
-    result = await engine.handle_turn("h", "and the bus was late")
+    result = await engine.handle_turn("h", "and then the bus was really late")
     assert result.reply == SAID  # style, not safety: no fallback
     assert result.fallback_reason is None
 
@@ -711,7 +711,7 @@ async def test_a_soft_first_draft_beats_a_failed_retry(settings: Settings) -> No
     engine = _engine(settings, llm=llm)
     await _session(engine)
     await engine.handle_turn("h", "I had a long day at work")
-    result = await engine.handle_turn("h", "and the bus was late")
+    result = await engine.handle_turn("h", "and then the bus was really late")
     assert result.reply == SAID
     assert result.fallback_reason is None
 
@@ -723,7 +723,7 @@ async def test_a_soft_draft_is_kept_when_there_is_no_time_to_retry(settings: Set
     engine = _engine(tight, llm=llm)
     await _session(engine)
     await engine.handle_turn("h", "I had a long day at work")
-    result = await engine.handle_turn("h", "and the bus was late")
+    result = await engine.handle_turn("h", "and then the bus was really late")
     assert result.reply == SAID
     assert llm.calls == 2  # one per turn: no retry
 

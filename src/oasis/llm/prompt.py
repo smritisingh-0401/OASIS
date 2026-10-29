@@ -66,12 +66,14 @@ RULES = {
     "not_empty": "Write a short reply.",
     "use_snippet_only": "Use only what the script line says.",
     "no_exercise_step": "Do not write exercise steps of your own.",
+    "brief": "Reply in one short sentence that acknowledges what they said, with no question.",
     "no_maker_claim": "Do not say a company made you or name another assistant.",
     "ack_only": "Write one short sentence responding to them, with no question and no exercise "
     "step.",
 }
 # A companion reply that only listens (demo testing, 2026-10-29).
 LISTEN_GOAL = "Respond to what they said and let them know you are listening."
+BRIEF_GOAL = "Acknowledge what they said, warmly and briefly."
 SCRIPT_MARK = "\n- script: "
 # An exercise step is added after the reply word for word (the 4B model, asked to rephrase
 # "T is for Take a step back", wrote "N is for Name what you are feeling"), so the step text
@@ -106,6 +108,8 @@ def build_messages(
         goal = STEP_GOAL
     elif "no_question" in plan.constraints:
         goal = LISTEN_GOAL
+    elif "brief" in plan.constraints:
+        goal = BRIEF_GOAL
     else:
         goal = GOALS.get(plan.mode, GOALS["companion"])
     style = framing(plan.style)

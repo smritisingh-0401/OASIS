@@ -62,7 +62,9 @@ def test_health(client: TestClient) -> None:
 
 def test_multi_turn_chat_and_history(client: TestClient) -> None:
     token = _session(client)
-    for text in ("first", "second"):
+    # Over five words each, so neither gets the short acknowledgement (2026-10-29).
+    first, second = "my first message about the day", "my second message about the day"
+    for text in (first, second):
         resp = _chat(client, token, text)
         assert resp.status_code == 200
         body = resp.json()
@@ -72,17 +74,17 @@ def test_multi_turn_chat_and_history(client: TestClient) -> None:
 
     history = client.get("/history", headers={HEADER: token}).json()["turns"]
     assert [(t["role"], t["content"]) for t in history] == [
-        ("user", "first"),
+        ("user", first),
         ("assistant", "That sounds like a lot. What's on your mind?"),
-        ("user", "second"),
+        ("user", second),
         ("assistant", "That sounds like a lot. What's on your mind?"),
     ]
 
 
 def test_history_limit(client: TestClient) -> None:
     token = _session(client)
-    _chat(client, token, "a")
-    _chat(client, token, "b")
+    _chat(client, token, "a message about my long day")
+    _chat(client, token, "b message about my long day")
     turns = client.get("/history?limit=1", headers={HEADER: token}).json()["turns"]
     assert [t["content"] for t in turns] == ["That sounds like a lot. What's on your mind?"]
 
