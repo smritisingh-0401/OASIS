@@ -60,3 +60,40 @@ def test_the_help_card_fits_a_phone_screen() -> None:
     assert "width: auto" in card.group(1)
     assert re.search(r"\.help \{[^}]*position: static", block)
     assert re.search(r"\.top \{[^}]*position: relative", block)
+
+
+# --- demo testing, 2026-10-29: fixed chat panel, auto-scroll, typing animation -------------
+
+HTML = (Path(oasis.__file__).parent / "web" / "index.html").read_text(encoding="utf-8")
+
+
+def test_only_the_conversation_scrolls_so_the_composer_stays_in_view() -> None:
+    assert '<body class="chat-page">' in HTML
+    page = _rule("body.chat-page")
+    assert "height: 100dvh" in page
+    assert "overflow: hidden" in page
+    conversation = _rule(".chat-page .messages")
+    assert "overflow-y: auto" in conversation
+    assert "min-height: 0" in conversation
+
+
+def test_new_messages_follow_a_reader_at_the_bottom_only() -> None:
+    """Scrolled up to read, a reader gets a "New message" button instead of being moved."""
+    add = re.search(r"function addMessage\(.*?\n\}", JS, re.DOTALL)
+    assert add is not None
+    assert "atBottom()" in add.group(0)
+    assert "follow(stick)" in add.group(0)
+    assert 'id="new-message"' in HTML
+
+
+def test_replies_type_out_but_crisis_replies_never_do() -> None:
+    """Typed out word by word, at most TYPE_MAX_MS; crisis replies and reduced motion show
+    at once, and a screen reader gets the whole reply once."""
+    assert "prefers-reduced-motion: reduce" in JS
+    cap = re.search(r"TYPE_MAX_MS = (\d+)", JS)
+    assert cap is not None
+    assert int(cap.group(1)) <= 2000
+    assert 'const animate = body.mode !== "crisis" && body.mode !== "post_crisis"' in JS
+    assert 'setAttribute("aria-hidden", "true")' in JS
+    assert "msg bot typing" in JS
+    assert "prefers-reduced-motion" in CSS
