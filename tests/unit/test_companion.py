@@ -226,3 +226,69 @@ def test_a_draft_repeating_a_recent_opener_breaks_fresh_opener() -> None:
     assert check("It sounds like a lot. What happened?", plan).reasons == ("fresh_opener",)
     assert check("That sounds like a lot. What happened?", plan).ok
     assert opener("It's  okay, really.") == "its okay really"
+
+
+# --- listening replies (demo testing, 2026-10-29) -------------------------------------------
+# "When I am feeling sad you are asking me how much sad": a reply sometimes just listens.
+
+LISTEN = Plan(mode="companion", constraints=("validate_first", "no_advice", "no_question",
+                                             "no_praise"))  # fmt: skip
+
+
+@pytest.mark.parametrize("message", [
+    "When I am feeling sad you are asking me how much sad",
+    "please stop asking me questions",
+    "can you just listen",
+    "I don't want questions right now, I just need to vent",
+])  # fmt: skip
+def test_asking_for_no_questions_gets_a_listening_reply(message: str) -> None:
+    plan = plan_turn(message, state())
+    assert "no_question" in plan.constraints
+    assert "one_question" not in plan.constraints
+    assert "listen.asked" in plan.reason_codes
+
+
+def test_after_two_questions_in_a_row_the_next_reply_listens() -> None:
+    asked = _said("That sounds hard. What happened?", "That must hurt. How are you coping?")
+    plan = plan_turn("work again", state(history=asked))
+    assert "no_question" in plan.constraints
+    assert "listen.two_questions" in plan.reason_codes
+    listened = _said("That sounds hard. What happened?", "That must hurt. I'm here.")
+    assert "one_question" in plan_turn("work again", state(history=listened)).constraints
+
+
+def test_a_long_outpouring_gets_a_listening_reply() -> None:
+    message = " ".join(["everything at the hostel has been going wrong this term"] * 5)
+    plan = plan_turn(message, state())
+    assert "no_question" in plan.constraints
+    assert "listen.long_message" in plan.reason_codes
+
+
+def test_asking_for_ideas_still_gets_a_question() -> None:
+    asked = _said("That sounds hard. What happened?", "That must hurt. How are you coping?")
+    plan = plan_turn("what should I do?", state(history=asked))
+    assert "one_question" in plan.constraints
+
+
+def test_a_listening_reply_asks_nothing() -> None:
+    assert check("That sounds really heavy. I'm here and listening.", LISTEN).ok
+    assert check("That sounds heavy. What happened?", LISTEN).reasons == ("no_question",)
+    assert check(TEMPLATES["listen_fallback"], LISTEN).ok
+    assert "?" not in TEMPLATES["listen_fallback"]
+
+
+def test_the_listening_prompt_says_not_to_ask() -> None:
+    system = build_messages(LISTEN, [], "hi", history_turns=6)[0].content
+    assert "Do not ask a question" in system
+    assert "ask one gentle open question" not in system
+
+
+def test_why_this_reply_says_why_it_only_listens() -> None:
+    import json
+
+    from oasis.explain import builder
+
+    message = "please stop asking me questions"
+    bullets = json.loads(builder.build(message, plan_turn(message, state())))["plain_language"]
+    assert bullets[-1] == builder.config().reasons["listen.asked"]
+    assert "asks one gentle question" not in " ".join(bullets)

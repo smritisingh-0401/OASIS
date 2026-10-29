@@ -784,3 +784,30 @@ def test_reply_latency_counts_from_the_last_reply_not_the_last_turn() -> None:
     ]
     assert _last_reply_at(history) == datetime.datetime(2026, 10, 20, 10, 0, tzinfo=datetime.UTC)
     assert _last_reply_at([]) is None
+
+
+@pytest.mark.anyio
+async def test_a_listening_reply_drops_the_models_question(settings: Settings) -> None:
+    """Demo testing, 2026-10-29: asked to just listen, the 4B model still adds a question;
+    the engine keeps the sentences before it, without another model call."""
+    llm = FakeLLM(replies=["That sounds so heavy. I'm here with you. What happened next?"])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+
+    result = await engine.handle_turn("h", "please stop asking me questions")
+
+    assert result.reply == "That sounds so heavy. I'm here with you."
+    assert llm.calls == 1
+
+
+@pytest.mark.anyio
+async def test_a_listening_reply_of_only_questions_ends_in_the_listening_fallback(
+    settings: Settings,
+) -> None:
+    llm = FakeLLM(replies=["What happened? How do you feel?"])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+
+    result = await engine.handle_turn("h", "can you just listen")
+
+    assert result.reply == TEMPLATES["listen_fallback"]
