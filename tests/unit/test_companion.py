@@ -363,3 +363,72 @@ def test_a_short_reply_is_one_sentence_without_a_question() -> None:
     assert check("That makes sense. It really does. I hear you.", BRIEF).reasons == ("brief",)
     system = build_messages(BRIEF, [], "food", history_turns=6)[0].content
     assert "one short sentence" in system
+
+
+# --- an occasional suggestion with hope (demo testing, 2026-10-29) ----------------------------
+
+
+def _turns(replies: int, mode: str = "companion") -> tuple[TurnRecord, ...]:
+    """`replies` exchanges: a user message, then a reply ending in a question."""
+    out: list[TurnRecord] = []
+    for i in range(replies):
+        out.append(TurnRecord(f"u{i}", 2 * i + 1, "user", "work has been hard", None, ""))
+        out.append(TurnRecord(f"a{i}", 2 * i + 2, "assistant", "That sounds hard. Why?",
+                              mode, ""))  # type: ignore[arg-type]  # fmt: skip
+    return tuple(out)
+
+
+STRUGGLE = "my manager keeps shouting at me and I feel awful"
+
+
+def test_every_fourth_reply_to_a_difficulty_offers_one_idea_with_hope() -> None:
+    plan = plan_turn(STRUGGLE, state(history=_turns(3)[-1:]))  # only the last turn is loaded
+    assert "offer_ideas" in plan.constraints
+    assert "encourage" in plan.constraints
+    assert "no_advice" not in plan.constraints
+    assert "idea.offered" in plan.reason_codes
+    system = build_messages(plan, [], STRUGGLE, history_turns=6)[0].content
+    assert "small steps still count" in system
+    assert "Never tell them to stay positive" in system
+
+
+@pytest.mark.parametrize("replies", [1, 2, 4])
+def test_other_replies_offer_no_unasked_idea(replies: int) -> None:
+    plan = plan_turn(STRUGGLE, state(history=_turns(replies)[-1:]))
+    assert "offer_ideas" not in plan.constraints
+
+
+def test_good_news_gets_no_idea() -> None:
+    plan = plan_turn(
+        "my manager praised my work today and I am happy", state(history=_turns(3)[-1:])
+    )
+    assert "offer_ideas" not in plan.constraints
+
+
+def test_no_idea_soon_after_crisis_support() -> None:
+    history = (*_turns(2), TurnRecord("c", 5, "placeholder", "x", "crisis", ""),
+               TurnRecord("p", 6, "assistant", "I'm here.", "companion", ""))  # fmt: skip
+    assert "offer_ideas" not in plan_turn(STRUGGLE, state(history=history)).constraints
+
+
+@pytest.mark.parametrize("reply", [
+    "That sounds hard, but just stay positive!",
+    "Try to look on the bright side. What happened?",
+    "It could be worse. How are you?",
+    "Everything happens for a reason.",
+    "You need a positive attitude.",
+])  # fmt: skip
+def test_dismissive_positivity_is_rejected_in_every_mode(reply: str) -> None:
+    for mode in ("companion", "cbt", "dbt"):
+        reasons = check(reply, Plan(mode=mode)).reasons  # type: ignore[arg-type]
+        assert "no_toxic_positivity" in reasons
+
+
+def test_hopeful_encouragement_passes() -> None:
+    plan = Plan(mode="companion", constraints=("validate_first", "offer_ideas", "encourage",
+                                               "one_question", "no_praise"))  # fmt: skip
+    reply = (
+        "That sounds exhausting. A short walk after work helps some people, and small "
+        "steps still count. Would that fit for you?"
+    )
+    assert check(reply, plan).ok
