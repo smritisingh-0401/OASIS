@@ -254,7 +254,7 @@ UNROUTED_CODES = [
     "assessment.accept", "assessment.answer", "assessment.decline", "assessment.pause",
     "assessment.resume", "assessment.abort", "assessment.none_open", "assessment.free_text",
     "assessment.not_saved", "psychoed.low_mood", "exercise.decline", "exercise.stop",
-    "exercise.none_open", "post_crisis.cleared",
+    "exercise.none_open", "post_crisis.cleared", "identity.asked",
 ]  # fmt: skip
 
 

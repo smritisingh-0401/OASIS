@@ -48,6 +48,19 @@ _JUST_LISTEN = re.compile(
     r"questions|too many questions|(?:just|only) (?:listen|vent)|(?:just |only )?need to vent|"
     r"(?:you|youre|you are|you keep|you always) (?:keep )?asking me)\b"
 )
+# A question about what OASIS is or who made it, as the whole message (demo testing,
+# 2026-10-29: "Who is your owner" got "created by Google"). Answered with a fixed text.
+_IDENTITY = re.compile(
+    r"^(?:(?:hi|hey|hello|so|ok|okay|but|wait|oasis|tell me),? )*(?:"
+    r"(?:who|what)(?: are|re) (?:you|u)|"
+    r"(?:who|which company|what company) (?:made|created|built|developed|owns|designed|"
+    r"programmed|trained|runs) (?:you|u)|"
+    r"whos (?:your|ur) (?:owner|maker|creator|developer|company)|"
+    r"who is (?:your|ur) (?:owner|maker|creator|developer|company)|"
+    r"are (?:you|u) (?:chatgpt|chat gpt|gpt|google|gemini|bard|claude|qwen|siri|alexa|"
+    r"a bot|a robot|an ai|ai|human|a human|a person|a real person|real)"
+    r")(?: exactly| really| anyway| then| lol)?\s*[?.!]*\s*$"
+)
 LISTEN_AFTER = 2  # replies ending in a question in a row before one that only listens
 LONG_MESSAGE_WORDS = 40  # an outpouring this long gets a listening reply
 
@@ -141,6 +154,9 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
                     assessment=step.record, card=step.card,
                     reason_codes=("planner.passthrough", "assessment.free_text"))  # fmt: skip
 
+    if _IDENTITY.search(base_form(message)):
+        return Plan(mode="companion", templated=True, text=TEMPLATES["identity"],
+                    assessment=expired, reason_codes=("identity.asked",))  # fmt: skip
     signals = extract(message)
     if state.router.exercise is not None:  # no offer or explanation mid-exercise (design §3.2)
         return _routed(signals, state, now, expired)

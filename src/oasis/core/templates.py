@@ -37,6 +37,13 @@ TEMPLATES: dict[str, str] = {
     ),
     # Companion drafts rejected twice: neutral, so it fits good news as well as bad (CR-18).
     "companion_fallback": "I hear you. What feels most important to talk about right now?",
+    # "Who is your owner?" and the like (demo testing, 2026-10-29): fixed, so the model
+    # cannot name a company. True in both the local and the shared test version.
+    "identity": (
+        "I'm OASIS, a listening companion. I'm an independent project that runs an open "
+        "language model, and I'm not made by any company. I'm not a person, a therapist or a "
+        "doctor. What would you like to talk about?"
+    ),
     # The same for a listening reply, which asks nothing (demo testing, 2026-10-29).
     "listen_fallback": "I hear you. Take your time, I'm listening.",
 }
