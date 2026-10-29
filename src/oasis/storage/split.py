@@ -34,6 +34,10 @@ class SplitRepository:
         store = self.ephemeral if ephemeral else self.saved
         return await store.create_user_session(session_hash)
 
+    async def add_session(self, user_id: str, session_hash: str) -> None:
+        # A new conversation stays in the store holding the person: unsaved stays unsaved.
+        await self._by_user(user_id).add_session(user_id, session_hash)
+
     async def get_session(self, session_hash: str) -> SessionInfo | None:
         return await self._by_session(session_hash).get_session(session_hash)
 

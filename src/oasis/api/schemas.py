@@ -167,6 +167,8 @@ class SessionTrendOut(BaseModel):
     turns: int
     mean: dict[str, float | None]
     variance: dict[str, float | None]
+    valence: list[float]  # turn by turn (New chat, 2026-10-29)
+    is_current: bool
 
 
 class TurnPointOut(BaseModel):

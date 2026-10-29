@@ -71,7 +71,8 @@ def test_only_the_conversation_scrolls_so_the_composer_stays_in_view() -> None:
     assert '<body class="chat-page">' in HTML
     page = _rule("body.chat-page")
     assert "height: 100dvh" in page
-    assert "overflow: hidden" in page
+    assert "overflow-y: auto" in page  # a very short window scrolls the page instead
+    assert "min-height: 320px" in _rule(".chat-page .chat")
     conversation = _rule(".chat-page .messages")
     assert "overflow-y: auto" in conversation
     assert "min-height: 0" in conversation

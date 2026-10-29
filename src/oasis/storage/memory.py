@@ -84,12 +84,18 @@ class MemoryRepository:
         self._session_times[session_hash][1] = utc_now()
 
     def _expire(self) -> None:
+        """Forget a user once every one of their conversations has been idle too long."""
         if self._idle_timeout_s is None:
             return
         cutoff = self._clock() - self._idle_timeout_s
-        for session_hash, since in list(self._idle_since.items()):
-            if since < cutoff and session_hash in self._sessions:
-                self._forget_user(self._sessions[session_hash])
+        latest: dict[str, float] = {}
+        for session_hash, since in self._idle_since.items():
+            user_id = self._sessions.get(session_hash)
+            if user_id is not None:
+                latest[user_id] = max(since, latest.get(user_id, since))
+        for user_id, since in latest.items():
+            if since < cutoff:
+                self._forget_user(user_id)
 
     def _owns(self, user_id: str, session_hash: str) -> None:
         if self._sessions.get(session_hash) != user_id:
@@ -101,13 +107,24 @@ class MemoryRepository:
         if self._max_sessions is not None and len(self._sessions) >= self._max_sessions:
             raise StorageBusy("too many sessions")
         user_id = uuid.uuid4().hex
+        self._users[user_id] = utc_now()
+        self._open(user_id, session_hash)
+        return user_id
+
+    async def add_session(self, user_id: str, session_hash: str) -> None:
+        self._expire()
+        if user_id not in self._users:
+            raise StorageUnavailable("user not found")
+        if self._max_sessions is not None and len(self._sessions) >= self._max_sessions:
+            raise StorageBusy("too many sessions")
+        self._open(user_id, session_hash)
+
+    def _open(self, user_id: str, session_hash: str) -> None:
         now = utc_now()
-        self._users[user_id] = now
         self._sessions[session_hash] = user_id
         self._session_times[session_hash] = [now, now]
         self._idle_since[session_hash] = self._clock()
         self._turns[session_hash] = []
-        return user_id
 
     async def get_session(self, session_hash: str) -> SessionInfo | None:
         self._expire()

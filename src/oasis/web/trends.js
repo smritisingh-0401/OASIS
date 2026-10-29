@@ -40,6 +40,10 @@ function words(v) {
   return "mostly neutral words";
 }
 
+function messageCount(n) {
+  return n === 1 ? "1 message" : `${n} messages`;
+}
+
 // One chart on a -1..1 scale: a solid line with dots, an optional dashed line, rings on
 // flagged points, and a zero line.
 function chart(container, values, { dashed = [], flags = [], label }) {
@@ -75,9 +79,35 @@ function showNow(current) {
     return;
   }
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  const label = `${values.length} messages in this conversation; on average ${words(mean)}.`;
+  const label = `${messageCount(values.length)} in this conversation; on average ${words(mean)}.`;
   chart(document.getElementById("now-chart"), values, { label });
   note.textContent = label;
+}
+
+// One graph per earlier conversation, newest first (New chat, 2026-10-29).
+function showEarlier(sessions) {
+  const earlier = sessions.filter((s) => !s.is_current).reverse();
+  document.getElementById("earlier").hidden = earlier.length === 0;
+  document.getElementById("earlier-list").replaceChildren(
+    ...earlier.map((s) => {
+      const box = document.createElement("div");
+      box.className = "earlier";
+      const title = document.createElement("h4");
+      const when = new Date(s.started_at).toLocaleString([], {
+        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+      });
+      title.textContent = `Started ${when}`;
+      const graph = document.createElement("div");
+      graph.className = "chart";
+      const label = `${messageCount(s.turns)}; on average ${words(s.mean.valence ?? 0)}.`;
+      const note = document.createElement("p");
+      note.className = "trend-note";
+      note.textContent = label;
+      chart(graph, s.valence, { label });
+      box.append(title, graph, note);
+      return box;
+    }),
+  );
 }
 
 function showPast(body) {
@@ -140,6 +170,7 @@ async function load() {
     const body = await resp.json();
     status.textContent = "";
     showNow(body.current);
+    showEarlier(body.sessions);
     showPast(body);
     showBasis(body.features);
   } catch {

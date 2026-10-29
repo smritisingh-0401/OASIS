@@ -154,6 +154,20 @@ class SQLiteRepository:
 
         return await self._run(op)
 
+    async def add_session(self, user_id: str, session_hash: str) -> None:
+        now = utc_now()
+
+        def op(conn: sqlite3.Connection) -> None:
+            if conn.execute("SELECT 1 FROM users WHERE user_id = ?", (user_id,)).fetchone() is None:
+                raise sqlite3.IntegrityError("user not found")
+            conn.execute(
+                "INSERT INTO sessions (session_id_hash, user_id, created_at, last_seen_at) "
+                "VALUES (?, ?, ?, ?)",
+                (session_hash, user_id, now, now),
+            )
+
+        await self._run(op)
+
     async def get_session(self, session_hash: str) -> SessionInfo | None:
         def op(conn: sqlite3.Connection) -> SessionInfo | None:
             row = conn.execute(

@@ -475,6 +475,7 @@ Latency uses **server** timestamps (client clocks are untrusted); client time is
 - **Citations** (`content/tracking/features.yaml`, CR-21): valence, first-person pronouns and absolutist words carry a checked source and a note on what it does not show; the rest are labelled exploratory. The loader rejects a feature with both or neither, and any other label.
 - **Aggregation** (`tracking/aggregate.py`): per-session mean and sample variance (`statistics`), EWMA over session mean valence (α = 0.3), and the change flag (K = 5, z = 1.5, sample SD; a baseline with no spread flags nothing). Recomputed from the stored features on each request, so no running state is kept; this replaces the Welford update the design named.
 - **Trend view:** the per-feature sources sit in a closed "What it is based on" dropdown (Smriti, 2026-10-24); the label stays always visible. `GET /trends` (label, per-feature sources, sessions with means and variances, EWMA, change flags, this session's valence per turn) and `web/trends.html` / `trends.js`, linked from the chat header. The label is always visible; flagged sessions are described as "noticeably different words … about word choice only".
+- **New chat** (demo testing, 2026-10-29): a button starts another conversation of the same person (never automatically); the browser keeps only the new key, so an earlier conversation is not reopened in the chat but appears under "Earlier conversations" in the trend view, one graph each, newest first, and in Export and Delete. An unsaved person is forgotten only when every one of their conversations has been idle for two hours.
 - **Known gap:** every browser session is a new pseudonymous user (Smriti, 2026-10-20: build the cross-session parts now, prove them on synthetic timelines), so the cross-session line and the change flag fill in only once returning users exist (Phase 10 / 13).
 
 ---
@@ -684,11 +685,12 @@ All endpoints: JSON; `X-OASIS-Session: <token>` header (except `POST /session` a
 |---|---|---|---|
 | `GET /health` | — | `{"status":"ok","llm":"up\|down\|unknown","storage":"up\|down","version":"…"}` | — |
 | `POST /session` | `{"ephemeral": bool}` | `201 {"session_id": "<256-bit token>", "ephemeral": bool, "consent_required": bool}` | 422 |
+| `POST /session/new` | — | `201 {"session_id": "<new token>", "ephemeral": bool}`: New chat (demo testing, 2026-10-29), another conversation of the same user in the same store, with their consent and settings | 401, 503 `busy` |
 | `POST /consent` | `{"disclosure_version": "1"}` | `204` | 401, 422 |
 | `POST /chat` | `{"message": str (1–2000 chars) \| null, "client_ts": ISO-8601, "action": Action \| null}` | `200 ChatResponse` | 401 `invalid_session`, 403 `consent_required` (non-crisis only, §3.3 of architecture), 422 `invalid_turn` |
 | `GET /history?limit=50&before=<turn_id>` | — | `200 {"turns": [{"turn_id","role","content","mode","created_at"}], "next": str\|null, "assessment": card\|null}`; `assessment` is the open questionnaire's current card, so a reload restores its buttons | 401 |
 | `GET /explanations/{explanation_id}` | — | `200 Explanation (§10.2)` | 401, 404 |
-| `GET /trends` | — | `200 {"label": "language-based mood trend, not a clinical measure", "sessions": [...], "ewma": [...], "change_flags": [...]}` | 401 |
+| `GET /trends` | — | `200 {"label": "language-based mood trend, not a clinical measure", "sessions": [... each with "valence" turn by turn and "is_current"], "ewma": [...], "change_flags": [...]}` | 401 |
 | `GET /settings` / `PUT /settings` | `{"directness","formality","country"}` (`country`: ISO code on the help card, or null) | `200 Settings` | 401, 403 `consent_required` (PUT), 422, 503 |
 | `GET /export` | — | `200 UserExport` (all tables for the user, JSON, `Content-Disposition: attachment`) | 401 |
 | `DELETE /account` | `{"confirm": "DELETE"}` | `204` | 401, 422 |

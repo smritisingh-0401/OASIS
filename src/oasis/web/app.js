@@ -118,6 +118,7 @@ function showOnboarding(note, resume = false) {
   messages.hidden = true;
   form.hidden = true;
   card.hidden = true;
+  newChat.hidden = true;
   status.textContent = note || "";
   if (!help.contains(document.activeElement)) (startSaved.hidden ? startEphemeral : startSaved).focus();
 }
@@ -135,7 +136,39 @@ function showChat() {
   onboarding.hidden = true;
   messages.hidden = false;
   form.hidden = false;
+  newChat.hidden = false;
 }
+
+// New chat (demo testing, 2026-10-29): a fresh conversation for the same person, only when
+// they ask. The earlier one stays in Mood trend; this browser keeps only the new key.
+const newChat = document.getElementById("new-chat");
+const emptyState = messages.querySelector(".empty-state").cloneNode(true);
+
+newChat.addEventListener("click", async () => {
+  if (sendButton.disabled) return;
+  const sure = window.confirm(
+    "Start a new conversation? This one stays in Mood trend, but you can't come back to it here.",
+  );
+  if (!sure) return;
+  try {
+    const resp = await api("/session/new", { method: "POST" });
+    if (resp.status === 401) {
+      saveToken("");
+      return showOnboarding();
+    }
+    if (!resp.ok) throw new Error("new chat");
+    const session = await resp.json();
+    saveToken(session.session_id, session.ephemeral);
+    messages.replaceChildren(emptyState.cloneNode(true));
+    continueButton.hidden = true;
+    card.hidden = true;
+    newMessage.hidden = true;
+    status.textContent = "New conversation started.";
+    input.focus();
+  } catch {
+    status.textContent = OFFLINE;
+  }
+});
 
 // Choosing how to start creates the session and records consent to the notice shown.
 async function start(ephemeral) {
