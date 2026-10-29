@@ -443,3 +443,34 @@ def _bank() -> dict[str, tuple[str, ...]]:
     from oasis.guard.socratic import load_bank
 
     return dict(load_bank())
+
+
+# --- who made OASIS (demo testing, 2026-10-29) ------------------------------------------------
+# Asked "Who is your owner", the model said "I am an artificial intelligence created by Google".
+
+
+@pytest.mark.parametrize("reply", [
+    "I am an artificial intelligence created by Google to be helpful to you.",
+    "I was developed by OpenAI, but I'm here to listen.",
+    "I'm Qwen, a large language model made by Alibaba Cloud.",
+    "As ChatGPT, I can't say.",
+])  # fmt: skip
+def test_claiming_a_maker_is_rejected_in_every_mode(reply: str) -> None:
+    for mode in ("companion", "cbt", "psychoed"):
+        assert "no_maker_claim" in check(reply, Plan(mode=mode)).reasons  # type: ignore[arg-type]
+    assert "no_maker_claim" in HARD_RULES
+
+
+def test_saying_what_oasis_is_passes() -> None:
+    plan = Plan(mode="companion")
+    reply = "I'm OASIS, a listening companion that runs on an open language model. I'm here."
+    assert "no_maker_claim" not in check(reply, plan).reasons
+    assert "no_maker_claim" not in check("So your friend works at Google.", plan).reasons
+
+
+def test_the_prompt_says_who_made_oasis() -> None:
+    from oasis.llm.prompt import build_messages
+
+    system = build_messages(Plan(mode="companion"), [], "who made you", history_turns=6)[0].content
+    assert "not made by any company" in system
+    assert "open language model" in system
