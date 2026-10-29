@@ -538,6 +538,22 @@ def test_new_chat_keeps_an_unsaved_person_unsaved(client: TestClient) -> None:
     assert client.post("/session/new", headers={HEADER: token}).json()["ephemeral"] is True
 
 
+def test_why_replies_have_their_own_page(client: TestClient) -> None:
+    """Demo testing, 2026-10-29: "Why this reply?" moves off every reply to a page of its
+    own, reached from the header like Mood trend."""
+    chat_js = (Path(oasis.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
+    assert "/explanations/" not in chat_js
+    assert 'href="why.html"' in client.get("/").text
+    page = client.get("/why.html")
+    assert page.status_code == 200
+    assert 'src="why.js"' in page.text
+    assert 'href="/"' in page.text  # back to chat
+    why_js = client.get("/why.js").text
+    assert "/history?limit=200" in why_js
+    assert "reverse()" in why_js  # newest first
+    assert "crisis support" in why_js  # a crisis reply's details are never kept
+
+
 def test_trends_need_a_session(client: TestClient) -> None:
     assert client.get("/trends").status_code == 401
     assert client.get("/trends", headers={HEADER: "not-a-session"}).status_code == 401
@@ -613,9 +629,9 @@ def test_crisis_reply_carries_no_explanation(client: TestClient) -> None:
 
 
 def test_the_why_panel_is_fetched_on_demand() -> None:
-    js = (Path(oasis.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
+    """Since 2026-10-29 the panels live on their own page (why.html), one per reply."""
+    js = (Path(oasis.__file__).parent / "web" / "why.js").read_text(encoding="utf-8")
     assert "/explanations/" in js
-    assert "Why this reply?" in js
     # No raw record in the panel (Smriti, 2026-10-24); GET /explanations and export keep it.
     assert "See details" not in js
     # The scope note stays in the record (GET /explanations, export), not in the panel.
