@@ -73,3 +73,7 @@ reasons:
   exercise.stop: "You stopped the exercise, so the reply goes back to talking."
   exercise.none_open: "There was no open exercise for that button, so the reply says so."
   post_crisis.cleared: "You said you would like to keep talking, so the reply listens again and asks one gentle question."
+  # Listening replies (demo testing, 2026-10-29): no question, and why.
+  listen.asked: "You asked OASIS to stop asking questions, so the reply reflects what you said and just listens."
+  listen.two_questions: "The last two replies each asked you something, so this one reflects what you said and just listens."
+  listen.long_message: "You shared a lot, so the reply reflects it and just listens, without a question."

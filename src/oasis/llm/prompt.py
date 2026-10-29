@@ -41,6 +41,8 @@ GOALS = {
 RULES = {
     "validate_first": "Start by acknowledging what they said, in your own words.",
     "one_question": "Ask exactly one gentle, open question, at the end.",
+    "no_question": "Do not ask a question: reflect what they said and let them know you are "
+    "listening.",
     "no_advice": "Do not give advice or tell them what to do.",
     "offer_ideas": "They asked for ideas: offer one or two gentle, practical suggestions.",
     "no_praise": "Do not praise or flatter them.",
@@ -64,6 +66,8 @@ RULES = {
     "ack_only": "Write one short sentence responding to them, with no question and no exercise "
     "step.",
 }
+# A companion reply that only listens (demo testing, 2026-10-29).
+LISTEN_GOAL = "Respond to what they said and let them know you are listening."
 SCRIPT_MARK = "\n- script: "
 # An exercise step is added after the reply word for word (the 4B model, asked to rephrase
 # "T is for Take a step back", wrote "N is for Name what you are feeling"), so the step text
@@ -94,7 +98,12 @@ def build_messages(
     history_turns: int,
     retry_reasons: Sequence[str] = (),
 ) -> list[ChatMessage]:
-    goal = STEP_GOAL if plan.is_step else GOALS.get(plan.mode, GOALS["companion"])
+    if plan.is_step:
+        goal = STEP_GOAL
+    elif "no_question" in plan.constraints:
+        goal = LISTEN_GOAL
+    else:
+        goal = GOALS.get(plan.mode, GOALS["companion"])
     style = framing(plan.style)
     system = SYSTEM_TEMPLATE.format(
         style=style + "\n" if style else "",

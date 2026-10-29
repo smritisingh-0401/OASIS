@@ -41,6 +41,15 @@ _CONTINUE = re.compile(
     r"i(?:m| am) ready to) (?:keep|continue|carry on|go on) (?:talking|chatting)|"
     r"(?:keep|continue) talking)\b"
 )
+# Asking for no questions (demo testing, 2026-10-29: "you are asking me how much sad").
+# Clinician review pending: CR-14.
+_JUST_LISTEN = re.compile(
+    r"\b(?:(?:stop|quit) asking|(?:no|dont want(?: any)?|do not want(?: any)?) (?:more )?"
+    r"questions|too many questions|(?:just|only) (?:listen|vent)|(?:just |only )?need to vent|"
+    r"(?:you|youre|you are|you keep|you always) (?:keep )?asking me)\b"
+)
+LISTEN_AFTER = 2  # replies ending in a question in a row before one that only listens
+LONG_MESSAGE_WORDS = 40  # an outpouring this long gets a listening reply
 
 # Plan constraints per mode (design §13.2); the prompt builder turns them into rules.
 CONSTRAINTS: dict[str, tuple[str, ...]] = {
@@ -83,7 +92,28 @@ def plan_turn(message: str, state: ConversationState, action: Action | None = No
     # So a conversation does not open every reply the same way (tone check, 2026-10-11).
     said = [t.content for t in state.history if t.role == "assistant" and t.mode == "companion"]
     recent = (o for o in map(opener, said[-RECENT_OPENERS:]) if len(o.split()) == 3)
-    return replace(plan, avoid_openers=tuple(dict.fromkeys(recent)))
+    return _listening(replace(plan, avoid_openers=tuple(dict.fromkeys(recent))), message, state)
+
+
+def _listening(plan: Plan, message: str, state: ConversationState) -> Plan:
+    """Swap the closing question for listening when asked, after LISTEN_AFTER questions in a
+    row, or after a long message. Asked-for ideas and thinking traps keep their question."""
+    if "one_question" not in plan.constraints or "offer_ideas" in plan.constraints:
+        return plan
+    if plan.distortion_types:
+        return plan
+    replies = [t.content.rstrip() for t in state.history if t.role == "assistant"]
+    last = replies[-LISTEN_AFTER:]
+    if _JUST_LISTEN.search(base_form(message)):
+        why = "asked"
+    elif len(last) == LISTEN_AFTER and all(r.endswith("?") for r in last):
+        why = "two_questions"
+    elif len(message.split()) >= LONG_MESSAGE_WORDS:
+        why = "long_message"
+    else:
+        return plan
+    rules = tuple("no_question" if c == "one_question" else c for c in plan.constraints)
+    return replace(plan, constraints=rules, reason_codes=(*plan.reason_codes, f"listen.{why}"))
 
 
 def _plan(message: str, state: ConversationState, action: Action | None) -> Plan:

@@ -469,6 +469,9 @@ class ChatEngine:
                     # The model tends to run on into a step of its own ("N is for Notice…")
                     # after a good first sentence: keep only that sentence.
                     text = _FIRST_SENTENCE.match(text).group(0).strip()  # type: ignore[union-attr]
+                elif "no_question" in plan.constraints:
+                    # Asked to just listen, the model still tends to end on a question.
+                    text = _without_questions(text)
             except TimeoutError:
                 return soft or _fallback(plan, "llm.timeout", attempt, outcomes, seed)
             except LLMFailure as failure:
@@ -490,6 +493,8 @@ def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str], seed:
     elif reason.startswith("guard.") and (plan.distortion_types or plan.mode in ("cbt", "dbt")):
         # Reroute (design §8.3): validate the feeling, then one vetted Socratic question.
         text = socratic_question(plan.distortion_types, seed)
+    elif reason.startswith("guard.") and "no_question" in plan.constraints:
+        text = TEMPLATES["listen_fallback"]
     else:
         text = TEMPLATES[fallback_template(reason)]
     return _Draft(text, attempts, tuple(outcomes), reason)
@@ -497,6 +502,13 @@ def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str], seed:
 
 _NO_DRAFT = _Draft("", 0, (), None)
 _FIRST_SENTENCE = re.compile(r"\s*[^.!?]*[.!?]*")  # always matches, possibly empty
+_SENTENCE = re.compile(r"[^.!?]+[.!?]*")
+
+
+def _without_questions(text: str) -> str:
+    """The sentences that are not questions; all of `text` if every one is."""
+    kept = [s.strip() for s in _SENTENCE.findall(text) if not s.rstrip().endswith("?")]
+    return " ".join(k for k in kept if k) or text
 
 
 def _trace(

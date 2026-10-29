@@ -37,6 +37,8 @@ TEMPLATES: dict[str, str] = {
     ),
     # Companion drafts rejected twice: neutral, so it fits good news as well as bad (CR-18).
     "companion_fallback": "I hear you. What feels most important to talk about right now?",
+    # The same for a listening reply, which asks nothing (demo testing, 2026-10-29).
+    "listen_fallback": "I hear you. Take your time, I'm listening.",
 }
 
 

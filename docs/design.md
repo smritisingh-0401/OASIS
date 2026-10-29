@@ -401,6 +401,7 @@ function route(x, rs: RouterState) -> RouteDecision:
 | `C-ADVICE` | Unprompted advice imperative when plan constraint `no_advice` is set | Companion |
 | `C-DEPEND` | Dependency language (`I'm always here for you`, `you don't need anyone else`, `only I understand`) | All |
 | `C-ONEQ` | Exactly one question when constraint `one_question` | Companion, Socratic |
+| `C-NOQ` | No question when constraint `no_question` (a listening reply: asked to, after 2 question replies in a row, or a 40+ word message; demo testing 2026-10-29). The engine drops question sentences first; all questions gives `listen_fallback` | Companion |
 | `G-LEN` | ≤ token cap; not empty | All |
 
 ### 8.3 Flow

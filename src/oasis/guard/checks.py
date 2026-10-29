@@ -2,8 +2,8 @@
 
 Each check enforces a plan rule the prompt already states, and its reason code is that rule's
 name, so a retry can name it back in plain words.
-- Companion replies: validate_first, one_question, no_praise, no_advice (only the rules the
-  plan carries) and fresh_opener.
+- Companion replies: validate_first, one_question or no_question (a listening reply),
+  no_praise, no_advice (only the rules the plan carries) and fresh_opener.
 - Replies to a thinking-trap message, in every mode: validate_first and one_question, plus
   no_agreeing and no_presupposing against the user's distorted claim (G-AGREE, G-PRESUP).
 - Exercise steps: ack_only (no question, no step or instruction of its own; the engine
@@ -32,12 +32,12 @@ COMPANION_LISTED = ("validate_first", "no_praise", "no_advice", "no_dependency")
 GUARD_LISTED = ("agreement", "hedges", "presupposing", "advice_words", "self_label",
                 "diagnosis", "medication", "refusals", "step_text", "made_up_step", "label_nouns",
                 "harsh_words", "strong_agreement", "medication_topic")  # fmt: skip
-COMPANION_RULES = ("validate_first", "one_question", "no_praise", "no_advice")
+COMPANION_RULES = ("validate_first", "one_question", "no_question", "no_praise", "no_advice")
 # Form, not content: a draft failing only these is retried, but kept rather than replaced
 # by the fixed fallback (the validating-phrase list cannot know every way to validate).
 SOFT_RULES = frozenset({"validate_first", "one_question", "fresh_opener"})
 # Content: a draft failing any of these twice is replaced by a vetted fallback.
-HARD_RULES = frozenset({"no_praise", "no_advice", "no_dependency", "no_agreeing",
+HARD_RULES = frozenset({"no_praise", "no_advice", "no_dependency", "no_agreeing", "no_question",
                         "no_self_label", "no_presupposing", "no_diagnosis", "no_medication",
                         "not_empty", "ack_only", "no_exercise_step"})  # fmt: skip
 # Checked on every generated reply: (rule, phrase list).
@@ -152,6 +152,8 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
             failed.append("validate_first")
         if "one_question" in active and (norm.count("?") != 1 or not norm.rstrip().endswith("?")):
             failed.append("one_question")
+        if "no_question" in active and "?" in norm:
+            failed.append("no_question")  # a listening reply (demo testing, 2026-10-29)
     if plan.is_step and _any(rules["no_praise"], norm):
         failed.append("no_praise")  # "That is a good start." before a step (tone check)
     if plan.mode == "companion":

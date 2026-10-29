@@ -211,7 +211,9 @@ def _plain(plan: Plan, fallback_reason: str | None) -> list[str]:
         bullets.append(p["trap"].format(traps=traps))
     # Without a route the planner chose the reply by precedence; its reason codes say why.
     reasons = [] if route is not None else [cfg.reasons[k] for k in _reason_keys(plan, cfg)]
-    bullets.extend(reasons or [_what_the_reply_does(plan, route, cfg)])
+    # A listening reply says why it asks nothing, instead of the mode's "asks one question".
+    listen = [cfg.reasons[c] for c in plan.reason_codes if c.startswith("listen.")]
+    bullets.extend(reasons or listen or [_what_the_reply_does(plan, route, cfg)])
     if fallback_reason is not None:
         bullets.append(p["fallback"])
     return bullets
