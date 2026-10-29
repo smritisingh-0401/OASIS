@@ -811,3 +811,17 @@ async def test_a_listening_reply_of_only_questions_ends_in_the_listening_fallbac
     result = await engine.handle_turn("h", "can you just listen")
 
     assert result.reply == TEMPLATES["listen_fallback"]
+
+
+@pytest.mark.anyio
+async def test_a_short_reply_keeps_only_the_first_plain_sentence(settings: Settings) -> None:
+    llm = FakeLLM(replies=["That sounds hard. What happened?",
+                           "Food matters a lot. It really does. What else is hard?"])  # fmt: skip
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    await engine.handle_turn("h", "I had a rough week at the hostel")
+
+    result = await engine.handle_turn("h", "food")
+
+    assert result.reply == "Food matters a lot."
+    assert llm.calls == 2

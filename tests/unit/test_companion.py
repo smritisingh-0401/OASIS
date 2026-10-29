@@ -322,3 +322,43 @@ def test_the_fixed_answer_is_honest_and_passes_the_checks() -> None:
     assert "open language model" in text
     assert "not a person" in text
     assert check(text, Plan(mode="companion")).ok
+
+
+# --- short acknowledgements (demo testing, 2026-10-29) --------------------------------------
+# "food", "MOTHER": a short answer gets a short reply, not a paragraph.
+
+BRIEF = Plan(mode="companion", constraints=("brief", "no_advice", "no_praise"))
+
+
+@pytest.mark.parametrize("message", ["food", "MOTHER", "ok thanks", "yeah it was hard"])
+def test_a_short_message_gets_a_short_acknowledgement(message: str) -> None:
+    plan = plan_turn(message, state(history=_said("That sounds hard. What bothers you most?")))
+    assert "brief" in plan.constraints
+    assert not {"one_question", "no_question", "validate_first"} & set(plan.constraints)
+    assert "brief.short_message" in plan.reason_codes
+
+
+@pytest.mark.parametrize("message", [
+    "who made you feel that?", "what should I do", "is that normal",
+    "my exams start next week and I am not ready at all",
+])  # fmt: skip
+def test_questions_and_longer_messages_get_a_full_reply(message: str) -> None:
+    history = state(history=_said("That sounds hard. What bothers you most?"))
+    assert "brief" not in plan_turn(message, history).constraints
+
+
+def test_the_first_message_gets_a_full_reply() -> None:
+    assert "brief" not in plan_turn("hi there", state()).constraints
+
+
+def test_asking_to_just_listen_wins_over_a_short_reply() -> None:
+    plan = plan_turn("can you just listen", state(history=_said("That sounds hard. Why?")))
+    assert "listen.asked" in plan.reason_codes
+
+
+def test_a_short_reply_is_one_sentence_without_a_question() -> None:
+    assert check("Food really matters when you're far from home.", BRIEF).ok
+    assert check("That makes sense. What else?", BRIEF).reasons == ("brief",)
+    assert check("That makes sense. It really does. I hear you.", BRIEF).reasons == ("brief",)
+    system = build_messages(BRIEF, [], "food", history_turns=6)[0].content
+    assert "one short sentence" in system
