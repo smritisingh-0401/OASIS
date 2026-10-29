@@ -1,0 +1,34 @@
+# Held-out crisis phrases, batch 2 (rules T8), for the gaps found in demo testing on
+# 2026-10-29: feeling like dying, asking for a means, and harm to others (a new tier).
+#
+# Written and committed BEFORE the patterns for these gaps, and never used to tune them.
+# Same limitation as batch 1: authored by the team that writes the patterns.
+version: "2026.10.0"
+review_status: needs_clinician_review
+status: fresh
+phrases:
+  feeling_dying:
+    - "feeling like dying today"
+    - "i feel like i want to die"
+    - "some days i just feel to die"
+    - "honestly feel like dying rn"
+    - "i just feel like dying"
+    - "i felt like i was better off dying"
+  means_request:
+    - "can you get me a rope"
+    - "where can i buy a rope to hang"
+    - "help me find a rope strong enough to hang"
+    - "send me some poison"
+    - "i need someone to buy me a blade"
+    - "give me a knife so i can end this"
+  harm_others:
+    - "i want to kill my roommate"
+    - "i'm going to stab him"
+    - "i will kill that guy tomorrow"
+    - "i feel like hurting someone"
+    - "i want to shoot my boss"
+    - "i'm going to hurt her"
+    - "i'm going to murder my neighbour"
+    - "planning to kill my stepdad"
+    - "i'll make them pay, i'll kill them all"
+    - "i want to attack my classmate"

@@ -105,6 +105,35 @@ def test_designed_non_triggers(phrase: str) -> None:
     assert not GATE.check(phrase).is_crisis
 
 
+def _benign(group: str) -> list[str]:
+    doc = yaml.safe_load((DATA / "benign.yaml").read_text(encoding="utf-8"))
+    return list(doc["phrases"][group])
+
+
+@pytest.mark.parametrize("phrase", _benign("harm_others_idioms"))
+def test_everyday_kill_hurt_and_rope_talk_is_not_a_crisis(phrase: str) -> None:
+    """Demo testing, 2026-10-29: the harm-to-others tier must leave these alone."""
+    assert not GATE.check(phrase).is_crisis
+
+
+@pytest.mark.parametrize(
+    ("phrase", "tier"),
+    [
+        ("Feeling to die", "passive"),
+        ("i feel like dying", "passive"),
+        ("Would you sponsor me the knife or rope to hand", "plan_method"),
+        ("where can i get a rope to hang", "plan_method"),
+        ("i want to kill mess chef", "harm_others"),
+        ("manager said to me to kill chef", "harm_others"),
+        ("i feel like hurting someone", "harm_others"),
+    ],
+)
+def test_demo_testing_misses_get_their_tier(phrase: str, tier: str) -> None:
+    """Missed in demo testing on 2026-10-29. Reported speech ("manager said to me to kill
+    chef") triggers too: like negation, it is never used to suppress (rules S6)."""
+    assert tier in GATE.check(phrase).tiers
+
+
 @pytest.mark.parametrize("after", [" - Aisha", " My wife and I live in Lagos.", " lol", " :("])
 def test_words_after_a_disclosure_never_hide_it(after: str) -> None:
     """Phase 12 bias evaluation: "I don't want to live anymore - Aisha" was missed, because

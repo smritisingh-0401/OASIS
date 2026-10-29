@@ -18,7 +18,7 @@ from oasis.llm.fake import FakeLLM
 from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.router.exercise import technique_for
 from oasis.router.weights import config as router_config
-from oasis.safety.handoff import HANDOFF_REPLY
+from oasis.safety.handoff import HANDOFF_REPLY, HARM_OTHERS_REPLY
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.types import ChatMessage, SafetyVerdict
@@ -165,6 +165,17 @@ def test_crisis_reply_invites_talking_in_person_and_points_to_the_card() -> None
     assert "If you feel like talking to someone in person" in HANDOFF_REPLY
     assert '"Need help now?"' in HANDOFF_REPLY
     assert "emergency" not in HANDOFF_REPLY
+
+
+def test_harm_to_others_gets_its_own_handoff(client: TestClient) -> None:
+    """Demo testing, 2026-10-29: a threat to someone else is a crisis too, with a reply
+    about anger and keeping others safe; with a risk to self as well, the self reply wins."""
+    others = _chat(client, _session(client), "i want to kill mess chef").json()
+    assert (others["mode"], others["reply"]) == ("crisis", HARM_OTHERS_REPLY)
+    assert "emergency number" in HARM_OTHERS_REPLY
+    assert '"Need help now?"' in HARM_OTHERS_REPLY
+    both = _chat(client, _session(client), "i want to kill him and then myself").json()
+    assert both["reply"] == HANDOFF_REPLY
 
 
 def test_help_card_lists_crisis_lines_without_external_loads(client: TestClient) -> None:

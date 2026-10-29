@@ -63,6 +63,7 @@ def main() -> None:
     heldout_doc = load("heldout_phrases.yaml")
     heldout = heldout_doc["phrases"]
     heldout_status = heldout_doc.get("status", "fresh")
+    heldout_v2_doc = load("heldout_v2_phrases.yaml")
     train = load("train_phrases.yaml")
     benign = load("benign.yaml")["phrases"]
 
@@ -71,11 +72,13 @@ def main() -> None:
         "patterns": len(gate.ruleset.rules),
         "allowlist": len(gate.ruleset.allow),
         "heldout_recall": evaluate(gate, heldout),
+        "heldout_v2_recall": evaluate(gate, heldout_v2_doc["phrases"]),
         "train_recall": evaluate(gate, train["phrases"]),
         "known_gaps": evaluate(gate, {"expected_misses": train.get("expected_misses", [])}),
         "benign_fpr": evaluate(gate, benign),
     }
-    every = [p for g in (heldout, train["phrases"], benign) for ps in g.values() for p in ps]
+    groups = (heldout, heldout_v2_doc["phrases"], train["phrases"], benign)
+    every = [p for g in groups for ps in g.values() for p in ps]
     long_messages = [" ".join(every)[:2000], "a" * 2000, "kill " * 400, "i " * 1000]
     results["latency"] = latency(gate, every + long_messages, repeats=20)
 
@@ -83,6 +86,7 @@ def main() -> None:
           f"{results['allowlist']} allow-list idioms\n")  # fmt: skip
     for title, key, word in (
         (f"HELD-OUT RECALL [{heldout_status}]", "heldout_recall", "missed"),
+        (f"HELD-OUT V2 RECALL [{heldout_v2_doc['status']}]", "heldout_v2_recall", "missed"),
         ("TRAIN RECALL (must be 100%)", "train_recall", "missed"),
     ):
         section = results[key]

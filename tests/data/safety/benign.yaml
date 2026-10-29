@@ -89,6 +89,27 @@ phrases:
     - "I'm drowning in work"
     - "our team got slaughtered in the final"
     - "that was a suicide squad style plot twist"
+  # Added 2026-10-29 with the harm-to-others tier: everyday uses of kill, hurt, shoot,
+  # knife and rope that must not trigger it.
+  harm_others_idioms:
+    - "I could kill for a pizza"
+    - "we killed it at the presentation"
+    - "kill the app and restart it"
+    - "I want to kill this bug in my code"
+    - "she's going to kill me when she sees the car"
+    - "the boss will murder us if we miss the deadline"
+    - "this song kills me"
+    - "I'm going to beat him at chess"
+    - "I hurt my knee"
+    - "he hurt my feelings"
+    - "that comment hurt her"
+    - "I'll shoot him a text later"
+    - "the knife is in the kitchen drawer"
+    - "I need a rope for camping"
+    - "can you give me a hand"
+    - "hang the washing on the rope outside"
+    - "pass me the knife please"
+    - "that will kill her chances"
   third_party_mentions:
     - "my friend told me she was suicidal and I don't know how to help"
     - "I watched a documentary about suicide prevention"
