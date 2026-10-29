@@ -811,7 +811,7 @@ All files are validated against Pydantic schemas at startup; invalid content ref
 2. **Chat** — message list, input, send; persistent footer "Support tool, not a diagnosis or emergency service"; "Need help now?" button top-right.
 3. **Assessment card** — inline card: instrument name, "Question 3 of 9", item text, four large 0–3 buttons with labels, Pause and Stop links.
 4. **Score explanation** — total, band in words, plain-language meaning, non-diagnostic statement, "talk to a professional" text when the band text says so.
-5. **"Why this reply" panel** — expandable under each bot message; plain-language bullets only. The scope note (§10.2) and the raw record stay in the stored record, not the page (2026-10-24).
+5. **"Why this reply" panel** — expandable under each bot message; plain-language bullets only. The scope note (§10.2) and the raw record stay in the stored record, not the page (2026-10-24). Since 2026-10-29 (demo testing) the panels moved to their own page, `why.html` ("Why replies" in the header): every reply of the conversation, newest first, each a closed panel with the start of the reply as its summary; a crisis reply shows only "This was crisis support. Its details are not kept."
 6. **Mood-trend view** — simple line of session means with the non-clinical label always visible.
 7. **Settings** — style profile (two segmented controls with examples), the help card's country, ephemeral status, Export, Delete (two-step confirm).
 8. **Crisis card** — replaces the input area focus: calm heading, resources as large tappable links (`tel:`), "Continue talking" button.
@@ -844,7 +844,7 @@ Warm, plain, brief, non-judgemental; second person; no exclamation marks, no emo
 - **Error / offline:** "I couldn't reach the server. Your message wasn't sent." + Retry; the help button still works.
 - **Busy:** templated reply "I'm handling a lot right now — could you give me a moment and send that again?"
 - **Conversation layout (demo testing, 2026-10-29):** the chat panel fills the window and only the conversation (or the data notice) scrolls, so the composer stays on screen. New messages follow a reader at the bottom; scrolled up, they get a "New message ↓" button instead, and their own message always returns them to the bottom.
-- **Typing:** three dots while the reply is generated, then the reply types out word by word (at most 2 s in all). It is already checked in full on the server, so this only reveals it. The note and "Why this reply?" appear once it is done, and `aria-busy` stays on until then, so a screen reader hears the reply once. Crisis and post-crisis replies, and reduced motion, show the reply at once.
+- **Typing:** three dots while the reply is generated, then the reply types out word by word (at most 2 s in all). It is already checked in full on the server, so this only reveals it. The note appears once it is done, and `aria-busy` stays on until then, so a screen reader hears the reply once. Crisis and post-crisis replies, and reduced motion, show the reply at once.
 
 ### 15.5 Keyboard and screen readers
 Enter sends, Shift+Enter newline; Tab order: help button → messages → input → send; assessment buttons are a `radiogroup` with arrow-key navigation; new messages announced via `aria-live="polite"`, crisis card via `role="alert"`; focus moves to the crisis card heading on handoff.

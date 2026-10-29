@@ -309,7 +309,7 @@ function typeOut(item, body, text) {
   }, step);
 }
 
-function addMessage(role, text, note, explanationId, animate = false) {
+function addMessage(role, text, note, animate = false) {
   const item = document.createElement("li");
   item.className = "msg " + ({ user: "user", placeholder: "system" }[role] || "bot");
   const body = document.createElement("p");
@@ -328,56 +328,12 @@ function addMessage(role, text, note, explanationId, animate = false) {
     small.textContent = note;
     item.appendChild(small);
   }
-  if (explanationId) item.appendChild(whyPanel(explanationId));
   // Your own message always brings the conversation to the bottom.
   const stick = role === "user" || atBottom();
   messages.appendChild(item);
   follow(stick);
   if (typing) typeOut(item, body, text);
   return item;
-}
-
-// "Why this reply?" (design §10, FR-XAI-3): fetched when opened, the plain-language bullets
-// only. The scope note and the raw record stay out of the page (Smriti, 2026-10-24); both
-// are still in the record served by GET /explanations/{id} and included in the export.
-function whyPanel(explanationId) {
-  const panel = document.createElement("details");
-  panel.className = "why";
-  const summary = document.createElement("summary");
-  summary.textContent = "Why this reply?";
-  panel.appendChild(summary);
-  let note = null;
-  panel.addEventListener("toggle", async () => {
-    if (!panel.open || panel.dataset.loaded || panel.dataset.loading) return;
-    panel.dataset.loading = "1";
-    if (note) note.remove();
-    let resp = null;
-    try {
-      resp = await api("/explanations/" + encodeURIComponent(explanationId));
-    } catch {
-      // No connection: said below and tried again on the next open.
-    }
-    delete panel.dataset.loading;
-    // No answer, or the server could not load it right now: say which, and fetch again the
-    // next time the panel is opened. Only a definite answer is kept.
-    if (!resp || resp.status >= 500) {
-      note = line("p", resp
-        ? "OASIS couldn't load this right now. Close and reopen this to try again."
-        : "Couldn't reach OASIS. Close and reopen this to try again.", "why-note");
-      panel.appendChild(note);
-      return;
-    }
-    panel.dataset.loaded = "1";
-    const body = resp.ok ? await resp.json().catch(() => null) : null;
-    if (!body || body.status === "unavailable") {
-      panel.appendChild(line("p", "Explanation unavailable for this reply.", "why-note"));
-      return;
-    }
-    const list = document.createElement("ul");
-    for (const text of body.plain_language) list.appendChild(line("li", text));
-    panel.append(list);
-  });
-  return panel;
 }
 
 function setBusy(busy) {
@@ -398,7 +354,7 @@ async function loadHistory() {
     }
     if (!resp.ok) return;
     const body = await resp.json();
-    for (const turn of body.turns) addMessage(turn.role, turn.content, "", turn.explanation_id);
+    for (const turn of body.turns) addMessage(turn.role, turn.content, "");
     // An open questionnaire picks up where it was: its buttons come back with the history.
     showCard(body);
     // Post-crisis mode outlives a reload, so the way out must too.
@@ -537,10 +493,10 @@ async function sendText(text, action) {
     // Crisis replies appear at once, never typed out.
     const animate = body.mode !== "crisis" && body.mode !== "post_crisis";
     if (body.preface) addMessage("assistant", body.preface);
-    const reply = addMessage("assistant", body.reply, note, body.explanation_id, animate);
+    const reply = addMessage("assistant", body.reply, note, animate);
     if (body.style_suggestion && !styleSuggested) {
       styleSuggested = true;
-      reply.insertBefore(styleNote(), reply.querySelector(".why"));
+      reply.appendChild(styleNote());
     }
     status.textContent = "";
     showCard(body);

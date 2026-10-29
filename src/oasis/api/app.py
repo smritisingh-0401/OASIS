@@ -111,6 +111,7 @@ def create_app(
     index_html = render_index(page("index.html"), resources, disclosure)
     settings_html = render_settings(page("settings.html"), resources)
     trends_html = page("trends.html")
+    why_html = page("why.html")
 
     # Each session is saved or ephemeral, chosen when it starts (FR-PRV-4).
     ephemeral = MemoryRepository(
@@ -179,6 +180,10 @@ def create_app(
     @app.get("/trends.html", include_in_schema=False)
     async def trends_page() -> HTMLResponse:
         return HTMLResponse(trends_html)
+
+    @app.get("/why.html", include_in_schema=False)
+    async def why_page() -> HTMLResponse:
+        return HTMLResponse(why_html)
 
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app

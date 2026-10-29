@@ -292,7 +292,7 @@ body.chat-page {
   0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
   30% { opacity: 1; transform: translateY(-3px); }
 }
-/* The note and "Why this reply?" appear once the reply has finished typing out. */
+/* The note appears once the reply has finished typing out. */
 .msg.typing-out > :not(.reply-text) { visibility: hidden; }
 
 .msg {
@@ -321,6 +321,16 @@ body.chat-page {
 .why ul { margin: 6px 0 0; padding-left: 20px; }
 .why li { margin: 2px 0; }
 .why .why-note { margin-top: 6px; font-style: italic; }
+/* Why replies page (demo testing, 2026-10-29): one closed panel per reply, newest first. */
+.why-list { list-style: none; margin: 0; padding: 0; }
+.why-list > li {
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--glass-strong);
+}
+.why-list .why { margin-top: 0; font-size: 15px; }
+.why-list .why summary { font-weight: 600; }
 
 .continue {
   align-self: flex-start;
@@ -532,6 +542,10 @@ body.chat-page {
 @media (max-width: 520px) {
   .top { flex-wrap: wrap; position: relative; }
   .pill, .help summary { padding: 7px 14px; }
+  /* Five header buttons (New chat, Why replies): each label stays on one line, so "Need help
+     now?" never breaks, and the buttons wrap to a second row instead. */
+  .pill, .help summary { white-space: nowrap; }
+  .top-actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
   /* The header wraps and "Need help now?" no longer sits at the right edge, so the card
      spans the header instead of hanging off the pill (it ran off-screen at 375 px). */
   .help { position: static; }

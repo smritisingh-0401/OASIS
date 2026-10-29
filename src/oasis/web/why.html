@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Why replies · OASIS</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="session.js" defer></script>
+  <script src="why.js" defer></script>
+</head>
+<body>
+  <!-- DEMO BANNER -->
+  <div class="orbs" aria-hidden="true"><i></i><i></i><i></i><i class="dots"></i><i class="dots"></i></div>
+
+  <header class="top">
+    <h1 class="brand">OASIS</h1>
+    <a class="pill" href="/">Back to chat</a>
+  </header>
+
+  <!-- "Why this reply?" for every reply of this conversation, on a page of its own instead of
+       under each reply (demo testing, 2026-10-29; FR-XAI-3). -->
+  <main class="chat trends">
+    <h2>Why OASIS replied as it did</h2>
+    <p class="trend-intro">Fixed rules choose how OASIS replies to each message; a language model
+      writes the words. Open a reply to see, in plain words, why it took that approach. This
+      explains the approach, not the exact wording.</p>
+
+    <p id="why-status" class="status" role="status" aria-live="polite">Loading…</p>
+
+    <ol id="why-list" class="why-list"></ol>
+  </main>
+
+  <footer class="footer">
+    OASIS is a support tool, not a diagnosis or an emergency service. It does not replace a
+    clinician.
+  </footer>
+</body>
+</html>
