@@ -114,7 +114,7 @@ patterns:
     examples: ["i want to kill myself"]
 ```
 
-- **Tiers:** `explicit` (stated intent), `passive` (wish to be dead), `plan_method` (means, timing, preparation; ID prefix `plan.`), `burden` ("better off without me") and `self_harm` (non-suicidal self-injury: "I cut myself", "I want to hurt myself"; added in Phase 2, CR-01). A self-harm disclosure gets the same handoff as the other tiers.
+- **Tiers:** `explicit` (stated intent), `passive` (wish to be dead), `plan_method` (means, timing, preparation; ID prefix `plan.`), `burden` ("better off without me") and `self_harm` (non-suicidal self-injury: "I cut myself", "I want to hurt myself"; added in Phase 2, CR-01). A self-harm disclosure gets the same handoff as the other tiers. `harm_others` (killing or attacking another person, reported speech included; added 2026-10-29, CR-27) gets the same handoff path with its own reply, `HARM_OTHERS_REPLY`, which names the emergency number; when a risk to self is also found, the self reply is shown.
 - Patterns are written against the normalised text (lower case, no apostrophes, single spaces).
 - **Load-time validation** (`safety/rules.py`) raises `SafetyConfigError`, and the app refuses to start, on: invalid YAML, a missing version, an unknown tier, an ID without its tier prefix, a duplicate ID, a pattern with no example, a pattern that does not compile, named groups or inline flags, or an unbounded nested quantifier (backtracking risk).
 - **Startup self-check:** every example must trigger its own rule through the full matcher; every allow-list `positive_example` must match a suppressed rule without the allow-list and be suppressed with it; every `negative_example` must still trigger.

@@ -5,7 +5,11 @@
 # Same limitation as batch 1: authored by the team that writes the patterns.
 version: "2026.10.0"
 review_status: needs_clinician_review
-status: fresh
+# STATUS: CONSUMED on 2026-10-29. Measured recall on first run: 20/22 = 90.9% (harm to
+# others 10/10, feeling like dying 5/6, asking for a means 5/6). The 2 misses then moved to
+# train_phrases.yaml and the patterns were fixed, so this file no longer gives an unbiased
+# estimate; the externally authored set (open item 10) is still needed.
+status: consumed
 phrases:
   feeling_dying:
     - "feeling like dying today"

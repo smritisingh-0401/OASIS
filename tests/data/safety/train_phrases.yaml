@@ -95,6 +95,10 @@ phrases:
     - "i want to kill mess chef"
     - "manager said to me to kill chef"
     - "he said to kill him"
+  # Missed by held-out batch 2 on its first run (2026-10-29), then used to fix patterns.
+  heldout_v2_misses:
+    - "i felt like i was better off dying"
+    - "give me a knife so i can end this"
 # Phrases deliberately listed as known gaps: they are NOT asserted and are reported by
 # scripts/safety_eval.py so the gap stays visible.
 expected_misses:

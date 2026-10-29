@@ -31,7 +31,7 @@ from oasis.llm.client import BoundedLLM, LLMClient, LLMFailure, clean_reply
 from oasis.llm.prompt import build_messages
 from oasis.router.router import dump_state, load_state
 from oasis.safety.gate import SafetyGate, check_fail_closed
-from oasis.safety.handoff import HANDOFF_REPLY
+from oasis.safety.handoff import handoff_reply
 from oasis.settings import Settings
 from oasis.storage.repository import (
     Repository,
@@ -354,7 +354,8 @@ class ChatEngine:
         self._post_crisis.add(session_hash)
         crisis_plan = Plan(mode="crisis", templated=True)
         turn_log.info(trace_to_json(_trace(turn_id, clock, verdict, crisis_plan, _NO_DRAFT, set())))
-        return TurnResult(turn_id, HANDOFF_REPLY, "crisis", templated=True, persisted=False,
+        return TurnResult(turn_id, handoff_reply(verdict.tiers), "crisis", templated=True,
+                          persisted=False,
                           degraded=frozenset(), verdict=verdict, escalated=escalated)  # fmt: skip
 
     async def _save_assessment(self, user_id: str | None, plan: Plan, degraded: set[str]) -> Plan:

@@ -15,7 +15,7 @@ import yaml
 
 from oasis.safety.normalize import normalise, tolerant
 
-TIERS = ("explicit", "passive", "plan_method", "burden", "self_harm")
+TIERS = ("explicit", "passive", "plan_method", "burden", "self_harm", "harm_others")
 # Unbounded quantifier applied to a group that itself ends in a quantifier: (a+)+, (\w+ )*.
 _NESTED = re.compile(r"[+*][^()]*\)[+*]|[+*][^()]*\)\{\d+,\}")
 # Named groups and inline flags would be mangled by the tolerant rewrite.

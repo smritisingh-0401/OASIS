@@ -9,7 +9,7 @@
 # - ANY match triggers the handoff. No negation handling, by design (rules S6).
 # - Not allowed: named groups, inline flags, unbounded nested quantifiers.
 # - Every pattern lists examples; each example must trigger, or the app refuses to start.
-version: "2026.10.1"
+version: "2026.10.2"
 review_status: needs_clinician_review
 patterns:
   # --- explicit intent -----------------------------------------------------------
@@ -221,3 +221,36 @@ patterns:
     # saving pills: guardando pastillas, nag-ipon ng gamot.
     pattern: '\b(?:pills|goliyan|goliyaan|tablets|dawai|pastillas|gamot)\b[^.!?]{0,60}\b(?:ek saath|todas juntas|todas de una|nang sabay)\b|\bguardando pastillas\b|\bnag ?-?ipon ako ng (?:pills|gamot|tabletas)\b'
     examples: ["maine bahut saari pills jama ki hain, sab ek saath le lunga", "he estado guardando pastillas", "nag-ipon ako ng pills para inumin lahat nang sabay"]
+
+  # --- demo testing, 2026-10-29 (CR-27) ------------------------------------------------
+  # Testers' own words that passed the gate: feeling like dying, asking someone for a means,
+  # and threats to other people (a new tier with its own handoff reply).
+  - id: explicit.kill_others_and_self
+    tier: explicit
+    # "kill him and then myself": a risk to self as well, so the self reply wins.
+    pattern: '\b(?:kill|murder|shoot|stab)\w* \w+(?: \w+){0,3} (?:and|then|before|after|with) (?:then |also |after that )?(?:my ?self|me ?self)\b'
+    examples: ["i want to kill him and then myself", "im going to shoot my family and myself"]
+  - id: passive.feel_die
+    tier: passive
+    pattern: '\b(?:feel|feels|feeling|felt) (?:like |as if |as though )?(?:i (?:want|wanna|could|would|might|am|was|were) )?(?:to |2 )?(?:die|dying|be dead)\b|\bbetter of{2} dying\b'
+    examples: ["feeling to die", "i feel like dying", "i felt like i was better off dying", "i felt like i could die", "it feels like i want to die"]
+  - id: plan.means_request
+    tier: plan_method
+    # Asking someone for a means; a knife alone is left out ("pass me the knife"), unless it
+    # comes with a purpose. A rope to hang, but not to hang the washing or the lights.
+    pattern: '\b(?:give|get|buy|send|bring|lend|sponsor|arrange|provide|order)\w* me\b[^.!?]{0,30}\b(?:rope|noose|blade|razor|poison|pesticide|gun|pistol)\b|\b(?:rope|noose|cord|belt|dupatta|scarf)\b(?: \w+){0,4} hang(?:ing)?\b(?! (?:out|up|on|around|clothes|washing|laundry|pictures?|lights|decorations|things|stuff)\b)|\b(?:knife|blade|razor|rope|pills|poison)\b[^.!?]{0,20}\b(?:so i can|so that i can|to) (?:end (?:it|this|my life|everything)|die|kill my ?self)\b'
+    examples: ["give me a knife so i can end this","would you sponsor me the knife or rope to hand", "can you get me some poison", "i need a rope to hang"]
+
+  # --- harm to others (demo testing, 2026-10-29; CR-27) ------------------------------------
+  - id: harm_others.kill
+    tier: harm_others
+    # Any mention of killing a person, reported speech included (rules S6). "kill me", "kill
+    # time", "kill it", "kill the app" name no person; "shoot him a text" is a message.
+    pattern: '\b(?:kill|murder|stab|shoot|shot|strangle|choke|poison|behead)(?:ing|ed|s)? (?:(?:him|them|someone|somebody|some one|everyone|everybody|every one|people)\b|her\b(?! (?:chances|vibe|mood|buzz|confidence|career|plans?|dreams?|time|appetite|joy|feelings)\b)|(?:(?:my|the|that|this|our|his|her|their|those|these|a|an) )?(?:\w+ )?(?:chef|cook|boss|manager|teacher|professor|prof|warden|room ?mate|flatmate|neighbou?r|wife|husband|girlfriend|gf|boyfriend|bf|ex|father|dad|mother|mom|mum|brother|sister|son|daughter|uncle|aunt|cousin|friend|classmate|colleague|co ?worker|landlord|supervisor|family|parents?|step ?dad|step ?mom|step ?father|step ?mother|partner|bull(?:y|ies)|guy|man|men|woman|women|girl|boy|kid|child|children|baby|person|student|senior|junior|doctor|nurse|cop|police|officer|idiot|bastard|bitch)s?\b)(?! (?:a|an) (?:\w+ )?(?:text|message|msg|email|mail|dm|line|note|call|look|glance)\b)'
+    examples: ["i want to kill mess chef", "manager said to me to kill chef", "he said to kill him", "im going to stab my roommate", "i will kill them all"]
+  - id: harm_others.hurt
+    tier: harm_others
+    # Harm, attack or beat up a person; "hurt" only with a firm intent or an unnamed person,
+    # because "I dont want to hurt him" is usually about feelings.
+    pattern: '\b(?:want|wanna|wana|going|gonna|gona|will|ill|planning|plan|about|ready|need|tempted|urge|feel like|feeling like|thinking (?:of|about)|decided|could|might)\w*(?: to)? (?:harm|attack|assault|beat up|beat the (?:hell|shit|crap) out of)(?:ing|s)? (?:(?:him|them|someone|somebody|some one|everyone|everybody|every one|people)\b|her\b(?! (?:chances|vibe|mood|buzz|confidence|career|plans?|dreams?|time|appetite|joy|feelings)\b)|(?:(?:my|the|that|this|our|his|her|their|those|these|a|an) )?(?:\w+ )?(?:chef|cook|boss|manager|teacher|professor|prof|warden|room ?mate|flatmate|neighbou?r|wife|husband|girlfriend|gf|boyfriend|bf|ex|father|dad|mother|mom|mum|brother|sister|son|daughter|uncle|aunt|cousin|friend|classmate|colleague|co ?worker|landlord|supervisor|family|parents?|step ?dad|step ?mom|step ?father|step ?mother|partner|bull(?:y|ies)|guy|man|men|woman|women|girl|boy|kid|child|children|baby|person|student|senior|junior|doctor|nurse|cop|police|officer|idiot|bastard|bitch)s?\b)|\b(?:going to|gonna|gona|will|ill|planning to|plan to|about to|urge to|feel like|feeling like|tempted to|ready to)\w* hurt(?:ing)? (?:(?:him|them|someone|somebody|some one|everyone|everybody|every one|people)\b|her\b(?! (?:chances|vibe|mood|buzz|confidence|career|plans?|dreams?|time|appetite|joy|feelings)\b)|(?:(?:my|the|that|this|our|his|her|their|those|these|a|an) )?(?:\w+ )?(?:chef|cook|boss|manager|teacher|professor|prof|warden|room ?mate|flatmate|neighbou?r|wife|husband|girlfriend|gf|boyfriend|bf|ex|father|dad|mother|mom|mum|brother|sister|son|daughter|uncle|aunt|cousin|friend|classmate|colleague|co ?worker|landlord|supervisor|family|parents?|step ?dad|step ?mom|step ?father|step ?mother|partner|bull(?:y|ies)|guy|man|men|woman|women|girl|boy|kid|child|children|baby|person|student|senior|junior|doctor|nurse|cop|police|officer|idiot|bastard|bitch)s?\b)|\b(?:want|wanna|wana|need|urge|feel like|feeling like|tempted)\w*(?: to)? hurt(?:ing)? (?:someone|somebody|some one|people|everyone|everybody)\b'
+    examples: ["i feel like hurting someone", "im going to hurt her", "i want to attack my classmate", "i want to beat up that guy"]
