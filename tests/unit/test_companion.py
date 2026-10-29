@@ -292,3 +292,33 @@ def test_why_this_reply_says_why_it_only_listens() -> None:
     bullets = json.loads(builder.build(message, plan_turn(message, state())))["plain_language"]
     assert bullets[-1] == builder.config().reasons["listen.asked"]
     assert "asks one gentle question" not in " ".join(bullets)
+
+
+# --- who OASIS is (demo testing, 2026-10-29) ---------------------------------------------------
+# "Who is your owner" got "created by Google", then a fallback: it now gets a fixed answer.
+
+
+@pytest.mark.parametrize("message", [
+    "Who is your owner", "who are you?", "Who made you?", "what are you exactly",
+    "are you chatgpt", "Are you a real person?", "which company created you",
+])  # fmt: skip
+def test_asking_what_oasis_is_gets_the_fixed_answer(message: str) -> None:
+    plan = plan_turn(message, state())
+    assert (plan.templated, plan.text) == (True, TEMPLATES["identity"])
+    assert plan.reason_codes == ("identity.asked",)
+
+
+@pytest.mark.parametrize("message", [
+    "what are you doing tonight", "who made you feel that way", "my brother asked who are you",
+    "are you sure about that",
+])  # fmt: skip
+def test_other_questions_are_not_about_oasis(message: str) -> None:
+    assert plan_turn(message, state()).text != TEMPLATES["identity"]
+
+
+def test_the_fixed_answer_is_honest_and_passes_the_checks() -> None:
+    text = TEMPLATES["identity"]
+    assert "not made by any company" in text
+    assert "open language model" in text
+    assert "not a person" in text
+    assert check(text, Plan(mode="companion")).ok
