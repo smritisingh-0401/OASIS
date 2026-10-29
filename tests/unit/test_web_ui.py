@@ -99,3 +99,13 @@ def test_replies_type_out_but_crisis_replies_never_do() -> None:
     assert "busy || typing" in JS  # setBusy(false) waits for the typing to finish
     assert "msg bot typing" in JS
     assert "prefers-reduced-motion" in CSS
+
+
+def test_new_chat_button_starts_a_fresh_conversation() -> None:
+    """New chat (demo testing, 2026-10-29): a button only, never automatic."""
+    assert 'id="new-chat"' in HTML
+    assert 'api("/session/new", { method: "POST" })' in JS
+    trends = (Path(oasis.__file__).parent / "web" / "trends.js").read_text(encoding="utf-8")
+    assert "is_current" in trends
+    page = (Path(oasis.__file__).parent / "web" / "trends.html").read_text(encoding="utf-8")
+    assert 'id="earlier"' in page

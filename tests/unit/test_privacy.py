@@ -271,3 +271,18 @@ def test_the_notice_folds_after_the_first_two_sections() -> None:
     assert [s.heading for s in d.sections[: d.visible]] == ["What OASIS is", "Two ways to start"]
     assert d.sections[d.visible].heading == "What is kept"
     assert "agree" in d.agreement
+
+
+@pytest.mark.anyio
+async def test_an_unsaved_person_is_forgotten_only_when_every_conversation_is_idle() -> None:
+    """New chat (2026-10-29): an idle earlier conversation must not take the new one with it."""
+    now = [0.0]
+    repo = MemoryRepository(idle_timeout_s=100, clock=lambda: now[0])
+    uid = await repo.create_user_session("old")
+    now[0] = 90
+    await repo.add_session(uid, "new")
+    now[0] = 150  # "old" idle for 150 s, "new" for 60 s
+    assert await repo.get_session("new") is not None
+    now[0] = 300
+    assert await repo.get_session("new") is None
+    assert not repo.has_user(uid)

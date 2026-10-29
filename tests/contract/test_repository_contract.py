@@ -451,3 +451,18 @@ async def test_idle_users_are_those_with_no_message_since_the_cutoff(repo: Repos
     later = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=1)
     assert sorted(await repo.idle_users(later)) == sorted([quiet, talking])
     assert await repo.idle_users(cutoff - datetime.timedelta(days=1)) == []
+
+
+@pytest.mark.anyio
+async def test_a_new_conversation_is_another_session_of_the_same_user(repo: Repository) -> None:
+    """New chat (demo testing, 2026-10-29): the same person, a fresh conversation."""
+    uid = await repo.create_user_session("first")
+    await _append(repo, uid, "first", "t1", "earlier words")
+    await repo.add_session(uid, "second")
+    info = await repo.get_session("second")
+    assert info is not None
+    assert info.user_id == uid
+    assert await repo.recent_turns(uid, "second", limit=10) == []
+    assert [t.content for t in await repo.recent_turns(uid, "first", limit=10)] == ["earlier words"]
+    with pytest.raises(StorageError):
+        await repo.add_session("no-such-user", "third")

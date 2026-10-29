@@ -509,6 +509,33 @@ def test_trends_over_http(client: TestClient) -> None:
     assert info["msg_length"]["exploratory"] is True
 
 
+def test_new_chat_starts_a_conversation_with_its_own_graph(client: TestClient) -> None:
+    """New chat (demo testing, 2026-10-29): same person and consent, an empty conversation,
+    and Mood trend shows each conversation turn by turn, the current one marked."""
+    first = _session(client)
+    _chat(client, first, "I always feel so tired")
+    resp = client.post("/session/new", headers={HEADER: first})
+    assert resp.status_code == 201
+    second = resp.json()["session_id"]
+    assert second != first
+    assert resp.json()["ephemeral"] is False
+    assert client.get("/history", headers={HEADER: second}).json()["turns"] == []
+    assert _chat(client, second, "work was fine today").status_code == 200  # no new consent
+    body = client.get("/trends", headers={HEADER: second}).json()
+    assert [len(s["valence"]) for s in body["sessions"]] == [1, 1]
+    assert [s["is_current"] for s in body["sessions"]] == [False, True]
+    assert len(body["current"]) == 1
+    assert client.post("/session/new").status_code == 401
+    assert client.post("/session/new", headers={HEADER: "not-a-session"}).status_code == 401
+
+
+def test_new_chat_keeps_an_unsaved_person_unsaved(client: TestClient) -> None:
+    token = client.post("/session", json={"ephemeral": True}).json()["session_id"]
+    client.post("/consent", json={"disclosure_version": load_disclosure().version},
+                headers={HEADER: token})  # fmt: skip
+    assert client.post("/session/new", headers={HEADER: token}).json()["ephemeral"] is True
+
+
 def test_trends_need_a_session(client: TestClient) -> None:
     assert client.get("/trends").status_code == 401
     assert client.get("/trends", headers={HEADER: "not-a-session"}).status_code == 401
