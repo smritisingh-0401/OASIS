@@ -83,3 +83,16 @@ patterns:
   maker_claim:
     - '\b(?:created|made|built|developed|trained|designed|owned|programmed|run|powered) by (?:google|openai|open ai|meta|facebook|alibaba|qwen|microsoft|anthropic|deepmind|apple|amazon|a company|a tech company)\b'
     - '\b(?:im|i am|as|this is) (?:an? )?(?:gemini|chatgpt|chat gpt|gpt\S*|qwen\S*|bard|claude|llama|copilot|siri|alexa)\b'
+  # Dismissive positivity (demo testing, 2026-10-29): telling someone who is low to stay
+  # positive reads as "your feelings are wrong". Encouragement is hope that leaves the
+  # feeling alone ("small steps still count"). Checked on every generated reply (CR-14).
+  toxic_positivity:
+    - '\b(?:stay|be|think|keep|remain|try to be|just be) (?:more )?positive\b'
+    - '\bpositive (?:attitude|mindset|thinking|vibes)\b'
+    - '\b(?:look|focus) on the (?:bright|positive|sunny) side\b'
+    - '\b(?:it|things|this|that) could (?:always )?be (?:a lot |much |so much )?worse\b'
+    - '\beverything happens for a reason\b'
+    - '\b(?:others|other people|some people|many people) have it (?:much |a lot |so much )?worse\b'
+    - '\b(?:just )?cheer up\b'
+    - '\bgood vibes\b'
+    - '\bat least you (?:have|got|still)\b'

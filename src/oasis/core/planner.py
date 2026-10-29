@@ -64,6 +64,8 @@ _IDENTITY = re.compile(
 LISTEN_AFTER = 2  # replies ending in a question in a row before one that only listens
 LONG_MESSAGE_WORDS = 40  # an outpouring this long gets a listening reply
 BRIEF_WORDS = 5  # a statement this short gets a one-sentence acknowledgement
+IDEA_EVERY = 4  # at most one unasked idea in this many replies
+NEUTRAL = 0.05  # VADER's own neutral band: a message below -NEUTRAL describes a difficulty
 _QUESTION_WORDS = frozenset({
     "who", "what", "why", "how", "when", "where", "which", "can", "could", "should", "would",
     "is", "are", "am", "do", "does", "did", "will", "was", "were",
@@ -110,7 +112,29 @@ def plan_turn(message: str, state: ConversationState, action: Action | None = No
     # So a conversation does not open every reply the same way (tone check, 2026-10-11).
     said = [t.content for t in state.history if t.role == "assistant" and t.mode == "companion"]
     recent = (o for o in map(opener, said[-RECENT_OPENERS:]) if len(o.split()) == 3)
-    return _listening(replace(plan, avoid_openers=tuple(dict.fromkeys(recent))), message, state)
+    plan = _listening(replace(plan, avoid_openers=tuple(dict.fromkeys(recent))), message, state)
+    return _idea(plan, message, state)
+
+
+def _idea(plan: Plan, message: str, state: ConversationState) -> Plan:
+    """Every IDEA_EVERY-th reply to someone describing a difficulty offers one small idea with
+    hopeful encouragement, unasked (demo testing, 2026-10-29). Not when the reply listens or
+    is short, not on a thinking trap, and not soon after crisis support."""
+    if not {"no_advice", "one_question"} <= set(plan.constraints) or plan.distortion_types:
+        return plan
+    if "post_crisis.cleared" in plan.reason_codes or extract(message).valence > -NEUTRAL:
+        return plan
+    recent = state.history[-IDEA_EVERY:]
+    if any(t.role == "placeholder" or t.mode in ("crisis", "post_crisis") for t in recent):
+        return plan
+    # ponytail: the reply's number from the stored turn count (two turns per exchange), since
+    # only the last few turns are loaded; a preface or placeholder shifts it by one.
+    reply_number = (state.history[-1].seq if state.history else 0) // 2 + 1
+    if reply_number % IDEA_EVERY:
+        return plan
+    swap = {"no_advice": ("offer_one_idea", "encourage")}
+    rules = tuple(c for r in plan.constraints for c in swap.get(r, (r,)))
+    return replace(plan, constraints=rules, reason_codes=(*plan.reason_codes, "idea.offered"))
 
 
 def _listening(plan: Plan, message: str, state: ConversationState) -> Plan:

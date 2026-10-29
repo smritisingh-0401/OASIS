@@ -66,6 +66,11 @@ RULES = {
     "not_empty": "Write a short reply.",
     "use_snippet_only": "Use only what the script line says.",
     "no_exercise_step": "Do not write exercise steps of your own.",
+    "offer_one_idea": "Offer one small, practical idea as a suggestion they can take or leave.",
+    "encourage": "Add one hopeful sentence that leaves their feeling alone, such as that small "
+    "steps still count. Never tell them to stay positive or look on the bright side.",
+    "no_toxic_positivity": "Do not tell them to stay positive, look on the bright side, or "
+    "that it could be worse.",
     "brief": "Reply in one short sentence that acknowledges what they said, with no question.",
     "no_maker_claim": "Do not say a company made you or name another assistant.",
     "ack_only": "Write one short sentence responding to them, with no question and no exercise "

@@ -78,4 +78,5 @@ reasons:
   listen.asked: "You asked OASIS to stop asking questions, so the reply reflects what you said and just listens."
   listen.two_questions: "The last two replies each asked you something, so this one reflects what you said and just listens."
   brief.short_message: "Your message was short, so the reply is a short acknowledgement."
+  idea.offered: "You had been describing something hard, so the reply offers one small idea you can take or leave, with a word of hope."
   listen.long_message: "You shared a lot, so the reply reflects it and just listens, without a question."
