@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import functools
 import re
+from typing import Any
+
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from oasis.core.detectors.lexicon import load
-from oasis.guard.checks import FIRST_PERSON, content_words, harsh_label, vader
+from oasis.guard.checks import FIRST_PERSON, content_words, harsh_label
 from oasis.safety.normalize import base_form
 from oasis.types import Signals
 
@@ -15,9 +19,72 @@ LABEL_TERM = 3.0 * 1.5  # labelling scorer scale x a labelling term's weight (di
 _CLAUSE = re.compile(r"[,.;:!?]+|\b(?:and|but)\b")
 
 
+# "like" is a positive verb only after one of these ("I like", "would like", "don't like").
+_LIKE_SUBJECTS = frozenset(
+    [
+        "i",
+        "you",
+        "we",
+        "they",
+        "he",
+        "she",
+        "people",
+        "everyone",
+        "really",
+        "would",
+        "do",
+        "does",
+        "did",
+        "dont",
+        "doesnt",
+        "didnt",
+        "don't",
+        "doesn't",
+        "didn't",
+        "to",
+        "also",
+        "still",
+        "actually",
+        "i'd",
+        "id",
+        "we'd",
+        "you'd",
+    ]
+)
+
+
+class _MoodVader(SentimentIntensityAnalyzer):
+    """VADER with the fixes from demo testing (2026-10-29, CR-21): "like" as a comparison
+    ("feels like") and "hand" score nothing, a negated bad word ("not to die", "no horrible")
+    and a good word after "over" or "too" are neutral instead of positive."""
+
+    def sentiment_valence(
+        self, valence: float, sentitext: Any, item: str, i: int, sentiments: list[float]
+    ) -> list[float]:
+        words = [w.lower() for w in sentitext.words_and_emoticons]
+        word = item.lower()
+        comparison = word in ("like", "likes") and (i == 0 or words[i - 1] not in _LIKE_SUBJECTS)
+        if comparison or word in ("hand", "hands"):
+            sentiments.append(0.0)
+            return sentiments
+        sentiments = super().sentiment_valence(valence, sentitext, item, i, sentiments)
+        own = self.lexicon.get(word, 0.0)
+        excess = own > 0 and i > 0 and words[i - 1] in ("over", "too")
+        if (own < 0 < sentiments[-1]) or excess:
+            sentiments[-1] = 0.0
+        return sentiments
+
+
+@functools.cache
+def _mood_vader() -> _MoodVader:
+    return _MoodVader()
+
+
 def valence(text: str) -> float:
-    """VADER compound score in [-1, 1]: the valence baseline (design §5)."""
-    return float(vader().polarity_scores(text)["compound"])
+    """VADER compound score in [-1, 1]: the valence baseline (design §5), with the
+    demo-testing fixes in `_MoodVader`. A misspelled word is unknown to VADER, so neutral:
+    correcting it without a dictionary misread real words ("brother" as "bother")."""
+    return float(_mood_vader().polarity_scores(text)["compound"])
 
 
 def load_all() -> None:

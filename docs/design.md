@@ -250,7 +250,7 @@ stateDiagram-v2
 
 | Signal | Detector | Notes |
 |---|---|---|
-| `valence` | VADER compound score | Baseline; [-1, 1] |
+| `valence` | VADER compound score, with four fixes from demo testing (2026-10-29): "like" as a comparison ("feels like") and "hand" score nothing; a negated bad word ("not to die") and a good word after "over" or "too" are neutral, not positive | Baseline; [-1, 1] |
 | `emotions[*]` | Lexicon scorers (`content/lexicons/emotions.yaml`) | Hand-weighted; normalised by token count, clipped to [0, 1] |
 | `dysregulation` | Lexicon (urge, rage, can't control, intensity markers) | DBT-leaning cue |
 | `distortion`, `distortion_types` | Lexicon/regex per Burns category (all-or-nothing, overgeneralisation, mental filter, disqualifying the positive, mind reading, fortune telling, magnification, emotional reasoning, should statements, labelling, personalisation) | CBT-leaning cue; reused by the guard |
