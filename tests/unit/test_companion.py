@@ -432,3 +432,12 @@ def test_hopeful_encouragement_passes() -> None:
         "steps still count. Would that fit for you?"
     )
     assert check(reply, plan).ok
+
+
+def test_continuing_after_crisis_support_keeps_the_full_reply() -> None:
+    """ "I'd like to keep talking." is five words, but leaving crisis mode is not small talk:
+    no short reply, no listening swap and no unasked idea on that turn (2026-10-29)."""
+    asked = _said("That sounds hard. What happened?", "That must hurt. How are you coping?")
+    plan = plan_turn("I'd like to keep talking.", state(post_crisis=True, history=asked))
+    assert plan.constraints == CONSTRAINTS["companion"]
+    assert plan.reason_codes == ("post_crisis.cleared",)

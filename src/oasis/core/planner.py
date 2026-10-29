@@ -142,7 +142,8 @@ def _listening(plan: Plan, message: str, state: ConversationState) -> Plan:
     row, or after a long message. Asked-for ideas and thinking traps keep their question."""
     if "one_question" not in plan.constraints or "offer_ideas" in plan.constraints:
         return plan
-    if plan.distortion_types:
+    # Leaving crisis mode ("I'd like to keep talking.") keeps the full companion reply.
+    if plan.distortion_types or "post_crisis.cleared" in plan.reason_codes:
         return plan
     replies = [t.content.rstrip() for t in state.history if t.role == "assistant"]
     last = replies[-LISTEN_AFTER:]
