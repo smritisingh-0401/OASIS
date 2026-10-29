@@ -9,7 +9,8 @@ name, so a retry can name it back in plain words.
 - Exercise steps: ack_only (no question, no step or instruction of its own; the engine
   keeps one sentence) and no_praise.
 - Every generated reply: no_self_label, no_diagnosis, no_medication, no_dependency,
-  no_exercise_step (after an exercise the model copies its "X is for" steps), not_empty.
+  no_exercise_step (after an exercise the model copies its "X is for" steps), not_empty,
+  no_maker_claim (a company named as its maker, or another assistant's name).
   A clause that declines ("I can't tell you if you have depression") does not fail
   no_diagnosis or no_medication.
 The engine owns the retry and the fallback.
@@ -31,7 +32,7 @@ from oasis.types import GuardVerdict, Plan
 COMPANION_LISTED = ("validate_first", "no_praise", "no_advice", "no_dependency")
 GUARD_LISTED = ("agreement", "hedges", "presupposing", "advice_words", "self_label",
                 "diagnosis", "medication", "refusals", "step_text", "made_up_step", "label_nouns",
-                "harsh_words", "strong_agreement", "medication_topic")  # fmt: skip
+                "harsh_words", "strong_agreement", "medication_topic", "maker_claim")  # fmt: skip
 COMPANION_RULES = ("validate_first", "one_question", "no_question", "no_praise", "no_advice")
 # Form, not content: a draft failing only these is retried, but kept rather than replaced
 # by the fixed fallback (the validating-phrase list cannot know every way to validate).
@@ -39,11 +40,11 @@ SOFT_RULES = frozenset({"validate_first", "one_question", "fresh_opener"})
 # Content: a draft failing any of these twice is replaced by a vetted fallback.
 HARD_RULES = frozenset({"no_praise", "no_advice", "no_dependency", "no_agreeing", "no_question",
                         "no_self_label", "no_presupposing", "no_diagnosis", "no_medication",
-                        "not_empty", "ack_only", "no_exercise_step"})  # fmt: skip
+                        "not_empty", "ack_only", "no_exercise_step", "no_maker_claim"})  # fmt: skip
 # Checked on every generated reply: (rule, phrase list).
 EVERY_REPLY = (("no_self_label", "self_label"), ("no_diagnosis", "diagnosis"),
                ("no_medication", "medication"), ("no_dependency", "no_dependency"),
-               ("no_exercise_step", "made_up_step"))  # fmt: skip
+               ("no_exercise_step", "made_up_step"), ("no_maker_claim", "maker_claim"))  # fmt: skip
 REFUSABLE = frozenset({"diagnosis", "medication"})  # a refusal clause may name these
 ECHO = 0.6  # share of a claim's content words a sentence must repeat to echo it (design §8.2)
 

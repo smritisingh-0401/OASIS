@@ -77,3 +77,9 @@ patterns:
     - '\bi (?:totally |completely |fully |really )?agree with you\b'
   medication_topic:
     - '\b(?:meds|medication|medications|medicine|pills|tablets|antidepressants?|ssris?|snris?|dose|dosage|prescription|prescribed)\b'
+  # A company named as the maker, or another assistant's name (demo testing, 2026-10-29:
+  # "I am an artificial intelligence created by Google"). OASIS runs an open model and is
+  # made by no company. Mentioning a company otherwise ("your friend works at Google") is fine.
+  maker_claim:
+    - '\b(?:created|made|built|developed|trained|designed|owned|programmed|run|powered) by (?:google|openai|open ai|meta|facebook|alibaba|qwen|microsoft|anthropic|deepmind|apple|amazon|a company|a tech company)\b'
+    - '\b(?:im|i am|as|this is) (?:an? )?(?:gemini|chatgpt|chat gpt|gpt\S*|qwen\S*|bard|claude|llama|copilot|siri|alexa)\b'
