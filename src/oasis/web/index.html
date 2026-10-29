@@ -8,7 +8,7 @@
   <script src="session.js" defer></script>
   <script src="app.js" defer></script>
 </head>
-<body>
+<body class="chat-page">
   <!-- DEMO BANNER -->
   <div class="orbs" aria-hidden="true"><i></i><i></i><i></i><i class="dots"></i><i class="dots"></i></div>
 
@@ -55,6 +55,9 @@
         Hi. This is a quiet place to talk about how you're feeling. What's on your mind?
       </li>
     </ol>
+
+    <!-- Scrolled up to read, a new reply shows this instead of moving the conversation. -->
+    <button id="new-message" class="new-message" type="button" hidden>New message &darr;</button>
 
     <p id="status" class="status" role="status" aria-live="polite"></p>
 

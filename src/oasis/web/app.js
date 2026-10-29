@@ -211,12 +211,84 @@ function styleNote() {
   return note;
 }
 
-function addMessage(role, text, note, explanationId) {
+// The conversation scrolls inside the panel (demo testing, 2026-10-29). It follows new
+// messages while the reader is at the bottom; scrolled up to read, they get a button instead.
+const newMessage = document.getElementById("new-message");
+const BOTTOM_SLACK_PX = 80;
+
+function atBottom() {
+  return messages.scrollHeight - messages.scrollTop - messages.clientHeight < BOTTOM_SLACK_PX;
+}
+
+function toBottom() {
+  messages.scrollTop = messages.scrollHeight;
+  newMessage.hidden = true;
+}
+
+function follow(stick) {
+  if (stick) toBottom();
+  else newMessage.hidden = false;
+}
+
+messages.addEventListener("scroll", () => {
+  if (atBottom()) newMessage.hidden = true;
+});
+newMessage.addEventListener("click", toBottom);
+
+// Three dots while OASIS writes; hidden from screen readers, which hear the status line.
+function showTyping() {
+  const item = document.createElement("li");
+  item.className = "msg bot typing";
+  item.setAttribute("aria-hidden", "true");
+  item.append(document.createElement("span"), document.createElement("span"),
+    document.createElement("span"));
+  const stick = atBottom();
+  messages.appendChild(item);
+  follow(stick);
+  return item;
+}
+
+// A reply types out word by word, at most TYPE_MAX_MS in all. It is already checked in full
+// on the server; this only reveals it. Reduced motion shows it at once.
+const TYPE_MS_PER_WORD = 40;
+const TYPE_MAX_MS = 2000;
+const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function typeOut(item, body, text) {
+  const tokens = text.split(/(\s+)/);
+  const words = tokens.filter((t) => t.trim()).length;
+  const step = Math.min(TYPE_MS_PER_WORD, TYPE_MAX_MS / Math.max(words, 1));
+  let shown = 0;
+  body.textContent = "";
+  const timer = setInterval(() => {
+    const stick = atBottom();
+    // One word and the space after it each tick.
+    while (shown < tokens.length) {
+      body.textContent += tokens[shown++];
+      if (tokens[shown - 1].trim()) break;
+    }
+    if (shown >= tokens.length) {
+      clearInterval(timer);
+      item.classList.remove("typing-out");
+      messages.setAttribute("aria-busy", "false");
+    }
+    follow(stick);
+  }, step);
+}
+
+function addMessage(role, text, note, explanationId, animate = false) {
   const item = document.createElement("li");
   item.className = "msg " + ({ user: "user", placeholder: "system" }[role] || "bot");
   const body = document.createElement("p");
   body.textContent = text;
   item.appendChild(body);
+  const typing = animate && !REDUCED_MOTION.matches;
+  if (typing) {
+    // A screen reader hears the whole reply once, when the conversation is no longer busy.
+    body.className = "reply-text";
+    messages.setAttribute("aria-busy", "true");
+    item.classList.add("typing-out");
+  }
   if (note) {
     const small = document.createElement("p");
     small.className = "note";
@@ -224,8 +296,11 @@ function addMessage(role, text, note, explanationId) {
     item.appendChild(small);
   }
   if (explanationId) item.appendChild(whyPanel(explanationId));
+  // Your own message always brings the conversation to the bottom.
+  const stick = role === "user" || atBottom();
   messages.appendChild(item);
-  item.scrollIntoView({ block: "end" });
+  follow(stick);
+  if (typing) typeOut(item, body, text);
   return item;
 }
 
@@ -275,7 +350,9 @@ function whyPanel(explanationId) {
 function setBusy(busy) {
   sendButton.disabled = busy;
   for (const button of card.querySelectorAll("button")) button.disabled = busy;
-  messages.setAttribute("aria-busy", busy ? "true" : "false");
+  // A reply still typing out keeps the conversation busy until typeOut finishes.
+  const typing = messages.querySelector(".typing-out") !== null;
+  messages.setAttribute("aria-busy", busy || typing ? "true" : "false");
 }
 
 async function loadHistory() {
@@ -399,6 +476,7 @@ async function sendText(text, action) {
   const pending = addMessage("user", text);
   setBusy(true);
   status.textContent = "OASIS is thinking…";
+  const dots = showTyping();
   const slow = setTimeout(() => {
     status.textContent = "Still working — this can take a few seconds on this computer.";
   }, SLOW_NOTICE_MS);
@@ -422,8 +500,11 @@ async function sendText(text, action) {
     const body = await resp.json();
     // A crisis turn is never stored by design, so the not-saved note would only alarm.
     const note = body.persisted || body.mode === "crisis" ? "" : "This message may not have been saved.";
+    dots.remove();
+    // Crisis replies appear at once, never typed out.
+    const animate = body.mode !== "crisis" && body.mode !== "post_crisis";
     if (body.preface) addMessage("assistant", body.preface);
-    const reply = addMessage("assistant", body.reply, note, body.explanation_id);
+    const reply = addMessage("assistant", body.reply, note, body.explanation_id, animate);
     if (body.style_suggestion && !styleSuggested) {
       styleSuggested = true;
       reply.insertBefore(styleNote(), reply.querySelector(".why"));
@@ -443,6 +524,7 @@ async function sendText(text, action) {
       "I couldn't reach the server. Your message wasn't sent. \"Need help now?\" still works.";
     return false;
   } finally {
+    dots.remove();
     clearTimeout(slow);
     setBusy(false);
   }

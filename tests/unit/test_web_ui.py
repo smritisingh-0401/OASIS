@@ -94,6 +94,8 @@ def test_replies_type_out_but_crisis_replies_never_do() -> None:
     assert cap is not None
     assert int(cap.group(1)) <= 2000
     assert 'const animate = body.mode !== "crisis" && body.mode !== "post_crisis"' in JS
-    assert 'setAttribute("aria-hidden", "true")' in JS
+    assert 'messages.setAttribute("aria-busy", "true")' in JS
+    assert 'messages.setAttribute("aria-busy", "false")' in JS
+    assert "busy || typing" in JS  # setBusy(false) waits for the typing to finish
     assert "msg bot typing" in JS
     assert "prefers-reduced-motion" in CSS

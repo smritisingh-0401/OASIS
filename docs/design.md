@@ -841,6 +841,8 @@ Warm, plain, brief, non-judgemental; second person; no exclamation marks, no emo
 - **Loading:** "OASIS is thinking…" with `aria-busy`; input stays editable; after 8 s, "Still working — this can take a few seconds on this computer."
 - **Error / offline:** "I couldn't reach the server. Your message wasn't sent." + Retry; the help button still works.
 - **Busy:** templated reply "I'm handling a lot right now — could you give me a moment and send that again?"
+- **Conversation layout (demo testing, 2026-10-29):** the chat panel fills the window and only the conversation (or the data notice) scrolls, so the composer stays on screen. New messages follow a reader at the bottom; scrolled up, they get a "New message ↓" button instead, and their own message always returns them to the bottom.
+- **Typing:** three dots while the reply is generated, then the reply types out word by word (at most 2 s in all). It is already checked in full on the server, so this only reveals it. The note and "Why this reply?" appear once it is done, and `aria-busy` stays on until then, so a screen reader hears the reply once. Crisis and post-crisis replies, and reduced motion, show the reply at once.
 
 ### 15.5 Keyboard and screen readers
 Enter sends, Shift+Enter newline; Tab order: help button → messages → input → send; assessment buttons are a `radiogroup` with arrow-key navigation; new messages announced via `aria-live="polite"`, crisis card via `role="alert"`; focus moves to the crisis card heading on handoff.
