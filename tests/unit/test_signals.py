@@ -100,6 +100,28 @@ def test_valence_follows_the_vader_baseline() -> None:
     assert extract("I feel hopeless and alone").valence == valence("I feel hopeless and alone")
 
 
+@pytest.mark.parametrize("message", [
+    # Demo testers' messages that plain VADER scored as positive (2026-10-29).
+    "Even sleep feels horrible for me , because i get dreams like someone haunting me and "
+    "saying I am not getting any job and I can't get any job and life is no horrible",
+    "Eating less feels like keeping my self hungry for hours and moving more feels like over "
+    "enthusiastic",
+    "Would you sponsor me the knife or rope to hand",
+    "I taught of cutting rope with the knife not to die for that also i need to meet doctor",
+])  # fmt: skip
+def test_negative_messages_are_never_scored_positive(message: str) -> None:
+    assert valence(message) <= 0
+
+
+def test_valence_fixes_keep_ordinary_uses() -> None:
+    """ "like" as a verb still counts, and a negated good word still turns negative."""
+    assert valence("I like this song") > 0
+    assert valence("I am not happy") < 0
+    assert valence("I am so happy today") > 0
+    assert valence("Getting a job will make me comfortable") > 0
+    assert valence("Getting a job will make me comfortabale") == 0  # a typo is unknown
+
+
 @pytest.mark.parametrize(("message", "expected"), [
     ("Can we stop the exercise?", True),
     ("I don't want to do this anymore", True),

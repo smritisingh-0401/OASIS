@@ -22,6 +22,8 @@ class SessionSummary:
     turns: int
     mean: Mapping[str, float | None]  # None: the feature had no value in this session
     variance: Mapping[str, float | None]  # None: fewer than two values
+    valence: tuple[float, ...] = ()  # turn by turn, for the conversation's own graph
+    is_current: bool = False  # the conversation the request came from
 
 
 @dataclass(frozen=True)
@@ -33,19 +35,21 @@ class Trend:
     current: list[tuple[str, float]]  # this session's turns: (time, valence)
 
 
-def summarise(records: Sequence[SignalRecord]) -> list[SessionSummary]:
+def summarise(records: Sequence[SignalRecord], current: str = "") -> list[SessionSummary]:
     by_session: dict[str, list[SignalRecord]] = {}
     for r in sorted(records, key=lambda r: r.created_at):
         by_session.setdefault(r.session_hash, []).append(r)
     out = []
-    for i, recs in enumerate(by_session.values(), start=1):
+    for i, (session_hash, recs) in enumerate(by_session.items(), start=1):
         mean: dict[str, float | None] = {}
         variance: dict[str, float | None] = {}
         for name in FEATURES:
             values = [float(v) for r in recs if (v := getattr(r.features, name)) is not None]
             mean[name] = statistics.fmean(values) if values else None
             variance[name] = statistics.variance(values) if len(values) > 1 else None
-        out.append(SessionSummary(i, recs[0].created_at, len(recs), mean, variance))
+        valence = tuple(r.features.valence for r in recs)
+        out.append(SessionSummary(i, recs[0].created_at, len(recs), mean, variance, valence,
+                                  session_hash == current))  # fmt: skip
     return out
 
 
@@ -72,7 +76,7 @@ def change_flags(values: Sequence[float], k: int, z: float) -> list[bool]:
 
 
 def trend(records: Sequence[SignalRecord], session_hash: str, cfg: TrackingConfig) -> Trend:
-    sessions = summarise(records)
+    sessions = summarise(records, session_hash)
     means = [s.mean["valence"] or 0.0 for s in sessions]  # every turn has a valence
     current = [(r.created_at, r.features.valence)
                for r in sorted(records, key=lambda r: r.created_at)

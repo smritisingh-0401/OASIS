@@ -144,7 +144,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 |---|---|
 | FR-XAI-1 | Every reply has an explanation built after decisions are final; generation of the explanation fails soft (reply still returned, explanation marked unavailable). |
 | FR-XAI-2 | The explanation states it explains the *response strategy*, not the LLM's word choice. |
-| FR-XAI-3 | Plain-language "why this reply" panel (fetched on demand) and a debug view with raw contributions. |
+| FR-XAI-3 | Plain-language "why this reply" panel (fetched on demand) and a debug view with raw contributions. Since 2026-10-29 the panels sit on a "Why replies" page reached from the header, one per reply, newest first, instead of under each reply (demo-testing feedback). |
 
 ### 5.9 Privacy & autonomy (FR-PRV)
 | ID | Requirement |

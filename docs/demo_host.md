@@ -91,6 +91,26 @@ It prints a link like `https://some-random-words.trycloudflare.com`. Open it you
 - The link changes every time `cloudflared` restarts. A link that stays the same needs a free Cloudflare account and a domain you own (a named tunnel).
 - To stop, press Ctrl+C in all three terminals. Every conversation is gone once OASIS stops.
 
+## Start automatically after a power cut (Ubuntu)
+
+Instead of three terminals, `scripts/host_autostart.sh` installs three systemd services, one each for the model, OASIS and the link. They start at every boot, and each restarts within 5 s if it stops. Run it once, as your own user (not with `sudo`), from the `OASIS` folder:
+
+```bash
+bash scripts/host_autostart.sh install
+```
+
+It finds `llama-server`, `uv` and `cloudflared`, creates `.env` if it is missing, starts everything and prints the link. After any restart or power cut the link is new; to print it:
+
+```bash
+bash scripts/host_autostart.sh link
+```
+
+`status` shows whether the three are running, `restart` restarts them (new link), `stop` stops them until the next boot, and `uninstall` removes the services. Logs: `journalctl -u oasis-model`, `oasis-app` or `oasis-link`.
+
+Two settings help it come back on its own:
+- In the computer's BIOS/UEFI setup, set **Restore on AC power loss** (sometimes "After power failure") to **Power on**, so it switches itself on when the power returns.
+- Keep it awake: Settings, Power, set automatic suspend to off. Nobody has to log in: the services run at boot.
+
 ## What testers see and what is kept
 
 Testers type into the page; the messages go through Cloudflare's network to this computer. Nothing is written to disk. OASIS's logs hold timings and decisions, never words, and the terminal running OASIS shows the same. Anyone with access to this computer while it runs controls it, which is why the notice asks for made-up messages.

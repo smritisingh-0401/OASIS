@@ -226,3 +226,218 @@ def test_a_draft_repeating_a_recent_opener_breaks_fresh_opener() -> None:
     assert check("It sounds like a lot. What happened?", plan).reasons == ("fresh_opener",)
     assert check("That sounds like a lot. What happened?", plan).ok
     assert opener("It's  okay, really.") == "its okay really"
+
+
+# --- listening replies (demo testing, 2026-10-29) -------------------------------------------
+# "When I am feeling sad you are asking me how much sad": a reply sometimes just listens.
+
+LISTEN = Plan(mode="companion", constraints=("validate_first", "no_advice", "no_question",
+                                             "no_praise"))  # fmt: skip
+
+
+@pytest.mark.parametrize("message", [
+    "When I am feeling sad you are asking me how much sad",
+    "please stop asking me questions",
+    "can you just listen",
+    "I don't want questions right now, I just need to vent",
+])  # fmt: skip
+def test_asking_for_no_questions_gets_a_listening_reply(message: str) -> None:
+    plan = plan_turn(message, state())
+    assert "no_question" in plan.constraints
+    assert "one_question" not in plan.constraints
+    assert "listen.asked" in plan.reason_codes
+
+
+def test_after_two_questions_in_a_row_the_next_reply_listens() -> None:
+    asked = _said("That sounds hard. What happened?", "That must hurt. How are you coping?")
+    message = "work was busy again today too"  # over BRIEF_WORDS, so not a short reply
+    plan = plan_turn(message, state(history=asked))
+    assert "no_question" in plan.constraints
+    assert "listen.two_questions" in plan.reason_codes
+    listened = _said("That sounds hard. What happened?", "That must hurt. I'm here.")
+    assert "one_question" in plan_turn(message, state(history=listened)).constraints
+
+
+def test_a_long_outpouring_gets_a_listening_reply() -> None:
+    message = " ".join(["everything at the hostel has been going wrong this term"] * 5)
+    plan = plan_turn(message, state())
+    assert "no_question" in plan.constraints
+    assert "listen.long_message" in plan.reason_codes
+
+
+def test_asking_for_ideas_still_gets_a_question() -> None:
+    asked = _said("That sounds hard. What happened?", "That must hurt. How are you coping?")
+    plan = plan_turn("what should I do?", state(history=asked))
+    assert "one_question" in plan.constraints
+
+
+def test_a_listening_reply_asks_nothing() -> None:
+    assert check("That sounds really heavy. I'm here and listening.", LISTEN).ok
+    assert check("That sounds heavy. What happened?", LISTEN).reasons == ("no_question",)
+    assert check(TEMPLATES["listen_fallback"], LISTEN).ok
+    assert "?" not in TEMPLATES["listen_fallback"]
+
+
+def test_the_listening_prompt_says_not_to_ask() -> None:
+    system = build_messages(LISTEN, [], "hi", history_turns=6)[0].content
+    assert "Do not ask a question" in system
+    assert "ask one gentle open question" not in system
+
+
+def test_why_this_reply_says_why_it_only_listens() -> None:
+    import json
+
+    from oasis.explain import builder
+
+    message = "please stop asking me questions"
+    bullets = json.loads(builder.build(message, plan_turn(message, state())))["plain_language"]
+    assert bullets[-1] == builder.config().reasons["listen.asked"]
+    assert "asks one gentle question" not in " ".join(bullets)
+
+
+# --- who OASIS is (demo testing, 2026-10-29) ---------------------------------------------------
+# "Who is your owner" got "created by Google", then a fallback: it now gets a fixed answer.
+
+
+@pytest.mark.parametrize("message", [
+    "Who is your owner", "who are you?", "Who made you?", "what are you exactly",
+    "are you chatgpt", "Are you a real person?", "which company created you",
+])  # fmt: skip
+def test_asking_what_oasis_is_gets_the_fixed_answer(message: str) -> None:
+    plan = plan_turn(message, state())
+    assert (plan.templated, plan.text) == (True, TEMPLATES["identity"])
+    assert plan.reason_codes == ("identity.asked",)
+
+
+@pytest.mark.parametrize("message", [
+    "what are you doing tonight", "who made you feel that way", "my brother asked who are you",
+    "are you sure about that",
+])  # fmt: skip
+def test_other_questions_are_not_about_oasis(message: str) -> None:
+    assert plan_turn(message, state()).text != TEMPLATES["identity"]
+
+
+def test_the_fixed_answer_is_honest_and_passes_the_checks() -> None:
+    text = TEMPLATES["identity"]
+    assert "not made by any company" in text
+    assert "open language model" in text
+    assert "not a person" in text
+    assert check(text, Plan(mode="companion")).ok
+
+
+# --- short acknowledgements (demo testing, 2026-10-29) --------------------------------------
+# "food", "MOTHER": a short answer gets a short reply, not a paragraph.
+
+BRIEF = Plan(mode="companion", constraints=("brief", "no_advice", "no_praise"))
+
+
+@pytest.mark.parametrize("message", ["food", "MOTHER", "ok thanks", "yeah it was hard"])
+def test_a_short_message_gets_a_short_acknowledgement(message: str) -> None:
+    plan = plan_turn(message, state(history=_said("That sounds hard. What bothers you most?")))
+    assert "brief" in plan.constraints
+    assert not {"one_question", "no_question", "validate_first"} & set(plan.constraints)
+    assert "brief.short_message" in plan.reason_codes
+
+
+@pytest.mark.parametrize("message", [
+    "who made you feel that?", "what should I do", "is that normal",
+    "my exams start next week and I am not ready at all",
+])  # fmt: skip
+def test_questions_and_longer_messages_get_a_full_reply(message: str) -> None:
+    history = state(history=_said("That sounds hard. What bothers you most?"))
+    assert "brief" not in plan_turn(message, history).constraints
+
+
+def test_the_first_message_gets_a_full_reply() -> None:
+    assert "brief" not in plan_turn("hi there", state()).constraints
+
+
+def test_asking_to_just_listen_wins_over_a_short_reply() -> None:
+    plan = plan_turn("can you just listen", state(history=_said("That sounds hard. Why?")))
+    assert "listen.asked" in plan.reason_codes
+
+
+def test_a_short_reply_is_one_sentence_without_a_question() -> None:
+    assert check("Food really matters when you're far from home.", BRIEF).ok
+    assert check("That makes sense. What else?", BRIEF).reasons == ("brief",)
+    assert check("That makes sense. It really does. I hear you.", BRIEF).reasons == ("brief",)
+    system = build_messages(BRIEF, [], "food", history_turns=6)[0].content
+    assert "one short sentence" in system
+
+
+# --- an occasional suggestion with hope (demo testing, 2026-10-29) ----------------------------
+
+
+def _turns(replies: int, mode: str = "companion") -> tuple[TurnRecord, ...]:
+    """`replies` exchanges: a user message, then a reply ending in a question."""
+    out: list[TurnRecord] = []
+    for i in range(replies):
+        out.append(TurnRecord(f"u{i}", 2 * i + 1, "user", "work has been hard", None, ""))
+        out.append(TurnRecord(f"a{i}", 2 * i + 2, "assistant", "That sounds hard. Why?",
+                              mode, ""))  # type: ignore[arg-type]  # fmt: skip
+    return tuple(out)
+
+
+STRUGGLE = "my manager keeps shouting at me and I feel awful"
+
+
+def test_every_fourth_reply_to_a_difficulty_offers_one_idea_with_hope() -> None:
+    plan = plan_turn(STRUGGLE, state(history=_turns(3)[-1:]))  # only the last turn is loaded
+    assert "offer_one_idea" in plan.constraints
+    assert "encourage" in plan.constraints
+    assert "no_advice" not in plan.constraints
+    assert "idea.offered" in plan.reason_codes
+    system = build_messages(plan, [], STRUGGLE, history_turns=6)[0].content
+    assert "small steps still count" in system
+    assert "Never tell them to stay positive" in system
+
+
+@pytest.mark.parametrize("replies", [1, 2, 4])
+def test_other_replies_offer_no_unasked_idea(replies: int) -> None:
+    plan = plan_turn(STRUGGLE, state(history=_turns(replies)[-1:]))
+    assert "offer_one_idea" not in plan.constraints
+
+
+def test_good_news_gets_no_idea() -> None:
+    plan = plan_turn(
+        "my manager praised my work today and I am happy", state(history=_turns(3)[-1:])
+    )
+    assert "offer_one_idea" not in plan.constraints
+
+
+def test_no_idea_soon_after_crisis_support() -> None:
+    history = (*_turns(2), TurnRecord("c", 5, "placeholder", "x", "crisis", ""),
+               TurnRecord("p", 6, "assistant", "I'm here.", "companion", ""))  # fmt: skip
+    assert "offer_one_idea" not in plan_turn(STRUGGLE, state(history=history)).constraints
+
+
+@pytest.mark.parametrize("reply", [
+    "That sounds hard, but just stay positive!",
+    "Try to look on the bright side. What happened?",
+    "It could be worse. How are you?",
+    "Everything happens for a reason.",
+    "You need a positive attitude.",
+])  # fmt: skip
+def test_dismissive_positivity_is_rejected_in_every_mode(reply: str) -> None:
+    for mode in ("companion", "cbt", "dbt"):
+        reasons = check(reply, Plan(mode=mode)).reasons  # type: ignore[arg-type]
+        assert "no_toxic_positivity" in reasons
+
+
+def test_hopeful_encouragement_passes() -> None:
+    plan = Plan(mode="companion", constraints=("validate_first", "offer_one_idea", "encourage",
+                                               "one_question", "no_praise"))  # fmt: skip
+    reply = (
+        "That sounds exhausting. A short walk after work helps some people, and small "
+        "steps still count. Would that fit for you?"
+    )
+    assert check(reply, plan).ok
+
+
+def test_continuing_after_crisis_support_keeps_the_full_reply() -> None:
+    """ "I'd like to keep talking." is five words, but leaving crisis mode is not small talk:
+    no short reply, no listening swap and no unasked idea on that turn (2026-10-29)."""
+    asked = _said("That sounds hard. What happened?", "That must hurt. How are you coping?")
+    plan = plan_turn("I'd like to keep talking.", state(post_crisis=True, history=asked))
+    assert plan.constraints == CONSTRAINTS["companion"]
+    assert plan.reason_codes == ("post_crisis.cleared",)

@@ -15,7 +15,7 @@ A review of 97 studies (16,620 participants) on mental health chatbots identifie
 ## Key properties
 
 - **Safety first** — pure-Python crisis detection runs before anything else; crisis handoff makes zero model calls. "Need help now?" works with no script and no server, and opens the country chosen in Settings, or else the computer's time zone, first.
-- **Explainable** — every reply has a "Why this reply?" panel: the signals that drove its strategy, with exact SHAP values and the router's weighted sum.
+- **Explainable** — every reply is explained on the "Why replies" page: the signals that drove its strategy, with exact SHAP values and the router's weighted sum.
 - **Private** — nothing leaves the computer. A data notice comes first; each conversation is either saved in a local file or kept in memory only, and Settings exports or deletes everything (deleted text is overwritten on disk). No name, email or phone number.
 - **Your style** — Settings sets how direct and how formal replies are; it changes the wording only, never what OASIS does, and is never guessed from how you write.
 - **Free to run** — quantised open model on a CPU laptop; no paid API.
@@ -116,6 +116,17 @@ uv run python scripts/verify.py
 
 Compare candidate models with `scripts/model_bakeoff.py`. `scripts/bias_eval.py` runs the bias evaluation (`--fake` for the decision plane only). `scripts/load_test.py` measures speed and concurrency. `scripts/licences.py` regenerates [docs/licences.md](docs/licences.md); `scripts/export_diagrams.py` exports the diagrams for reports (needs Node.js).
 
+## ML models
+
+Four small models add to the rules without replacing them. Each can only add (an alert, an emotion, a rejection or an item) and has a fallback:
+
+- an add-only crisis classifier for misspellings: held-out typo recall goes from 51% to 80%;
+- learned emotion scorers trained on GoEmotions: ROC-AUC goes from 0.54-0.67 to 0.82-0.93;
+- an NLI check in the guard for reworded agreement;
+- semantic psychoeducation retrieval: the right item for 24 of 33 reworded questions, against 3 before.
+
+The first two need nothing extra. The last two are optional: `uv sync --extra ml`, then `uv run python ml/fetch_models.py`. Data, training, metrics and limits are in [docs/ml_models.md](docs/ml_models.md).
+
 ## Limitations
 
 - **Not a clinical tool.** No diagnosis, no medication advice, not an emergency service. The safety patterns, crisis policy and clinical wording await review by a qualified clinician ([docs/clinical_review.md](docs/clinical_review.md)); the data notice awaits legal review.
@@ -159,6 +170,7 @@ See [docs/phases.md](docs/phases.md) and [docs/memory.md](docs/memory.md).
 | [docs/phases.md](docs/phases.md) | Build plan |
 | [docs/memory.md](docs/memory.md) | Project memory and decision log |
 | [docs/clinical_review.md](docs/clinical_review.md) | Items awaiting clinician review |
+| [docs/ml_models.md](docs/ml_models.md) | ML models: data, training, evaluation, limits |
 | [docs/reports/](docs/reports/) | Per-phase reports: design, evaluation, measured results, known limits |
 | [docs/licences.md](docs/licences.md) | Licences of everything OASIS runs |
 

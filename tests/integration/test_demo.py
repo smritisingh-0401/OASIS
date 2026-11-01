@@ -41,7 +41,7 @@ def test_demo_never_saves_even_when_asked(demo: Settings) -> None:
     assert not Path(demo.db_path).exists()
 
 
-@pytest.mark.parametrize("page", ["/", "/settings.html", "/trends.html"])
+@pytest.mark.parametrize("page", ["/", "/settings.html", "/trends.html", "/why.html"])
 def test_every_demo_page_carries_the_banner(demo: Settings, settings: Settings, page: str) -> None:
     with TestClient(create_app(demo)) as c:
         html = c.get(page).text

@@ -18,7 +18,7 @@ from oasis.llm.fake import FakeLLM
 from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.router.exercise import technique_for
 from oasis.router.weights import config as router_config
-from oasis.safety.handoff import HANDOFF_REPLY
+from oasis.safety.handoff import HANDOFF_REPLY, HARM_OTHERS_REPLY
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.types import ChatMessage, SafetyVerdict
@@ -62,7 +62,9 @@ def test_health(client: TestClient) -> None:
 
 def test_multi_turn_chat_and_history(client: TestClient) -> None:
     token = _session(client)
-    for text in ("first", "second"):
+    # Over five words each, so neither gets the short acknowledgement (2026-10-29).
+    first, second = "my first message about the day", "my second message about the day"
+    for text in (first, second):
         resp = _chat(client, token, text)
         assert resp.status_code == 200
         body = resp.json()
@@ -72,17 +74,17 @@ def test_multi_turn_chat_and_history(client: TestClient) -> None:
 
     history = client.get("/history", headers={HEADER: token}).json()["turns"]
     assert [(t["role"], t["content"]) for t in history] == [
-        ("user", "first"),
+        ("user", first),
         ("assistant", "That sounds like a lot. What's on your mind?"),
-        ("user", "second"),
+        ("user", second),
         ("assistant", "That sounds like a lot. What's on your mind?"),
     ]
 
 
 def test_history_limit(client: TestClient) -> None:
     token = _session(client)
-    _chat(client, token, "a")
-    _chat(client, token, "b")
+    _chat(client, token, "a message about my long day")
+    _chat(client, token, "b message about my long day")
     turns = client.get("/history?limit=1", headers={HEADER: token}).json()["turns"]
     assert [t["content"] for t in turns] == ["That sounds like a lot. What's on your mind?"]
 
@@ -165,6 +167,17 @@ def test_crisis_reply_invites_talking_in_person_and_points_to_the_card() -> None
     assert "If you feel like talking to someone in person" in HANDOFF_REPLY
     assert '"Need help now?"' in HANDOFF_REPLY
     assert "emergency" not in HANDOFF_REPLY
+
+
+def test_harm_to_others_gets_its_own_handoff(client: TestClient) -> None:
+    """Demo testing, 2026-10-29: a threat to someone else is a crisis too, with a reply
+    about anger and keeping others safe; with a risk to self as well, the self reply wins."""
+    others = _chat(client, _session(client), "i want to kill mess chef").json()
+    assert (others["mode"], others["reply"]) == ("crisis", HARM_OTHERS_REPLY)
+    assert "emergency number" in HARM_OTHERS_REPLY
+    assert '"Need help now?"' in HARM_OTHERS_REPLY
+    both = _chat(client, _session(client), "i want to kill him and then myself").json()
+    assert both["reply"] == HANDOFF_REPLY
 
 
 def test_help_card_lists_crisis_lines_without_external_loads(client: TestClient) -> None:
@@ -498,6 +511,49 @@ def test_trends_over_http(client: TestClient) -> None:
     assert info["msg_length"]["exploratory"] is True
 
 
+def test_new_chat_starts_a_conversation_with_its_own_graph(client: TestClient) -> None:
+    """New chat (demo testing, 2026-10-29): same person and consent, an empty conversation,
+    and Mood trend shows each conversation turn by turn, the current one marked."""
+    first = _session(client)
+    _chat(client, first, "I always feel so tired")
+    resp = client.post("/session/new", headers={HEADER: first})
+    assert resp.status_code == 201
+    second = resp.json()["session_id"]
+    assert second != first
+    assert resp.json()["ephemeral"] is False
+    assert client.get("/history", headers={HEADER: second}).json()["turns"] == []
+    assert _chat(client, second, "work was fine today").status_code == 200  # no new consent
+    body = client.get("/trends", headers={HEADER: second}).json()
+    assert [len(s["valence"]) for s in body["sessions"]] == [1, 1]
+    assert [s["is_current"] for s in body["sessions"]] == [False, True]
+    assert len(body["current"]) == 1
+    assert client.post("/session/new").status_code == 401
+    assert client.post("/session/new", headers={HEADER: "not-a-session"}).status_code == 401
+
+
+def test_new_chat_keeps_an_unsaved_person_unsaved(client: TestClient) -> None:
+    token = client.post("/session", json={"ephemeral": True}).json()["session_id"]
+    client.post("/consent", json={"disclosure_version": load_disclosure().version},
+                headers={HEADER: token})  # fmt: skip
+    assert client.post("/session/new", headers={HEADER: token}).json()["ephemeral"] is True
+
+
+def test_why_replies_have_their_own_page(client: TestClient) -> None:
+    """Demo testing, 2026-10-29: "Why this reply?" moves off every reply to a page of its
+    own, reached from the header like Mood trend."""
+    chat_js = (Path(oasis.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
+    assert "/explanations/" not in chat_js
+    assert 'href="why.html"' in client.get("/").text
+    page = client.get("/why.html")
+    assert page.status_code == 200
+    assert 'src="why.js"' in page.text
+    assert 'href="/"' in page.text  # back to chat
+    why_js = client.get("/why.js").text
+    assert "/history?limit=200" in why_js
+    assert "reverse()" in why_js  # newest first
+    assert "crisis support" in why_js  # a crisis reply's details are never kept
+
+
 def test_trends_need_a_session(client: TestClient) -> None:
     assert client.get("/trends").status_code == 401
     assert client.get("/trends", headers={HEADER: "not-a-session"}).status_code == 401
@@ -573,9 +629,9 @@ def test_crisis_reply_carries_no_explanation(client: TestClient) -> None:
 
 
 def test_the_why_panel_is_fetched_on_demand() -> None:
-    js = (Path(oasis.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
+    """Since 2026-10-29 the panels live on their own page (why.html), one per reply."""
+    js = (Path(oasis.__file__).parent / "web" / "why.js").read_text(encoding="utf-8")
     assert "/explanations/" in js
-    assert "Why this reply?" in js
     # No raw record in the panel (Smriti, 2026-10-24); GET /explanations and export keep it.
     assert "See details" not in js
     # The scope note stays in the record (GET /explanations, export), not in the panel.

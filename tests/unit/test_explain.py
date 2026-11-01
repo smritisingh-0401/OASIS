@@ -28,7 +28,7 @@ from oasis.storage.memory import MemoryRepository
 from oasis.storage.repository import StorageUnavailable
 from oasis.types import ConversationState, ExerciseAction, Plan, RouterState
 
-LEXICONS = ("emotions", "cues", "distortions")
+LEXICONS = builder.LEXICONS
 NOW = datetime.datetime(2026, 10, 22, 12, tzinfo=datetime.UTC)
 MESSAGES = [
     "I always mess everything up and nobody likes me",
@@ -254,7 +254,7 @@ UNROUTED_CODES = [
     "assessment.accept", "assessment.answer", "assessment.decline", "assessment.pause",
     "assessment.resume", "assessment.abort", "assessment.none_open", "assessment.free_text",
     "assessment.not_saved", "psychoed.low_mood", "exercise.decline", "exercise.stop",
-    "exercise.none_open", "post_crisis.cleared",
+    "exercise.none_open", "post_crisis.cleared", "identity.asked",
 ]  # fmt: skip
 
 
@@ -431,11 +431,11 @@ def test_a_longer_message_explains_the_sentence_that_was_scored(message: str) ->
     from oasis.core.signals import extract
 
     signals = extract(message)
-    used = {f"emotions.{e}": v for e, v in signals.emotions.items()}
-    used |= {"cues.dysregulation": signals.dysregulation, "cues.overwhelm": signals.overwhelm}
+    # An emotion is the larger of its hand-written and learned scorers (add-only).
+    used = {(f"emotions.{e}", f"emotions_learned.{e}"): v for e, v in signals.emotions.items()}
+    used |= {("cues.dysregulation",): signals.dysregulation, ("cues.overwhelm",): signals.overwhelm}
     record = _record(message)
     assert record["status"] == "ok"
-    explained = {d["detector"]: d for d in record["detectors"]}
-    for name, value in used.items():
-        d = explained.get(name)
-        assert (min(1.0, max(0.0, d["output"])) if d else 0.0) == pytest.approx(value, abs=1e-9)
+    explained = {d["detector"]: min(1.0, max(0.0, d["output"])) for d in record["detectors"]}
+    for names, value in used.items():
+        assert max(explained.get(n, 0.0) for n in names) == pytest.approx(value, abs=1e-9)

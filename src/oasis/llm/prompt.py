@@ -11,6 +11,9 @@ from oasis.types import ChatMessage, Plan, TurnRecord
 SYSTEM_TEMPLATE = (
     "You are OASIS, a supportive listening companion. You are not a therapist or a doctor.\n"
     "Never diagnose. Never give medication advice. Never claim to be human.\n"
+    # A demo tester asked "Who is your owner" and got "created by Google" (2026-10-29).
+    "If asked who made or owns you: OASIS is an independent project that runs an open "
+    "language model on its own computer; it is not made by any company.\n"
     "Never encourage them to rely on you instead of the people in their life.\n"
     "Write three sentences or fewer, in plain words, with no lists and no emojis.\n"
     "Match their tone: keep small talk light, and never make a feeling sound bigger or "
@@ -41,6 +44,8 @@ GOALS = {
 RULES = {
     "validate_first": "Start by acknowledging what they said, in your own words.",
     "one_question": "Ask exactly one gentle, open question, at the end.",
+    "no_question": "Do not ask a question: reflect what they said and let them know you are "
+    "listening.",
     "no_advice": "Do not give advice or tell them what to do.",
     "offer_ideas": "They asked for ideas: offer one or two gentle, practical suggestions.",
     "no_praise": "Do not praise or flatter them.",
@@ -61,9 +66,19 @@ RULES = {
     "not_empty": "Write a short reply.",
     "use_snippet_only": "Use only what the script line says.",
     "no_exercise_step": "Do not write exercise steps of your own.",
+    "offer_one_idea": "Offer one small, practical idea as a suggestion they can take or leave.",
+    "encourage": "Add one hopeful sentence that leaves their feeling alone, such as that small "
+    "steps still count. Never tell them to stay positive or look on the bright side.",
+    "no_toxic_positivity": "Do not tell them to stay positive, look on the bright side, or "
+    "that it could be worse.",
+    "brief": "Reply in one short sentence that acknowledges what they said, with no question.",
+    "no_maker_claim": "Do not say a company made you or name another assistant.",
     "ack_only": "Write one short sentence responding to them, with no question and no exercise "
     "step.",
 }
+# A companion reply that only listens (demo testing, 2026-10-29).
+LISTEN_GOAL = "Respond to what they said and let them know you are listening."
+BRIEF_GOAL = "Acknowledge what they said, warmly and briefly."
 SCRIPT_MARK = "\n- script: "
 # An exercise step is added after the reply word for word (the 4B model, asked to rephrase
 # "T is for Take a step back", wrote "N is for Name what you are feeling"), so the step text
@@ -94,7 +109,14 @@ def build_messages(
     history_turns: int,
     retry_reasons: Sequence[str] = (),
 ) -> list[ChatMessage]:
-    goal = STEP_GOAL if plan.is_step else GOALS.get(plan.mode, GOALS["companion"])
+    if plan.is_step:
+        goal = STEP_GOAL
+    elif "no_question" in plan.constraints:
+        goal = LISTEN_GOAL
+    elif "brief" in plan.constraints:
+        goal = BRIEF_GOAL
+    else:
+        goal = GOALS.get(plan.mode, GOALS["companion"])
     style = framing(plan.style)
     system = SYSTEM_TEMPLATE.format(
         style=style + "\n" if style else "",

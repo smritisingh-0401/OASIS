@@ -2,14 +2,16 @@
 
 Each check enforces a plan rule the prompt already states, and its reason code is that rule's
 name, so a retry can name it back in plain words.
-- Companion replies: validate_first, one_question, no_praise, no_advice (only the rules the
-  plan carries) and fresh_opener.
+- Companion replies: validate_first, one_question or no_question (a listening reply),
+  no_praise, no_advice (only the rules the plan carries) and fresh_opener.
 - Replies to a thinking-trap message, in every mode: validate_first and one_question, plus
   no_agreeing and no_presupposing against the user's distorted claim (G-AGREE, G-PRESUP).
 - Exercise steps: ack_only (no question, no step or instruction of its own; the engine
   keeps one sentence) and no_praise.
 - Every generated reply: no_self_label, no_diagnosis, no_medication, no_dependency,
-  no_exercise_step (after an exercise the model copies its "X is for" steps), not_empty.
+  no_exercise_step (after an exercise the model copies its "X is for" steps), not_empty,
+  no_maker_claim (a company named as its maker, or another assistant's name),
+  no_toxic_positivity ("stay positive", "look on the bright side", "it could be worse").
   A clause that declines ("I can't tell you if you have depression") does not fail
   no_diagnosis or no_medication.
 The engine owns the retry and the fallback.
@@ -25,26 +27,38 @@ from typing import Any
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from oasis.content import load_yaml, require_review
+from oasis.guard.nli import AgreementModel
 from oasis.safety.normalize import base_form
 from oasis.types import GuardVerdict, Plan
 
 COMPANION_LISTED = ("validate_first", "no_praise", "no_advice", "no_dependency")
 GUARD_LISTED = ("agreement", "hedges", "presupposing", "advice_words", "self_label",
                 "diagnosis", "medication", "refusals", "step_text", "made_up_step", "label_nouns",
-                "harsh_words", "strong_agreement", "medication_topic")  # fmt: skip
-COMPANION_RULES = ("validate_first", "one_question", "no_praise", "no_advice")
+                "harsh_words", "strong_agreement", "medication_topic", "maker_claim",
+                "toxic_positivity")  # fmt: skip
+COMPANION_RULES = (
+    "validate_first",
+    "one_question",
+    "no_question",
+    "brief",
+    "no_praise",
+    "no_advice",
+)
 # Form, not content: a draft failing only these is retried, but kept rather than replaced
 # by the fixed fallback (the validating-phrase list cannot know every way to validate).
 SOFT_RULES = frozenset({"validate_first", "one_question", "fresh_opener"})
 # Content: a draft failing any of these twice is replaced by a vetted fallback.
-HARD_RULES = frozenset({"no_praise", "no_advice", "no_dependency", "no_agreeing",
-                        "no_self_label", "no_presupposing", "no_diagnosis", "no_medication",
-                        "not_empty", "ack_only", "no_exercise_step"})  # fmt: skip
+HARD_RULES = frozenset({"no_praise", "no_advice", "no_dependency", "no_agreeing", "no_question",
+                        "brief", "no_self_label", "no_presupposing", "no_diagnosis",
+                        "no_medication", "not_empty", "ack_only", "no_exercise_step",
+                        "no_maker_claim", "no_toxic_positivity"})  # fmt: skip
 # Checked on every generated reply: (rule, phrase list).
 EVERY_REPLY = (("no_self_label", "self_label"), ("no_diagnosis", "diagnosis"),
                ("no_medication", "medication"), ("no_dependency", "no_dependency"),
-               ("no_exercise_step", "made_up_step"))  # fmt: skip
+               ("no_exercise_step", "made_up_step"), ("no_maker_claim", "maker_claim"),
+               ("no_toxic_positivity", "toxic_positivity"))  # fmt: skip
 REFUSABLE = frozenset({"diagnosis", "medication"})  # a refusal clause may name these
+BRIEF_MAX = 25  # words in a short acknowledgement
 ECHO = 0.6  # share of a claim's content words a sentence must repeat to echo it (design §8.2)
 
 # Function words dropped before comparing a reply with a claim, so "I'm such a failure" and
@@ -138,7 +152,9 @@ def load_rules() -> Rules:
             **parse_guard(load_yaml("guard", "checks.yaml"))}  # fmt: skip
 
 
-def check(draft: str, plan: Plan) -> GuardVerdict:
+def check(draft: str, plan: Plan, agreement: AgreementModel | None = None) -> GuardVerdict:
+    """`agreement` is the optional NLI check (oasis.guard.nli): add-only, for agreement that
+    rewords the claim."""
     rules = load_rules()
     norm = base_form(draft)
     if not norm.strip():
@@ -152,6 +168,13 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
             failed.append("validate_first")
         if "one_question" in active and (norm.count("?") != 1 or not norm.rstrip().endswith("?")):
             failed.append("one_question")
+        if "no_question" in active and "?" in norm:
+            failed.append("no_question")  # a listening reply (demo testing, 2026-10-29)
+        sentences = [s for s in re.split(r"(?<=[.!?])\s+", norm.strip()) if s]
+        if "brief" in active and (
+            "?" in norm or len(sentences) > 1 or len(norm.split()) > BRIEF_MAX
+        ):
+            failed.append("brief")  # a short acknowledgement (demo testing, 2026-10-29)
     if plan.is_step and _any(rules["no_praise"], norm):
         failed.append("no_praise")  # "That is a good start." before a step (tone check)
     if plan.mode == "companion":
@@ -163,6 +186,8 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
         failed.append("ack_only")
     if plan.claims:
         failed += _claim_rules(norm, plan.claims, rules)
+        if agreement and "no_agreeing" not in failed and agreement.agrees(draft, plan.claim_texts):
+            failed.append("no_agreeing")
     # "I agree with you" agrees even when the reply words the claim differently from theirs.
     strong = _any(rules["strong_agreement"], norm)
     if strong and "no_agreeing" in plan.constraints and "no_agreeing" not in failed:

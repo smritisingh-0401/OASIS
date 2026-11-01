@@ -157,6 +157,20 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
             raise STORAGE_DOWN from None
         return SessionResponse(session_id=token, ephemeral=ephemeral)
 
+    @router.post("/session/new", status_code=201)
+    async def new_conversation(session: SessionHeader = None) -> SessionResponse:
+        """New chat (demo testing, 2026-10-29): a fresh conversation for the same person, in
+        the same store, with their consent and settings. The browser keeps only the new key."""
+        _, info = await resolve(session)
+        token = secrets.token_urlsafe(32)
+        try:
+            await repo.add_session(info.user_id, hash_token(token))
+        except StorageBusy:
+            raise BUSY from None
+        except StorageError:
+            raise STORAGE_DOWN from None
+        return SessionResponse(session_id=token, ephemeral=repo.is_ephemeral(hash_token(token)))
+
     @router.get("/session")
     async def session_status(session: SessionHeader = None) -> SessionStatus:
         session_hash, info = await resolve(session)

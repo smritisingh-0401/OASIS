@@ -114,7 +114,7 @@ patterns:
     examples: ["i want to kill myself"]
 ```
 
-- **Tiers:** `explicit` (stated intent), `passive` (wish to be dead), `plan_method` (means, timing, preparation; ID prefix `plan.`), `burden` ("better off without me") and `self_harm` (non-suicidal self-injury: "I cut myself", "I want to hurt myself"; added in Phase 2, CR-01). A self-harm disclosure gets the same handoff as the other tiers.
+- **Tiers:** `explicit` (stated intent), `passive` (wish to be dead), `plan_method` (means, timing, preparation; ID prefix `plan.`), `burden` ("better off without me") and `self_harm` (non-suicidal self-injury: "I cut myself", "I want to hurt myself"; added in Phase 2, CR-01). A self-harm disclosure gets the same handoff as the other tiers. `harm_others` (killing or attacking another person, reported speech included; added 2026-10-29, CR-27) gets the same handoff path with its own reply, `HARM_OTHERS_REPLY`, which names the emergency number; when a risk to self is also found, the self reply is shown.
 - Patterns are written against the normalised text (lower case, no apostrophes, single spaces).
 - **Load-time validation** (`safety/rules.py`) raises `SafetyConfigError`, and the app refuses to start, on: invalid YAML, a missing version, an unknown tier, an ID without its tier prefix, a duplicate ID, a pattern with no example, a pattern that does not compile, named groups or inline flags, or an unbounded nested quantifier (backtracking risk).
 - **Startup self-check:** every example must trigger its own rule through the full matcher; every allow-list `positive_example` must match a suppressed rule without the allow-list and be suppressed with it; every `negative_example` must still trigger.
@@ -250,7 +250,7 @@ stateDiagram-v2
 
 | Signal | Detector | Notes |
 |---|---|---|
-| `valence` | VADER compound score | Baseline; [-1, 1] |
+| `valence` | VADER compound score, with four fixes from demo testing (2026-10-29): "like" as a comparison ("feels like") and "hand" score nothing; a negated bad word ("not to die") and a good word after "over" or "too" are neutral, not positive | Baseline; [-1, 1] |
 | `emotions[*]` | Lexicon scorers (`content/lexicons/emotions.yaml`) | Hand-weighted; normalised by token count, clipped to [0, 1] |
 | `dysregulation` | Lexicon (urge, rage, can't control, intensity markers) | DBT-leaning cue |
 | `distortion`, `distortion_types` | Lexicon/regex per Burns category (all-or-nothing, overgeneralisation, mental filter, disqualifying the positive, mind reading, fortune telling, magnification, emotional reasoning, should statements, labelling, personalisation) | CBT-leaning cue; reused by the guard |
@@ -401,6 +401,7 @@ function route(x, rs: RouterState) -> RouteDecision:
 | `C-ADVICE` | Unprompted advice imperative when plan constraint `no_advice` is set | Companion |
 | `C-DEPEND` | Dependency language (`I'm always here for you`, `you don't need anyone else`, `only I understand`) | All |
 | `C-ONEQ` | Exactly one question when constraint `one_question` | Companion, Socratic |
+| `C-NOQ` | No question when constraint `no_question` (a listening reply: asked to, after 2 question replies in a row, or a 40+ word message; demo testing 2026-10-29). The engine drops question sentences first; all questions gives `listen_fallback` | Companion |
 | `G-LEN` | ≤ token cap; not empty | All |
 
 ### 8.3 Flow
@@ -474,6 +475,7 @@ Latency uses **server** timestamps (client clocks are untrusted); client time is
 - **Citations** (`content/tracking/features.yaml`, CR-21): valence, first-person pronouns and absolutist words carry a checked source and a note on what it does not show; the rest are labelled exploratory. The loader rejects a feature with both or neither, and any other label.
 - **Aggregation** (`tracking/aggregate.py`): per-session mean and sample variance (`statistics`), EWMA over session mean valence (α = 0.3), and the change flag (K = 5, z = 1.5, sample SD; a baseline with no spread flags nothing). Recomputed from the stored features on each request, so no running state is kept; this replaces the Welford update the design named.
 - **Trend view:** the per-feature sources sit in a closed "What it is based on" dropdown (Smriti, 2026-10-24); the label stays always visible. `GET /trends` (label, per-feature sources, sessions with means and variances, EWMA, change flags, this session's valence per turn) and `web/trends.html` / `trends.js`, linked from the chat header. The label is always visible; flagged sessions are described as "noticeably different words … about word choice only".
+- **New chat** (demo testing, 2026-10-29): a button starts another conversation of the same person (never automatically); the browser keeps only the new key, so an earlier conversation is not reopened in the chat but appears under "Earlier conversations" in the trend view, one graph each, newest first, and in Export and Delete. An unsaved person is forgotten only when every one of their conversations has been idle for two hours.
 - **Known gap:** every browser session is a new pseudonymous user (Smriti, 2026-10-20: build the cross-session parts now, prove them on synthetic timelines), so the cross-session line and the change flag fill in only once returning users exist (Phase 10 / 13).
 
 ---
@@ -683,11 +685,12 @@ All endpoints: JSON; `X-OASIS-Session: <token>` header (except `POST /session` a
 |---|---|---|---|
 | `GET /health` | — | `{"status":"ok","llm":"up\|down\|unknown","storage":"up\|down","version":"…"}` | — |
 | `POST /session` | `{"ephemeral": bool}` | `201 {"session_id": "<256-bit token>", "ephemeral": bool, "consent_required": bool}` | 422 |
+| `POST /session/new` | — | `201 {"session_id": "<new token>", "ephemeral": bool}`: New chat (demo testing, 2026-10-29), another conversation of the same user in the same store, with their consent and settings | 401, 503 `busy` |
 | `POST /consent` | `{"disclosure_version": "1"}` | `204` | 401, 422 |
 | `POST /chat` | `{"message": str (1–2000 chars) \| null, "client_ts": ISO-8601, "action": Action \| null}` | `200 ChatResponse` | 401 `invalid_session`, 403 `consent_required` (non-crisis only, §3.3 of architecture), 422 `invalid_turn` |
 | `GET /history?limit=50&before=<turn_id>` | — | `200 {"turns": [{"turn_id","role","content","mode","created_at"}], "next": str\|null, "assessment": card\|null}`; `assessment` is the open questionnaire's current card, so a reload restores its buttons | 401 |
 | `GET /explanations/{explanation_id}` | — | `200 Explanation (§10.2)` | 401, 404 |
-| `GET /trends` | — | `200 {"label": "language-based mood trend, not a clinical measure", "sessions": [...], "ewma": [...], "change_flags": [...]}` | 401 |
+| `GET /trends` | — | `200 {"label": "language-based mood trend, not a clinical measure", "sessions": [... each with "valence" turn by turn and "is_current"], "ewma": [...], "change_flags": [...]}` | 401 |
 | `GET /settings` / `PUT /settings` | `{"directness","formality","country"}` (`country`: ISO code on the help card, or null) | `200 Settings` | 401, 403 `consent_required` (PUT), 422, 503 |
 | `GET /export` | — | `200 UserExport` (all tables for the user, JSON, `Content-Disposition: attachment`) | 401 |
 | `DELETE /account` | `{"confirm": "DELETE"}` | `204` | 401, 422 |
@@ -808,7 +811,7 @@ All files are validated against Pydantic schemas at startup; invalid content ref
 2. **Chat** — message list, input, send; persistent footer "Support tool, not a diagnosis or emergency service"; "Need help now?" button top-right.
 3. **Assessment card** — inline card: instrument name, "Question 3 of 9", item text, four large 0–3 buttons with labels, Pause and Stop links.
 4. **Score explanation** — total, band in words, plain-language meaning, non-diagnostic statement, "talk to a professional" text when the band text says so.
-5. **"Why this reply" panel** — expandable under each bot message; plain-language bullets only. The scope note (§10.2) and the raw record stay in the stored record, not the page (2026-10-24).
+5. **"Why this reply" panel** — expandable under each bot message; plain-language bullets only. The scope note (§10.2) and the raw record stay in the stored record, not the page (2026-10-24). Since 2026-10-29 (demo testing) the panels moved to their own page, `why.html` ("Why replies" in the header): every reply of the conversation, newest first, each a closed panel with the start of the reply as its summary; a crisis reply shows only "This was crisis support. Its details are not kept."
 6. **Mood-trend view** — simple line of session means with the non-clinical label always visible.
 7. **Settings** — style profile (two segmented controls with examples), the help card's country, ephemeral status, Export, Delete (two-step confirm).
 8. **Crisis card** — replaces the input area focus: calm heading, resources as large tappable links (`tel:`), "Continue talking" button.
@@ -840,6 +843,8 @@ Warm, plain, brief, non-judgemental; second person; no exclamation marks, no emo
 - **Loading:** "OASIS is thinking…" with `aria-busy`; input stays editable; after 8 s, "Still working — this can take a few seconds on this computer."
 - **Error / offline:** "I couldn't reach the server. Your message wasn't sent." + Retry; the help button still works.
 - **Busy:** templated reply "I'm handling a lot right now — could you give me a moment and send that again?"
+- **Conversation layout (demo testing, 2026-10-29):** the chat panel fills the window and only the conversation (or the data notice) scrolls, so the composer stays on screen. New messages follow a reader at the bottom; scrolled up, they get a "New message ↓" button instead, and their own message always returns them to the bottom.
+- **Typing:** three dots while the reply is generated, then the reply types out word by word (at most 2 s in all). It is already checked in full on the server, so this only reveals it. The note appears once it is done, and `aria-busy` stays on until then, so a screen reader hears the reply once. Crisis and post-crisis replies, and reduced motion, show the reply at once.
 
 ### 15.5 Keyboard and screen readers
 Enter sends, Shift+Enter newline; Tab order: help button → messages → input → send; assessment buttons are a `radiogroup` with arrow-key navigation; new messages announced via `aria-live="polite"`, crisis card via `role="alert"`; focus moves to the crisis card heading on handoff.

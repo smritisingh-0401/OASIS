@@ -688,7 +688,7 @@ async def test_a_repeated_opener_is_retried_with_a_fresh_one(settings: Settings)
     engine = _engine(settings, llm=llm)
     await _session(engine)
     await engine.handle_turn("h", "I had a long day at work")
-    result = await engine.handle_turn("h", "and the bus was late")
+    result = await engine.handle_turn("h", "and then the bus was really late")
     assert result.reply == fresh
     assert llm.calls == 3
     assert '"it sounds like"' in llm.last_messages[0].content
@@ -700,7 +700,7 @@ async def test_a_repeated_opener_alone_never_costs_the_reply(settings: Settings)
     engine = _engine(settings, llm=llm)
     await _session(engine)
     await engine.handle_turn("h", "I had a long day at work")
-    result = await engine.handle_turn("h", "and the bus was late")
+    result = await engine.handle_turn("h", "and then the bus was really late")
     assert result.reply == SAID  # style, not safety: no fallback
     assert result.fallback_reason is None
 
@@ -711,7 +711,7 @@ async def test_a_soft_first_draft_beats_a_failed_retry(settings: Settings) -> No
     engine = _engine(settings, llm=llm)
     await _session(engine)
     await engine.handle_turn("h", "I had a long day at work")
-    result = await engine.handle_turn("h", "and the bus was late")
+    result = await engine.handle_turn("h", "and then the bus was really late")
     assert result.reply == SAID
     assert result.fallback_reason is None
 
@@ -723,7 +723,7 @@ async def test_a_soft_draft_is_kept_when_there_is_no_time_to_retry(settings: Set
     engine = _engine(tight, llm=llm)
     await _session(engine)
     await engine.handle_turn("h", "I had a long day at work")
-    result = await engine.handle_turn("h", "and the bus was late")
+    result = await engine.handle_turn("h", "and then the bus was really late")
     assert result.reply == SAID
     assert llm.calls == 2  # one per turn: no retry
 
@@ -784,3 +784,44 @@ def test_reply_latency_counts_from_the_last_reply_not_the_last_turn() -> None:
     ]
     assert _last_reply_at(history) == datetime.datetime(2026, 10, 20, 10, 0, tzinfo=datetime.UTC)
     assert _last_reply_at([]) is None
+
+
+@pytest.mark.anyio
+async def test_a_listening_reply_drops_the_models_question(settings: Settings) -> None:
+    """Demo testing, 2026-10-29: asked to just listen, the 4B model still adds a question;
+    the engine keeps the sentences before it, without another model call."""
+    llm = FakeLLM(replies=["That sounds so heavy. I'm here with you. What happened next?"])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+
+    result = await engine.handle_turn("h", "please stop asking me questions")
+
+    assert result.reply == "That sounds so heavy. I'm here with you."
+    assert llm.calls == 1
+
+
+@pytest.mark.anyio
+async def test_a_listening_reply_of_only_questions_ends_in_the_listening_fallback(
+    settings: Settings,
+) -> None:
+    llm = FakeLLM(replies=["What happened? How do you feel?"])
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+
+    result = await engine.handle_turn("h", "can you just listen")
+
+    assert result.reply == TEMPLATES["listen_fallback"]
+
+
+@pytest.mark.anyio
+async def test_a_short_reply_keeps_only_the_first_plain_sentence(settings: Settings) -> None:
+    llm = FakeLLM(replies=["That sounds hard. What happened?",
+                           "Food matters a lot. It really does. What else is hard?"])  # fmt: skip
+    engine = _engine(settings, llm=llm)
+    await _session(engine)
+    await engine.handle_turn("h", "I had a rough week at the hostel")
+
+    result = await engine.handle_turn("h", "food")
+
+    assert result.reply == "Food matters a lot."
+    assert llm.calls == 2

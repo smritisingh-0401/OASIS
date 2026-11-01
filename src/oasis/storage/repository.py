@@ -68,6 +68,10 @@ class Repository(Protocol):
         """Create a pseudonymous user with one session; return the user ID."""
         ...
 
+    async def add_session(self, user_id: str, session_hash: str) -> None:
+        """Another conversation for an existing user (New chat); unknown user -> StorageError."""
+        ...
+
     async def get_session(self, session_hash: str) -> SessionInfo | None: ...
 
     async def append_turn(

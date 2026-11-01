@@ -29,9 +29,10 @@ from oasis.guard.checks import check as check_reply
 from oasis.guard.socratic import socratic_question
 from oasis.llm.client import BoundedLLM, LLMClient, LLMFailure, clean_reply
 from oasis.llm.prompt import build_messages
+from oasis.psychoed.semantic import SemanticMatcher
 from oasis.router.router import dump_state, load_state
 from oasis.safety.gate import SafetyGate, check_fail_closed
-from oasis.safety.handoff import HANDOFF_REPLY
+from oasis.safety.handoff import handoff_reply
 from oasis.settings import Settings
 from oasis.storage.repository import (
     Repository,
@@ -128,6 +129,7 @@ class ChatEngine:
         guard: Guard = check_reply,
         explainer: Explainer = build_explanation,
         consent_version: str | None = None,
+        psychoed_matcher: SemanticMatcher | None = None,
     ) -> None:
         self.safety = safety
         # The generation timeout lives in BoundedLLM (it starts once the model is free).
@@ -139,6 +141,7 @@ class ChatEngine:
         self.planner = planner
         self.guard = guard
         self.explainer = explainer
+        self.psychoed_matcher = psychoed_matcher
         # The data notice a session must have accepted before a non-crisis reply (FR-PRV-1);
         # None turns the gate off (engine unit tests). The app always sets it.
         self.consent_version = consent_version
@@ -205,13 +208,17 @@ class ChatEngine:
             # After the safety gate, so a crisis is always answered (architecture §3.3).
             raise ConsentRequired
 
-        # Stage 5 — plan.
+        # Stage 5 — plan. A button press carries its label, not the user's words.
+        match = None
+        if self.psychoed_matcher and action is None:
+            match = self.psychoed_matcher.match(message, router_state.psychoed_shown)
         state = ConversationState(
             tuple(history),
             post_crisis,
             tuple(assessments),
             datetime.datetime.now(datetime.UTC),
             router_state,
+            match.id if match else None,
         )
         try:
             plan = self.planner(message, state, action)
@@ -354,7 +361,8 @@ class ChatEngine:
         self._post_crisis.add(session_hash)
         crisis_plan = Plan(mode="crisis", templated=True)
         turn_log.info(trace_to_json(_trace(turn_id, clock, verdict, crisis_plan, _NO_DRAFT, set())))
-        return TurnResult(turn_id, HANDOFF_REPLY, "crisis", templated=True, persisted=False,
+        return TurnResult(turn_id, handoff_reply(verdict.tiers), "crisis", templated=True,
+                          persisted=False,
                           degraded=frozenset(), verdict=verdict, escalated=escalated)  # fmt: skip
 
     async def _save_assessment(self, user_id: str | None, plan: Plan, degraded: set[str]) -> Plan:
@@ -468,6 +476,12 @@ class ChatEngine:
                     # The model tends to run on into a step of its own ("N is for Notice…")
                     # after a good first sentence: keep only that sentence.
                     text = _FIRST_SENTENCE.match(text).group(0).strip()  # type: ignore[union-attr]
+                elif "no_question" in plan.constraints:
+                    # Asked to just listen, the model still tends to end on a question.
+                    text = _without_questions(text)
+                elif "brief" in plan.constraints:
+                    # A short acknowledgement: the first sentence that is not a question.
+                    text = _SENTENCE.match(_without_questions(text)).group(0).strip()  # type: ignore[union-attr]
             except TimeoutError:
                 return soft or _fallback(plan, "llm.timeout", attempt, outcomes, seed)
             except LLMFailure as failure:
@@ -489,6 +503,10 @@ def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str], seed:
     elif reason.startswith("guard.") and (plan.distortion_types or plan.mode in ("cbt", "dbt")):
         # Reroute (design §8.3): validate the feeling, then one vetted Socratic question.
         text = socratic_question(plan.distortion_types, seed)
+    elif reason.startswith("guard.") and (
+        "no_question" in plan.constraints or "brief" in plan.constraints
+    ):
+        text = TEMPLATES["listen_fallback"]
     else:
         text = TEMPLATES[fallback_template(reason)]
     return _Draft(text, attempts, tuple(outcomes), reason)
@@ -496,6 +514,13 @@ def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str], seed:
 
 _NO_DRAFT = _Draft("", 0, (), None)
 _FIRST_SENTENCE = re.compile(r"\s*[^.!?]*[.!?]*")  # always matches, possibly empty
+_SENTENCE = re.compile(r"[^.!?]+[.!?]*")
+
+
+def _without_questions(text: str) -> str:
+    """The sentences that are not questions; all of `text` if every one is."""
+    kept = [s.strip() for s in _SENTENCE.findall(text) if not s.rstrip().endswith("?")]
+    return " ".join(k for k in kept if k) or text
 
 
 def _trace(

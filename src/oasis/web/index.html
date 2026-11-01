@@ -8,14 +8,26 @@
   <script src="session.js" defer></script>
   <script src="app.js" defer></script>
 </head>
-<body>
+<body class="chat-page">
   <!-- DEMO BANNER -->
   <div class="orbs" aria-hidden="true"><i></i><i></i><i></i><i class="dots"></i><i class="dots"></i></div>
 
   <header class="top">
     <h1 class="brand">OASIS</h1>
     <div class="top-actions">
+    <!-- New chat (demo testing, 2026-10-29): a speech bubble with a plus, drawn inline. -->
+    <button type="button" class="pill icon-pill" id="new-chat" aria-label="New chat"
+            title="New chat" hidden>
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"
+           fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"
+           stroke-linecap="round">
+        <path d="M4 4.5h16v11.5H10l-4.5 4v-4H4z"/>
+        <path d="M12 7.2v6M9 10.2h6"/>
+      </svg>
+    </button>
     <a class="pill" href="trends.html">Mood trend</a>
+    <!-- Why OASIS replied as it did, for every reply, on its own page (demo testing). -->
+    <a class="pill" href="why.html">Why replies</a>
     <!-- Native <details>: opens with no script and no server, so help works even when the
          backend is down (rules S12, F2). -->
     <details class="help" id="help">
@@ -55,6 +67,9 @@
         Hi. This is a quiet place to talk about how you're feeling. What's on your mind?
       </li>
     </ol>
+
+    <!-- Scrolled up to read, a new reply shows this instead of moving the conversation. -->
+    <button id="new-message" class="new-message" type="button" hidden>New message &darr;</button>
 
     <p id="status" class="status" role="status" aria-live="polite"></p>
 

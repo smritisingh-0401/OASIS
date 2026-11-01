@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from dataclasses import replace
 
 from oasis.assessment import flow, trigger
-from oasis.core.signals import claims, extract
+from oasis.core.signals import claims, extract, trap_clauses
 from oasis.core.templates import TEMPLATES
 from oasis.guard.checks import medication_topic, opener
 from oasis.psychoed import selector as psychoed
@@ -41,6 +41,35 @@ _CONTINUE = re.compile(
     r"i(?:m| am) ready to) (?:keep|continue|carry on|go on) (?:talking|chatting)|"
     r"(?:keep|continue) talking)\b"
 )
+# Asking for no questions (demo testing, 2026-10-29: "you are asking me how much sad").
+# Clinician review pending: CR-14.
+_JUST_LISTEN = re.compile(
+    r"\b(?:(?:stop|quit) asking|(?:no|dont want(?: any)?|do not want(?: any)?) (?:more )?"
+    r"questions|too many questions|(?:just|only) (?:listen|vent)|(?:just |only )?need to vent|"
+    r"(?:you|youre|you are|you keep|you always) (?:keep )?asking me)\b"
+)
+# A question about what OASIS is or who made it, as the whole message (demo testing,
+# 2026-10-29: "Who is your owner" got "created by Google"). Answered with a fixed text.
+_IDENTITY = re.compile(
+    r"^(?:(?:hi|hey|hello|so|ok|okay|but|wait|oasis|tell me),? )*(?:"
+    r"(?:who|what)(?: are|re) (?:you|u)|"
+    r"(?:who|which company|what company) (?:made|created|built|developed|owns|designed|"
+    r"programmed|trained|runs) (?:you|u)|"
+    r"whos (?:your|ur) (?:owner|maker|creator|developer|company)|"
+    r"who is (?:your|ur) (?:owner|maker|creator|developer|company)|"
+    r"are (?:you|u) (?:chatgpt|chat gpt|gpt|google|gemini|bard|claude|qwen|siri|alexa|"
+    r"a bot|a robot|an ai|ai|human|a human|a person|a real person|real)"
+    r")(?: exactly| really| anyway| then| lol)?\s*[?.!]*\s*$"
+)
+LISTEN_AFTER = 2  # replies ending in a question in a row before one that only listens
+LONG_MESSAGE_WORDS = 40  # an outpouring this long gets a listening reply
+BRIEF_WORDS = 5  # a statement this short gets a one-sentence acknowledgement
+IDEA_EVERY = 4  # at most one unasked idea in this many replies
+NEUTRAL = 0.05  # VADER's own neutral band: a message below -NEUTRAL describes a difficulty
+_QUESTION_WORDS = frozenset({
+    "who", "what", "why", "how", "when", "where", "which", "can", "could", "should", "would",
+    "is", "are", "am", "do", "does", "did", "will", "was", "were",
+})  # fmt: skip
 
 # Plan constraints per mode (design §13.2); the prompt builder turns them into rules.
 CONSTRAINTS: dict[str, tuple[str, ...]] = {
@@ -83,7 +112,62 @@ def plan_turn(message: str, state: ConversationState, action: Action | None = No
     # So a conversation does not open every reply the same way (tone check, 2026-10-11).
     said = [t.content for t in state.history if t.role == "assistant" and t.mode == "companion"]
     recent = (o for o in map(opener, said[-RECENT_OPENERS:]) if len(o.split()) == 3)
-    return replace(plan, avoid_openers=tuple(dict.fromkeys(recent)))
+    plan = _listening(replace(plan, avoid_openers=tuple(dict.fromkeys(recent))), message, state)
+    return _idea(plan, message, state)
+
+
+def _idea(plan: Plan, message: str, state: ConversationState) -> Plan:
+    """Every IDEA_EVERY-th reply to someone describing a difficulty offers one small idea with
+    hopeful encouragement, unasked (demo testing, 2026-10-29). Not when the reply listens or
+    is short, not on a thinking trap, and not soon after crisis support."""
+    if not {"no_advice", "one_question"} <= set(plan.constraints) or plan.distortion_types:
+        return plan
+    if "post_crisis.cleared" in plan.reason_codes or extract(message).valence > -NEUTRAL:
+        return plan
+    recent = state.history[-IDEA_EVERY:]
+    if any(t.role == "placeholder" or t.mode in ("crisis", "post_crisis") for t in recent):
+        return plan
+    # ponytail: the reply's number from the stored turn count (two turns per exchange), since
+    # only the last few turns are loaded; a preface or placeholder shifts it by one.
+    reply_number = (state.history[-1].seq if state.history else 0) // 2 + 1
+    if reply_number % IDEA_EVERY:
+        return plan
+    swap = {"no_advice": ("offer_one_idea", "encourage")}
+    rules = tuple(c for r in plan.constraints for c in swap.get(r, (r,)))
+    return replace(plan, constraints=rules, reason_codes=(*plan.reason_codes, "idea.offered"))
+
+
+def _listening(plan: Plan, message: str, state: ConversationState) -> Plan:
+    """Swap the closing question for listening when asked, after LISTEN_AFTER questions in a
+    row, or after a long message. Asked-for ideas and thinking traps keep their question."""
+    if "one_question" not in plan.constraints or "offer_ideas" in plan.constraints:
+        return plan
+    # Leaving crisis mode ("I'd like to keep talking.") keeps the full companion reply.
+    if plan.distortion_types or "post_crisis.cleared" in plan.reason_codes:
+        return plan
+    replies = [t.content.rstrip() for t in state.history if t.role == "assistant"]
+    last = replies[-LISTEN_AFTER:]
+    if _JUST_LISTEN.search(base_form(message)):
+        why = "asked"
+    elif replies and _short_statement(message):
+        # "food", "ok thanks": one sentence back, not a paragraph (demo testing, 2026-10-29).
+        rules = ("brief", *(c for c in plan.constraints if c in ("no_advice", "no_praise")))
+        return replace(plan, constraints=rules,
+                       reason_codes=(*plan.reason_codes, "brief.short_message"))  # fmt: skip
+    elif len(last) == LISTEN_AFTER and all(r.endswith("?") for r in last):
+        why = "two_questions"
+    elif len(message.split()) >= LONG_MESSAGE_WORDS:
+        why = "long_message"
+    else:
+        return plan
+    rules = tuple("no_question" if c == "one_question" else c for c in plan.constraints)
+    return replace(plan, constraints=rules, reason_codes=(*plan.reason_codes, f"listen.{why}"))
+
+
+def _short_statement(message: str) -> bool:
+    words = base_form(message).split()
+    question = message.rstrip().endswith("?") or (bool(words) and words[0] in _QUESTION_WORDS)
+    return 0 < len(words) <= BRIEF_WORDS and not question
 
 
 def _plan(message: str, state: ConversationState, action: Action | None) -> Plan:
@@ -111,11 +195,14 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
                     assessment=step.record, card=step.card,
                     reason_codes=("planner.passthrough", "assessment.free_text"))  # fmt: skip
 
+    if _IDENTITY.search(base_form(message)):
+        return Plan(mode="companion", templated=True, text=TEMPLATES["identity"],
+                    assessment=expired, reason_codes=("identity.asked",))  # fmt: skip
     signals = extract(message)
     if state.router.exercise is not None:  # no offer or explanation mid-exercise (design §3.2)
         return _routed(signals, state, now, expired)
     offer = trigger.decide(state.history, message, state.assessments, now)
-    item = _explanation(message, signals, state.router)
+    item = _explanation(message, signals, state)
     if offer is not None and (item is None or offer.explicit):
         plan = _from_step(flow.offer(offer.instrument, offer.reason, now), "assessment.offer")
         if item is None:
@@ -132,11 +219,14 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
     return _routed(signals, state, now, expired)
 
 
-def _explanation(message: str, signals: Signals, rs: RouterState) -> psychoed.Item | None:
+def _explanation(message: str, signals: Signals, state: ConversationState) -> psychoed.Item | None:
     """The vetted item for a psychoeducation cue; acute overwhelm needs grounding first."""
-    if not signals.psychoed_cue or signals.overwhelm >= router_config().acute_threshold:
+    if signals.overwhelm >= router_config().acute_threshold:
         return None
-    return psychoed.select(message, rs.psychoed_shown)
+    if signals.psychoed_cue:
+        return psychoed.select(message, state.router.psychoed_shown)
+    # Add-only: a question the cue lexicon missed, matched by meaning (oasis.psychoed.semantic).
+    return next((i for i in psychoed.load_all() if i.id == state.psychoed_match), None)
 
 
 def _after_item(rs: RouterState, item: psychoed.Item) -> tuple[RouterState, tuple[str, ...]]:
@@ -219,7 +309,8 @@ def with_thinking_trap(plan: Plan, message: str) -> Plan:
     if not found:
         return plan
     rules = plan.constraints + tuple(r for r in DISTORTION_RULES if r not in plan.constraints)
-    return replace(plan, constraints=rules, distortion_types=found, claims=claims(message))
+    return replace(plan, constraints=rules, distortion_types=found, claims=claims(message),
+                   claim_texts=trap_clauses(message))  # fmt: skip
 
 
 def rules_for(mode: str, signals: Signals) -> tuple[str, ...]:

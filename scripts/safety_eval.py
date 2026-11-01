@@ -17,6 +17,7 @@ from typing import Any
 
 import yaml
 
+from oasis.safety.classifier import load_classifier
 from oasis.safety.gate import RuleBasedSafetyGate
 from oasis.safety.rules import load_ruleset
 
@@ -54,15 +55,35 @@ def latency(gate: RuleBasedSafetyGate, messages: list[str], repeats: int) -> dic
             "max_ms": max(samples)}  # fmt: skip
 
 
+def flat(groups: dict[str, list[str]]) -> list[str]:
+    return [p for ps in groups.values() for p in ps]
+
+
+def classifier_gain(
+    rules: RuleBasedSafetyGate, full: RuleBasedSafetyGate, sets: dict[str, list[str]]
+) -> dict[str, Any]:
+    """What the add-only classifier adds to the rules on each set (rules S7)."""
+    out: dict[str, Any] = {}
+    for name, items in sets.items():
+        before = [p for p in items if rules.check(p).is_crisis]
+        after = [p for p in items if full.check(p).is_crisis]
+        out[name] = {"n": len(items), "rules": len(before), "rules_or_classifier": len(after),
+                     "added": [p for p in after if p not in before]}  # fmt: skip
+    return out
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", type=Path, help="also write results as JSON")
     args = parser.parse_args()
 
-    gate = RuleBasedSafetyGate(load_ruleset())
+    ruleset = load_ruleset()
+    gate = RuleBasedSafetyGate(ruleset)
+    full = RuleBasedSafetyGate(ruleset, load_classifier())
     heldout_doc = load("heldout_phrases.yaml")
     heldout = heldout_doc["phrases"]
     heldout_status = heldout_doc.get("status", "fresh")
+    heldout_v2_doc = load("heldout_v2_phrases.yaml")
     train = load("train_phrases.yaml")
     benign = load("benign.yaml")["phrases"]
 
@@ -71,18 +92,27 @@ def main() -> None:
         "patterns": len(gate.ruleset.rules),
         "allowlist": len(gate.ruleset.allow),
         "heldout_recall": evaluate(gate, heldout),
+        "heldout_v2_recall": evaluate(gate, heldout_v2_doc["phrases"]),
         "train_recall": evaluate(gate, train["phrases"]),
         "known_gaps": evaluate(gate, {"expected_misses": train.get("expected_misses", [])}),
         "benign_fpr": evaluate(gate, benign),
     }
-    every = [p for g in (heldout, train["phrases"], benign) for ps in g.values() for p in ps]
+    groups = (heldout, heldout_v2_doc["phrases"], train["phrases"], benign)
+    every = [p for g in groups for ps in g.values() for p in ps]
     long_messages = [" ".join(every)[:2000], "a" * 2000, "kill " * 400, "i " * 1000]
-    results["latency"] = latency(gate, every + long_messages, repeats=20)
+    results["classifier"] = classifier_gain(gate, full, {
+        "heldout_v1": flat(heldout), "heldout_v2": flat(heldout_v2_doc["phrases"]),
+        "heldout_typos": flat(load("heldout_typos.yaml")["phrases"]),
+        "known_gaps": train.get("expected_misses", []),
+        **{f"benign_{g}": ps for g, ps in benign.items()},
+    })  # fmt: skip
+    results["latency"] = latency(full, every + long_messages, repeats=20)
 
     print(f"Ruleset {results['ruleset_version']}: {results['patterns']} patterns, "
           f"{results['allowlist']} allow-list idioms\n")  # fmt: skip
     for title, key, word in (
         (f"HELD-OUT RECALL [{heldout_status}]", "heldout_recall", "missed"),
+        (f"HELD-OUT V2 RECALL [{heldout_v2_doc['status']}]", "heldout_v2_recall", "missed"),
         ("TRAIN RECALL (must be 100%)", "train_recall", "missed"),
     ):
         section = results[key]
@@ -104,9 +134,14 @@ def main() -> None:
             print(f"      flagged: {p}")
     gaps = results["known_gaps"]["expected_misses"]
     print(f"\nKNOWN GAPS (documented, not asserted): {gaps['flagged']}/{gaps['n']} now caught")
+    print("\nADD-ONLY CLASSIFIER (rules -> rules or classifier)")
+    for name, g in results["classifier"].items():
+        print(f"  {name:<24}{g['rules']:>3} -> {g['rules_or_classifier']:<3} of {g['n']}")
+        for p in g["added"]:
+            print(f"      added: {p}")
     lat = results["latency"]
     print(
-        f"\nLATENCY over {lat['n']} checks: p50 {lat['p50_ms']:.3f} ms, "
+        f"\nLATENCY (rules + classifier) over {lat['n']} checks: p50 {lat['p50_ms']:.3f} ms, "
         f"p95 {lat['p95_ms']:.3f} ms, p99 {lat['p99_ms']:.3f} ms, max {lat['max_ms']:.3f} ms "
         "(target p99 < 10 ms)"
     )
