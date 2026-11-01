@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import functools
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -21,13 +23,17 @@ from oasis.api.routes import ApiError, build_router
 from oasis.assessment.instruments import load_all as load_assessment_content
 from oasis.core.engine import ChatEngine
 from oasis.core.signals import load_all as load_signal_content
+from oasis.guard.checks import check as check_reply
 from oasis.guard.checks import load_rules as load_reply_checks
+from oasis.guard.nli import load_agreement
 from oasis.llm.client import LLMClient
 from oasis.llm.fake import FakeLLM
 from oasis.llm.llama_server import LlamaServerClient
 from oasis.psychoed.selector import load_all as load_psychoed
+from oasis.psychoed.semantic import load_matcher
 from oasis.router.exercise import load_all as load_techniques
 from oasis.router.weights import config as router_config
+from oasis.safety.classifier import load_classifier
 from oasis.safety.gate import RuleBasedSafetyGate, SafetyGate
 from oasis.safety.resources import Resources, load_resources
 from oasis.safety.rules import load_ruleset
@@ -91,7 +97,8 @@ def create_app(
     settings = settings or Settings()
     # Safety content is loaded and validated before anything else; invalid patterns or
     # resources stop the app here (rules S5).
-    safety = safety or RuleBasedSafetyGate(load_ruleset())
+    classifier = load_classifier() if settings.crisis_classifier else None
+    safety = safety or RuleBasedSafetyGate(load_ruleset(), classifier)
     load_assessment_content()
     # Signal lexicons, router weights, exercise scripts, psychoeducation items and reply
     # checks: a bad file stops startup here.
@@ -120,8 +127,16 @@ def create_app(
     )
     store = SplitRepository(repo or _default_repo(settings), ephemeral)
     # The engine bounds the model client itself (BoundedLLM).
+    # The optional models (ml/fetch_models.py); without them the engine is wired as before.
+    agreement = load_agreement(settings.guard_nli_dir)
+    nli: dict[str, Any] = {}
+    if agreement:
+        nli["guard"] = functools.partial(check_reply, agreement=agreement)
     engine = ChatEngine(safety=safety, llm=llm or _default_llm(settings), repo=store,
-                        settings=settings, consent_version=disclosure.version)  # fmt: skip
+                        settings=settings, consent_version=disclosure.version,
+                        psychoed_matcher=load_matcher(settings.psychoed_embed_dir,
+                                                      load_psychoed()),
+                        **nli)  # fmt: skip
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:

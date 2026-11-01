@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 
+from oasis.safety.classifier import load_classifier
 from oasis.safety.gate import RuleBasedSafetyGate
 from oasis.safety.rules import load_ruleset
 
@@ -19,7 +20,7 @@ MESSAGES = [
 
 
 def test_gate_stays_under_10ms_per_message() -> None:
-    gate = RuleBasedSafetyGate(load_ruleset())
+    gate = RuleBasedSafetyGate(load_ruleset(), load_classifier())  # the gate the app runs
     for text in MESSAGES:
         # Best of 5 measures the gate's own cost, not scheduler noise on a busy machine;
         # scripts/safety_eval.py reports the full latency distribution.

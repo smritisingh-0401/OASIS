@@ -208,6 +208,8 @@ class Plan:
     # user text, so never stored or traced (rules P2).
     distortion_types: frozenset[str] = frozenset()
     claims: tuple[frozenset[str], ...] = ()
+    # The same clauses as text, for the optional NLI agreement check (oasis.guard.nli).
+    claim_texts: tuple[str, ...] = ()
     # Attached by the engine after planning, so no decision can depend on it; read only by
     # the prompt builder (design §6).
     style: StyleProfile = StyleProfile()
@@ -277,6 +279,9 @@ class ConversationState:
     assessments: tuple[AssessmentRecord, ...] = ()  # this user's, oldest first
     now: datetime.datetime | None = None
     router: RouterState = RouterState()
+    # The item the optional semantic matcher found for this message (oasis.psychoed.semantic),
+    # by id; the engine asks it before planning, so planning stays free of model calls.
+    psychoed_match: str | None = None
 
 
 @dataclass(frozen=True)

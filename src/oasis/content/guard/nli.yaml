@@ -1,0 +1,7 @@
+# Guard NLI agreement check (oasis.guard.nli). A reply fails no_agreeing when one of its
+# statements entails the user's thinking-trap claim with at least this probability. Chosen by
+# ml/eval_guard_nli.py on the curated reply sets only; see docs/reports/ml-guard-nli.json.
+schema: oasis.content/v1
+version: "2026.11.0"
+review_status: needs_clinician_review
+entailment_threshold: 0.5

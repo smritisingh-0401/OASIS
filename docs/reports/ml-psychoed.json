@@ -1,0 +1,169 @@
+{
+  "threshold": 0.3,
+  "grid": {
+    "0.3": {
+      "right_item": 23,
+      "any_item": 23,
+      "n_cue": 23,
+      "ordinary_given_item": 1,
+      "n_ordinary": 22
+    },
+    "0.35": {
+      "right_item": 23,
+      "any_item": 23,
+      "n_cue": 23,
+      "ordinary_given_item": 0,
+      "n_ordinary": 22
+    },
+    "0.4": {
+      "right_item": 23,
+      "any_item": 23,
+      "n_cue": 23,
+      "ordinary_given_item": 0,
+      "n_ordinary": 22
+    },
+    "0.45": {
+      "right_item": 23,
+      "any_item": 23,
+      "n_cue": 23,
+      "ordinary_given_item": 0,
+      "n_ordinary": 22
+    },
+    "0.5": {
+      "right_item": 23,
+      "any_item": 23,
+      "n_cue": 23,
+      "ordinary_given_item": 0,
+      "n_ordinary": 22
+    },
+    "0.55": {
+      "right_item": 23,
+      "any_item": 23,
+      "n_cue": 23,
+      "ordinary_given_item": 0,
+      "n_ordinary": 22
+    },
+    "0.6": {
+      "right_item": 23,
+      "any_item": 23,
+      "n_cue": 23,
+      "ordinary_given_item": 0,
+      "n_ordinary": 22
+    },
+    "0.65": {
+      "right_item": 23,
+      "any_item": 23,
+      "n_cue": 23,
+      "ordinary_given_item": 0,
+      "n_ordinary": 22
+    },
+    "0.7": {
+      "right_item": 23,
+      "any_item": 23,
+      "n_cue": 23,
+      "ordinary_given_item": 0,
+      "n_ordinary": 22
+    }
+  },
+  "heldout": {
+    "phrase_lists": {
+      "right_item": 3,
+      "any_item": 5,
+      "n_cue": 33,
+      "ordinary_given_item": 0,
+      "n_ordinary": 30,
+      "false_items": [],
+      "missed": [
+        "how would I find out if I actually have a mental illness?",
+        "can you tell me whether I have bipolar?",
+        "could a doctor tell me if this is clinical depression?",
+        "is it worth speaking to a professional about feeling low?",
+        "would talking to a psychologist even help someone like me?",
+        "is seeing a counselor only for really serious problems?",
+        "does needing support mean I'm weak?",
+        "is it pathetic that I can't cope on my own?",
+        "why do I feel so ashamed for struggling?",
+        "why does my heart suddenly pound and I can't breathe for no reason?",
+        "what are these sudden waves of terror that come from nowhere?",
+        "can those sudden attacks of fear actually hurt me?",
+        "is it normal to still miss my dad this much a year after he passed?",
+        "how long does mourning usually last?",
+        "why do I feel numb since my grandmother passed away?",
+        "can bad sleep make my mood worse?",
+        "why do I lie awake every night unable to drift off?",
+        "is insomnia linked to feeling down?",
+        "why do I feel isolated even when I'm surrounded by people?",
+        "is it common to feel disconnected from everyone?",
+        "how do people stop feeling so alone?",
+        "why does worry make my stomach churn?",
+        "is it normal for nerves to make my hands shake?",
+        "why do I always feel on edge for no reason?",
+        "how does pressure at work affect the body?",
+        "why does having too much on my plate make me snap at people?",
+        "is being constantly overloaded bad for my health?",
+        "why have I felt flat and unmotivated for weeks?",
+        "is feeling down every day something that passes?",
+        "what does it mean if nothing feels enjoyable anymore?"
+      ]
+    },
+    "phrase_lists_or_semantic": {
+      "right_item": 24,
+      "any_item": 30,
+      "n_cue": 33,
+      "ordinary_given_item": 1,
+      "n_ordinary": 30,
+      "false_items": [
+        "is it normal for cats to sleep all day?"
+      ],
+      "missed": [
+        "is it worth speaking to a professional about feeling low?",
+        "what are these sudden waves of terror that come from nowhere?",
+        "is it normal to still miss my dad this much a year after he passed?",
+        "how long does mourning usually last?",
+        "is it common to feel disconnected from everyone?",
+        "is it normal for nerves to make my hands shake?",
+        "why do I always feel on edge for no reason?",
+        "why does having too much on my plate make me snap at people?",
+        "is being constantly overloaded bad for my health?"
+      ]
+    },
+    "without_question_check": {
+      "right_item": 24,
+      "any_item": 30,
+      "n_cue": 33,
+      "ordinary_given_item": 14,
+      "n_ordinary": 30,
+      "false_items": [
+        "I couldn't sleep last night",
+        "I had a panic attack at the shops today",
+        "my grandmother passed away last month",
+        "work has been so stressful this week",
+        "I've been feeling really low",
+        "I feel lonely since moving here",
+        "I'm anxious about my exam tomorrow",
+        "I miss my dad so much today",
+        "my heart was pounding before the interview",
+        "I don't really enjoy anything these days",
+        "I just feel alone tonight",
+        "I keep waking up at 3am",
+        "I'm struggling to cope with everything",
+        "is it normal for cats to sleep all day?"
+      ],
+      "missed": [
+        "is it worth speaking to a professional about feeling low?",
+        "what are these sudden waves of terror that come from nowhere?",
+        "is it normal to still miss my dad this much a year after he passed?",
+        "how long does mourning usually last?",
+        "is it common to feel disconnected from everyone?",
+        "is it normal for nerves to make my hands shake?",
+        "why do I always feel on edge for no reason?",
+        "why does having too much on my plate make me snap at people?",
+        "is being constantly overloaded bad for my health?"
+      ]
+    }
+  },
+  "latency_ms": {
+    "median": 5.1,
+    "max": 5.8
+  }
+}

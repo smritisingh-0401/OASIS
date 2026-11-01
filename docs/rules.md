@@ -16,7 +16,7 @@ These rules apply to every phase of the build. They are binding: a change that b
 | S4 | **No routing, companion or guard logic on crisis.** The handoff reply is fixed text plus verified resources. |
 | S5 | **Fails closed.** Any exception inside the safety layer produces a crisis verdict. Invalid or missing pattern files stop the app at startup. |
 | S6 | **Never suppressed by negation.** "I'm not going to kill myself" still triggers. The only false-positive reduction is a short allow-list of unambiguous idioms, each with its own test. |
-| S7 | **Add-only classifier.** An optional classifier may raise alerts but never clear a rule-based match. (No classifier in v1.) |
+| S7 | **Add-only classifier.** An optional classifier may raise alerts but never clear a rule-based match. (Since 2026-11-01: `safety/classifier.py`, consulted only when no rule matched; its own alert gets the check-in reply, CR-28. See [ml_models.md](ml_models.md).) |
 | S8 | **Pure Python, isolated.** `oasis.safety` imports nothing from `llm`, `storage`, `api`, `core`, or any network/database module (import-linter + AST test). |
 | S9 | **Changed only with tests and review.** Any change to patterns, allow-list, handoff text, resources or post-crisis policy requires: new/updated tests, a passing held-out recall run, and an entry in [clinical_review.md](clinical_review.md). |
 | S10 | **Post-crisis policy (provisional).** Every later message still passes the gate first; the bot stays in minimal supportive mode until the user explicitly says they want to continue. |

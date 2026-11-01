@@ -29,6 +29,7 @@ from oasis.guard.checks import check as check_reply
 from oasis.guard.socratic import socratic_question
 from oasis.llm.client import BoundedLLM, LLMClient, LLMFailure, clean_reply
 from oasis.llm.prompt import build_messages
+from oasis.psychoed.semantic import SemanticMatcher
 from oasis.router.router import dump_state, load_state
 from oasis.safety.gate import SafetyGate, check_fail_closed
 from oasis.safety.handoff import handoff_reply
@@ -128,6 +129,7 @@ class ChatEngine:
         guard: Guard = check_reply,
         explainer: Explainer = build_explanation,
         consent_version: str | None = None,
+        psychoed_matcher: SemanticMatcher | None = None,
     ) -> None:
         self.safety = safety
         # The generation timeout lives in BoundedLLM (it starts once the model is free).
@@ -139,6 +141,7 @@ class ChatEngine:
         self.planner = planner
         self.guard = guard
         self.explainer = explainer
+        self.psychoed_matcher = psychoed_matcher
         # The data notice a session must have accepted before a non-crisis reply (FR-PRV-1);
         # None turns the gate off (engine unit tests). The app always sets it.
         self.consent_version = consent_version
@@ -205,13 +208,17 @@ class ChatEngine:
             # After the safety gate, so a crisis is always answered (architecture §3.3).
             raise ConsentRequired
 
-        # Stage 5 — plan.
+        # Stage 5 — plan. A button press carries its label, not the user's words.
+        match = None
+        if self.psychoed_matcher and action is None:
+            match = self.psychoed_matcher.match(message, router_state.psychoed_shown)
         state = ConversationState(
             tuple(history),
             post_crisis,
             tuple(assessments),
             datetime.datetime.now(datetime.UTC),
             router_state,
+            match.id if match else None,
         )
         try:
             plan = self.planner(message, state, action)

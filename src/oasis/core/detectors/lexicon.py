@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import functools
 import re
+from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -26,8 +27,14 @@ from oasis.content import load_yaml
 # message scores exactly as before.
 _SENTENCE = re.compile(r"[.!?;\n]+|\s[-\u2013\u2014]+\s")
 _FRAMING = re.compile(r"^\s*(?:as (?:a|an) [^,]{1,40}|at \d{1,3}),")
+# A term that is one plain word, '\bsad\b', matches exactly the runs of word characters equal
+# to that word, so it is counted from one split of the text instead of its own regex scan.
+# The learned lexicons (ml/train_emotions.py) have hundreds of such terms.
+_PLAIN = re.compile(r"\\b(\w+)\\b")
+_RUN = re.compile(r"\w+")
 
 
+@functools.lru_cache(maxsize=256)  # every scorer of a message splits the same text
 def segments(norm: str) -> tuple[str, ...]:
     """The parts of a normalised message that are scored separately."""
     parts: list[str] = []
@@ -35,6 +42,12 @@ def segments(norm: str) -> tuple[str, ...]:
         framing = _FRAMING.match(sentence)
         parts += [sentence[: framing.end()], sentence[framing.end() :]] if framing else [sentence]
     return tuple(p for p in parts if p.split()) or (norm,)
+
+
+@functools.lru_cache(maxsize=256)
+def _runs(norm: str) -> Counter[str]:
+    """The word-character runs of `norm`, counted; shared by every scorer of a message."""
+    return Counter(_RUN.findall(norm))
 
 
 class ContentError(ValueError):
@@ -50,21 +63,45 @@ class Lexicon:
     version: str
     review_status: str
 
+    @functools.cached_property
+    def _plain(self) -> tuple[str | None, ...]:
+        return tuple((m[1] if (m := _PLAIN.fullmatch(p.pattern)) else None) for p, _ in self.terms)
+
     def counts(self, norm: str) -> tuple[int, ...]:
         """Each term's number of matches, in file order."""
-        return tuple(len(p.findall(norm)) for p, _ in self.terms)
+        runs = _runs(norm)
+        return tuple(
+            runs[w] if w else len(p.findall(norm))
+            for (p, _), w in zip(self.terms, self._plain, strict=True)
+        )
+
+    @functools.cached_property
+    def _index(self) -> tuple[dict[str, float], tuple[tuple[re.Pattern[str], float], ...]]:
+        """Plain-word weights by word, and the other terms."""
+        words: dict[str, float] = {}
+        for (_, w), word in zip(self.terms, self._plain, strict=True):
+            if word:
+                words[word] = words.get(word, 0.0) + w
+        other = tuple(t for t, word in zip(self.terms, self._plain, strict=True) if not word)
+        return words, other
 
     def linear(self, norm: str, n_tokens: int, counts: tuple[int, ...] | None = None) -> float:
         """The pre-clip value: the linear model the explanation decomposes (design §10.1).
         `counts` skips the matching when the caller already has them."""
-        found = self.counts(norm) if counts is None else counts
-        rate = sum(w * k for (_, w), k in zip(self.terms, found, strict=True)) / max(1, n_tokens)
-        return self.bias + self.scale * rate
+        if counts is None:  # the same sum, by word lookup: no vector of mostly zeros
+            words, other = self._index
+            total = sum(words.get(r, 0.0) * k for r, k in _runs(norm).items())
+            total += sum(w * len(p.findall(norm)) for p, w in other)
+        else:
+            total = sum(w * k for (_, w), k in zip(self.terms, counts, strict=True))
+        return self.bias + self.scale * total / max(1, n_tokens)
 
     def segment(self, norm: str) -> str:
         """The part of the message this scorer is computed on: its highest-scoring segment
         (the first, on a tie). For one sentence, the whole message."""
         parts = segments(norm)
+        if len(parts) == 1:
+            return parts[0]
         return max(parts, key=lambda p: self.linear(p, len(p.split())))
 
     def score(self, norm: str) -> float:

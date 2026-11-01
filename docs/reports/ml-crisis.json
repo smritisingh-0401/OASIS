@@ -1,0 +1,39 @@
+{
+  "sentences": {
+    "crisis": 1680,
+    "other": 96104
+  },
+  "cross_validation": {
+    "0.3": {
+      "threshold": 2.376947125067157,
+      "recall": 0.31845238095238093,
+      "fpr": 0.0010093232331640722
+    },
+    "1.0": {
+      "threshold": 1.9632371704143117,
+      "recall": 0.34345238095238095,
+      "fpr": 0.0010093232331640722
+    },
+    "3.0": {
+      "threshold": 1.8708412765090923,
+      "recall": 0.3476190476190476,
+      "fpr": 0.0010093232331640722
+    }
+  },
+  "chosen_C": 3.0,
+  "weights": 1167,
+  "parity_max_gap": 0.0006742305881601851,
+  "goemotions_test_fpr": {
+    "n": 5410,
+    "flagged": 7,
+    "examples": [
+      "Joining the server when everyone's at 1/4hp and out of ammo, with no damage to your...uh...living room. Yeah, ggwp.",
+      "No one makes it through. We all die. Just some sooner than others.",
+      "y i k e s",
+      "K... I guess I'll just take your work for it.",
+      "I just want to live. You're the sad loser for going out of your way to comment something so completely stupid",
+      "Tell us your story, too, [NAME] :) Sooooo many more details to mine, ooooofffff... i tried to be brief",
+      "I bet we'd all die. Thank [NAME] for colds and germs or we'd all be dead upon birth"
+    ]
+  }
+}

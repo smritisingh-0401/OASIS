@@ -1,0 +1,82 @@
+{
+  "sadness": {
+    "positives_test": 292,
+    "C": 1.0,
+    "threshold_logit": 1.6509,
+    "terms": 511,
+    "hand_test_auc": 0.5726,
+    "learned_test_auc": 0.8216,
+    "hand_test": {
+      "precision": 0.6027,
+      "recall": 0.1507
+    },
+    "learned_test": {
+      "precision": 0.3757,
+      "recall": 0.4555
+    },
+    "hand_or_learned_test": {
+      "precision": 0.3666,
+      "recall": 0.4658
+    }
+  },
+  "anxiety": {
+    "positives_test": 98,
+    "C": 1.0,
+    "threshold_logit": 5.2069,
+    "terms": 391,
+    "hand_test_auc": 0.6685,
+    "learned_test_auc": 0.9043,
+    "hand_test": {
+      "precision": 0.3953,
+      "recall": 0.3469
+    },
+    "learned_test": {
+      "precision": 0.5714,
+      "recall": 0.4898
+    },
+    "hand_or_learned_test": {
+      "precision": 0.4552,
+      "recall": 0.6224
+    }
+  },
+  "anger": {
+    "positives_test": 488,
+    "C": 1.0,
+    "threshold_logit": 1.1186,
+    "terms": 518,
+    "hand_test_auc": 0.5357,
+    "learned_test_auc": 0.8227,
+    "hand_test": {
+      "precision": 0.4301,
+      "recall": 0.082
+    },
+    "learned_test": {
+      "precision": 0.4469,
+      "recall": 0.4652
+    },
+    "hand_or_learned_test": {
+      "precision": 0.4361,
+      "recall": 0.4754
+    }
+  },
+  "shame": {
+    "positives_test": 93,
+    "C": 0.3,
+    "threshold_logit": 2.6965,
+    "terms": 114,
+    "hand_test_auc": 0.5688,
+    "learned_test_auc": 0.9247,
+    "hand_test": {
+      "precision": 0.52,
+      "recall": 0.1398
+    },
+    "learned_test": {
+      "precision": 0.4715,
+      "recall": 0.6237
+    },
+    "hand_or_learned_test": {
+      "precision": 0.4773,
+      "recall": 0.6774
+    }
+  }
+}

@@ -63,21 +63,24 @@ def valence(text: str) -> float:
 
 def load_all() -> None:
     """Parse every lexicon now, so a bad file stops the app at startup."""
-    for name in ("emotions", "cues", "distortions"):
+    for name in ("emotions", "emotions_learned", "cues", "distortions"):
         load(name)
 
 
-def claims(message: str) -> tuple[frozenset[str], ...]:
-    """Each clause of `message` holding a thinking-trap phrase, as its content words
-    (design §8.1). The guard compares replies against these; they are never stored."""
+def trap_clauses(message: str) -> tuple[str, ...]:
+    """Each clause of `message` holding a thinking-trap phrase, in base form (design §8.1).
+    The guard compares replies against these; they are never stored."""
     patterns = [p for lex in load("distortions").values() for p, _ in lex.terms]
-    found: list[frozenset[str]] = []
-    for clause in _CLAUSE.split(base_form(message)):
-        words = content_words(clause)
-        trap = any(p.search(clause) for p in patterns) or harsh_label(clause, FIRST_PERSON)
-        if words and words not in found and trap:
-            found.append(words)
-    return tuple(found)
+    return tuple(
+        c.strip()
+        for c in _CLAUSE.split(base_form(message))
+        if content_words(c) and (any(p.search(c) for p in patterns) or harsh_label(c, FIRST_PERSON))
+    )
+
+
+def claims(message: str) -> tuple[frozenset[str], ...]:
+    """The trap clauses as their content words, for the guard's echo checks."""
+    return tuple(dict.fromkeys(content_words(c) for c in trap_clauses(message)))
 
 
 def harsh_label_score(norm: str, n: int) -> float:
@@ -89,11 +92,17 @@ def extract(message: str) -> Signals:
     norm = base_form(message)
     n = len(norm.split())
     emotions, cues, distortions = load("emotions"), load("cues"), load("distortions")
+    learned = load("emotions_learned")
     by_type = {name: lex.score(norm) for name, lex in distortions.items()}
     by_type["labelling"] = max(by_type["labelling"], harsh_label_score(norm, n))
     return Signals(
         valence=valence(message),
-        emotions={e: emotions[e].score(norm) for e in EMOTIONS},
+        # Add-only (ml/train_emotions.py): a learned scorer can raise an emotion the hand
+        # terms miss, never lower one.
+        emotions={
+            e: max(emotions[e].score(norm), learned[e].score(norm) if e in learned else 0.0)
+            for e in EMOTIONS
+        },
         dysregulation=cues["dysregulation"].score(norm),
         # Sum, not max: several categories in one message add up, and the sum is still a
         # linear model before the clip, so its explanation stays exact.

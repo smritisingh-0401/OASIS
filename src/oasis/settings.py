@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     request_timeout_s: float = Field(30.0, gt=0)
     guard_retry_min_budget_s: float = Field(8.0, ge=0)
     history_turns: int = Field(6, ge=0)
+    # The add-only crisis classifier (rules S7, ml/train_crisis.py); off = rules only.
+    crisis_classifier: bool = True
+    # The guard's optional NLI agreement check (oasis.guard.nli); off when the folder has no
+    # model (ml/fetch_models.py) or the `ml` extra is not installed.
+    guard_nli_dir: Path = Path("models/nli")
+    # Optional semantic psychoeducation retrieval (oasis.psychoed.semantic); off the same way.
+    psychoed_embed_dir: Path = Path("models/embed")
     max_body_bytes: int = Field(16 * 1024, ge=1024)
 
     # Privacy: an ephemeral (unsaved) session is forgotten after this long without a message

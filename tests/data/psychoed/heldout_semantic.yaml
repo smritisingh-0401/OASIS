@@ -1,0 +1,75 @@
+# Held-out set for psychoeducation retrieval (2026-11-01), written before the embedding
+# matcher was run on anything and never used to tune it. `cue` messages ask to understand
+# something in their own words (mostly avoiding the cue lexicon's phrases) and name the item
+# that answers them; `ordinary` messages must not get an item: statements about the same
+# topics ("I couldn't sleep last night") and questions that are not about understanding
+# oneself. Authored by the build, not by clinicians or users: a fresh external set is still
+# needed for any real-world claim.
+version: "2026.11.0"
+cue:
+  - {message: "how would I find out if I actually have a mental illness?", item: diagnosis}
+  - {message: "can you tell me whether I have bipolar?", item: diagnosis}
+  - {message: "could a doctor tell me if this is clinical depression?", item: diagnosis}
+  - {message: "is it worth speaking to a professional about feeling low?", item: help_seeking}
+  - {message: "would talking to a psychologist even help someone like me?", item: help_seeking}
+  - {message: "is seeing a counselor only for really serious problems?", item: help_seeking}
+  - {message: "does needing support mean I'm weak?", item: not_weakness}
+  - {message: "is it pathetic that I can't cope on my own?", item: not_weakness}
+  - {message: "why do I feel so ashamed for struggling?", item: not_weakness}
+  - {message: "why does my heart suddenly pound and I can't breathe for no reason?", item: panic}
+  - {message: "what are these sudden waves of terror that come from nowhere?", item: panic}
+  - {message: "can those sudden attacks of fear actually hurt me?", item: panic}
+  - {message: "is it normal to still miss my dad this much a year after he passed?", item: grief}
+  - {message: "how long does mourning usually last?", item: grief}
+  - {message: "why do I feel numb since my grandmother passed away?", item: grief}
+  - {message: "can bad sleep make my mood worse?", item: sleep}
+  - {message: "why do I lie awake every night unable to drift off?", item: sleep}
+  - {message: "is insomnia linked to feeling down?", item: sleep}
+  - {message: "why do I feel isolated even when I'm surrounded by people?", item: loneliness}
+  - {message: "is it common to feel disconnected from everyone?", item: loneliness}
+  - {message: "how do people stop feeling so alone?", item: loneliness}
+  - {message: "why does worry make my stomach churn?", item: anxiety}
+  - {message: "is it normal for nerves to make my hands shake?", item: anxiety}
+  - {message: "why do I always feel on edge for no reason?", item: anxiety}
+  - {message: "how does pressure at work affect the body?", item: stress}
+  - {message: "why does having too much on my plate make me snap at people?", item: stress}
+  - {message: "is being constantly overloaded bad for my health?", item: stress}
+  - {message: "why have I felt flat and unmotivated for weeks?", item: low_mood}
+  - {message: "is feeling down every day something that passes?", item: low_mood}
+  - {message: "what does it mean if nothing feels enjoyable anymore?", item: low_mood}
+  - {message: "am I broken?", item: general}
+  - {message: "why am I like this?", item: general}
+  - {message: "do other people feel this way too?", item: general}
+ordinary:
+  # statements about the same topics
+  - "I couldn't sleep last night"
+  - "I had a panic attack at the shops today"
+  - "my grandmother passed away last month"
+  - "work has been so stressful this week"
+  - "I've been feeling really low"
+  - "I feel lonely since moving here"
+  - "I'm anxious about my exam tomorrow"
+  - "I miss my dad so much today"
+  - "my heart was pounding before the interview"
+  - "my boss gave me way too much to do"
+  - "I don't really enjoy anything these days"
+  - "I just feel alone tonight"
+  - "I'm so nervous about the date"
+  - "I keep waking up at 3am"
+  - "I'm struggling to cope with everything"
+  # questions that are not about understanding oneself
+  - "can you recommend a good book?"
+  - "what should I cook for dinner?"
+  - "how do I tell my friend I'm upset with her?"
+  - "should I text him back?"
+  - "what time is it in Tokyo?"
+  - "how do I get better at maths?"
+  - "why is my phone so slow?"
+  - "is it normal for cats to sleep all day?"
+  - "how long does it take to learn guitar?"
+  - "do you think I should apply for the job?"
+  - "why does my sister always ignore me?"
+  - "how can I make new friends at uni?"
+  - "what's a good way to study for exams?"
+  - "is it rude to leave a party early?"
+  - "how do I ask my boss for a day off?"
