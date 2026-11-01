@@ -80,7 +80,7 @@ def _validate(inst_id: InstrumentId, raw: dict[str, Any]) -> Instrument:
         raise ValueError("verified_on must be a date not in the future")
     bands = tuple(Band(int(b["min"]), int(b["max"]), str(b["label"])) for b in raw["bands"])
     expected = 0
-    for band in bands:  # contiguous, in order, covering 0..max exactly once
+    for band in bands:
         if band.low != expected or band.high < band.low:
             raise ValueError("bands must be contiguous from 0")
         expected = band.high + 1

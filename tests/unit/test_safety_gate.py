@@ -23,9 +23,6 @@ def _phrases(name: str) -> list[tuple[str, str]]:
     return [(group, p) for group, items in doc["phrases"].items() for p in items]
 
 
-# --- every pattern and every idiom has its own test (rules T8) -------------------
-
-
 @pytest.mark.parametrize(
     ("rule_id", "example"),
     [(r.id, ex) for r in RULESET.rules for ex in r.examples],
@@ -50,9 +47,6 @@ def test_idiom_does_not_hide_a_real_disclosure_in_the_same_message() -> None:
     verdict = GATE.check("I killed myself laughing at that, but honestly I want to kill myself")
     assert verdict.is_crisis
     assert "explicit.kill_self" in verdict.pattern_ids
-
-
-# --- known trigger phrases (Phase 2 done-when) -----------------------------------
 
 
 @pytest.mark.parametrize(("group", "phrase"), _phrases("train_phrases.yaml"))
@@ -89,8 +83,6 @@ def test_negation_never_suppresses(phrase: str) -> None:
         "I'm so proud of myself",
         "I'm drowning in work",
         "my phone is dead",
-        # Code-mixed idioms next to the Phase 12 phrases: dying of laughter or hunger,
-        # "in trouble", wanting to sleep.
         "me muero de risa",
         "me muero de hambre",
         "hasi se mar gaya yaar",
@@ -142,8 +134,6 @@ def test_words_after_a_disclosure_never_hide_it(after: str) -> None:
         assert GATE.check(phrase + after).is_crisis, phrase + after
 
 
-# --- robustness properties ---------------------------------------------------------
-
 EXAMPLES = [ex for r in RULESET.rules for ex in r.examples]
 
 
@@ -173,9 +163,6 @@ def test_gate_never_raises(text: str) -> None:
     assert isinstance(GATE.check(text), SafetyVerdict)
 
 
-# --- fail closed (rules S5) -------------------------------------------------------
-
-
 def test_verdict_reports_tiers_and_version() -> None:
     verdict = GATE.check("I want to die, everyone would be better off without me")
     assert verdict.tiers == {"passive", "burden"}
@@ -191,8 +178,6 @@ def test_gate_error_fails_closed() -> None:
     assert verdict.is_crisis
     assert "internal_error" in verdict.tiers
 
-
-# --- loader refuses bad content (fail fast at startup) -----------------------------
 
 GOOD_RULE = """
 version: "t"

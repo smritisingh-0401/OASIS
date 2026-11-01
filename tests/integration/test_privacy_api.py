@@ -48,9 +48,6 @@ def _consent(c: TestClient, token: str, version: str | None = None) -> Any:
     return c.post("/consent", json={"disclosure_version": version}, headers={HEADER: token})
 
 
-# --- consent gate --------------------------------------------------------------------------
-
-
 def test_chat_is_refused_before_consent(client: TestClient) -> None:
     token = _new(client)
     resp = _chat(client, token)
@@ -75,7 +72,7 @@ def test_consent_must_name_the_current_notice(client: TestClient) -> None:
 
 def test_session_reports_its_mode_and_consent(client: TestClient) -> None:
     saved, temp = _new(client), _new(client, ephemeral=True)
-    assert client.post("/session").json()["ephemeral"] is False  # no body: saved, as before
+    assert client.post("/session").json()["ephemeral"] is False
     info = client.get("/session", headers={HEADER: temp}).json()
     assert info == {"ephemeral": True, "consented": False,
                     "disclosure_version": load_disclosure().version}  # fmt: skip
@@ -96,9 +93,6 @@ def test_consent_is_audited_in_saved_mode(settings: Settings) -> None:
     }
 
 
-# --- export --------------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("ephemeral", [False, True])
 def test_export_downloads_everything_the_user_said(
     client: TestClient, start_session: Callable[..., str], ephemeral: bool
@@ -116,14 +110,11 @@ def test_export_downloads_everything_the_user_said(
     assert body["ephemeral"] is ephemeral
     assert MARKER in [t["content"] for t in body["tables"]["turns"]]
     assert "someone else" not in resp.text
-    assert token not in resp.text  # the bearer token is never stored, so never exported
+    assert token not in resp.text
 
 
 def test_export_needs_a_session(client: TestClient) -> None:
     assert client.get("/export").status_code == 401
-
-
-# --- delete --------------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("ephemeral", [False, True])
@@ -185,7 +176,7 @@ def test_deleted_words_are_gone_from_the_database_files(
         for _ in range(3):
             _chat(c, token, MARKER)
         files = sorted(tmp_path.glob("o.db*"))
-        assert any(MARKER.encode() in f.read_bytes() for f in files)  # sanity: it was written
+        assert any(MARKER.encode() in f.read_bytes() for f in files)
         c.request("DELETE", "/account", json={"confirm": "DELETE"}, headers={HEADER: token})
         for f in sorted(tmp_path.glob("o.db*")):
             assert MARKER.encode() not in f.read_bytes(), f.name
@@ -204,9 +195,6 @@ def test_logs_hold_no_content_through_consent_export_and_delete(
     assert MARKER not in caplog.text
     assert "lantern" not in caplog.text
     assert token not in caplog.text
-
-
-# --- ephemeral mode leaves no trace on disk (rules P4) ------------------------------------
 
 
 def _snapshot(folder: Path) -> dict[str, str]:
@@ -231,9 +219,6 @@ def test_an_ephemeral_session_changes_no_file(
         assert _snapshot(tmp_path) == before
 
 
-# --- pages ---------------------------------------------------------------------------------
-
-
 def test_onboarding_is_on_the_chat_page(client: TestClient) -> None:
     page = client.get("/").text
     d = load_disclosure()
@@ -241,7 +226,7 @@ def test_onboarding_is_on_the_chat_page(client: TestClient) -> None:
     assert d.title in page
     assert "Start without saving" in page
     assert 'href="settings.html"' in page
-    assert 'id="help"' in page  # "Need help now?" stays reachable before consent
+    assert 'id="help"' in page
 
 
 def test_settings_page_offers_export_and_delete(client: TestClient) -> None:
@@ -273,7 +258,7 @@ def test_only_the_session_key_is_stored_in_the_browser() -> None:
     app = (web / "app.js").read_text(encoding="utf-8")
     assert "localStorage.setItem(SESSION_KEY" in app
     assert "sessionStorage.setItem(SESSION_KEY" in app
-    shared = (web / "session.js").read_text(encoding="utf-8")  # every page reads either place
+    shared = (web / "session.js").read_text(encoding="utf-8")
     assert "localStorage.getItem(SESSION_KEY)" in shared
     assert "sessionStorage.getItem(SESSION_KEY)" in shared
     for page, script in (("index.html", "app.js"), ("settings.html", "settings.js"),

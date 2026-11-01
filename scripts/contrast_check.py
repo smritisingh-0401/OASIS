@@ -18,7 +18,7 @@ from pathlib import Path
 
 CSS = Path(__file__).resolve().parents[1] / "src" / "oasis" / "web" / "styles.css"
 RGBA = tuple[float, float, float, float]
-Ref = tuple[str, str]  # (selector, property)
+Ref = tuple[str, str]
 
 TEXT: Ref = ("body", "color")
 CHAT: Ref = (".chat", "background")
@@ -26,7 +26,6 @@ BOT: Ref = (".msg.bot", "background")
 CARD: Ref = (".card", "background")
 HELP: Ref = (".help-card", "background")
 
-# (what, text colour, layers from the page up, large text)
 PAIRS: list[tuple[str, Ref, list[Ref], bool]] = [
     ("Wordmark", (".brand", "background"), [], True),
     ("Footer", (".footer", "color"), [], False),

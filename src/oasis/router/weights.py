@@ -77,4 +77,4 @@ def score_modes(x: Mapping[str, float], cfg: RouterConfig) -> tuple[ModeScore, .
         parts = [Contribution(s, w * x.get(s, 0.0)) for s, w in m.weights.items()]
         parts.sort(key=lambda c: -abs(c.value))
         scores.append(ModeScore(mode, m.bias + sum(c.value for c in parts), m.bias, tuple(parts)))
-    return tuple(sorted(scores, key=lambda s: -s.score))  # stable: ties keep mode order
+    return tuple(sorted(scores, key=lambda s: -s.score))

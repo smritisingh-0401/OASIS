@@ -17,7 +17,7 @@ STYLE_MARK = "Style: "
 class Framing:
     directness: Mapping[str, str]
     formality: Mapping[str, str]
-    window: int  # suggestion: typed messages looked at, this one included
+    window: int
     min_hedged: int
     hedges: tuple[str, ...]
     version: str

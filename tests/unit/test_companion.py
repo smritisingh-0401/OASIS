@@ -27,9 +27,6 @@ BAD = yaml.safe_load((DATA / "bad_replies.yaml").read_text(encoding="utf-8"))["r
 COMPANION = Plan(mode="companion", constraints=CONSTRAINTS["companion"])
 
 
-# --- checks ------------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("reply", GOOD)
 def test_good_replies_pass(reply: str) -> None:
     verdict = check(reply, COMPANION)
@@ -81,9 +78,6 @@ def test_each_rule_is_only_checked_when_the_plan_carries_it() -> None:
     assert check("What happened? Why?", Plan(mode="companion")).ok
 
 
-# --- content file --------------------------------------------------------------------------
-
-
 def _raw() -> dict[str, Any]:
     return {
         "version": "2026.10.0",
@@ -115,8 +109,6 @@ def test_parse_rejects_invalid_files(breakage: str) -> None:
     with pytest.raises(ValueError, match="companion"):
         parse(raw)
 
-
-# --- advice cue and planner constraints ------------------------------------------------------
 
 ASKS = [
     "what should I do?",
@@ -172,27 +164,20 @@ def test_every_generated_companion_reply_carries_the_rules() -> None:
     assert typed.constraints == CONSTRAINTS["companion"]
 
 
-# --- prompt ------------------------------------------------------------------------------------
-
-
 def test_rules_reach_the_prompt_as_plain_sentences() -> None:
     system = build_messages(COMPANION, [], "hi", history_turns=6)[0].content
     assert "one_question" not in system
     assert "Ask exactly one gentle, open question" in system
-    assert "makes sense" not in system  # no stock phrase for the model to copy
+    assert "makes sense" not in system
     assert "Do not give advice" in system
-    assert "rely on you" in system  # the system text guards against dependency in every mode
-    # "This traffic is killing me" is a gripe, not a crisis: no inflating or darkening it.
+    assert "rely on you" in system
     assert "never make a feeling sound bigger or darker" in system
-    assert "reflecting their feeling" not in system  # it made small talk sound like worry
+    assert "reflecting their feeling" not in system
 
 
 def test_a_retry_names_the_broken_rules_in_plain_words() -> None:
     msgs = build_messages(COMPANION, [], "hi", history_turns=6, retry_reasons=("no_praise",))
     assert "Do not praise or flatter" in msgs[0].content.split("previous draft", 1)[1]
-
-
-# --- varied openers (a conversation should not start every reply the same way) -------------
 
 
 def _said(*replies: str, mode: str = "companion") -> tuple[TurnRecord, ...]:
@@ -228,9 +213,6 @@ def test_a_draft_repeating_a_recent_opener_breaks_fresh_opener() -> None:
     assert opener("It's  okay, really.") == "its okay really"
 
 
-# --- listening replies (demo testing, 2026-10-29) -------------------------------------------
-# "When I am feeling sad you are asking me how much sad": a reply sometimes just listens.
-
 LISTEN = Plan(mode="companion", constraints=("validate_first", "no_advice", "no_question",
                                              "no_praise"))  # fmt: skip
 
@@ -250,7 +232,7 @@ def test_asking_for_no_questions_gets_a_listening_reply(message: str) -> None:
 
 def test_after_two_questions_in_a_row_the_next_reply_listens() -> None:
     asked = _said("That sounds hard. What happened?", "That must hurt. How are you coping?")
-    message = "work was busy again today too"  # over BRIEF_WORDS, so not a short reply
+    message = "work was busy again today too"
     plan = plan_turn(message, state(history=asked))
     assert "no_question" in plan.constraints
     assert "listen.two_questions" in plan.reason_codes
@@ -295,10 +277,6 @@ def test_why_this_reply_says_why_it_only_listens() -> None:
     assert "asks one gentle question" not in " ".join(bullets)
 
 
-# --- who OASIS is (demo testing, 2026-10-29) ---------------------------------------------------
-# "Who is your owner" got "created by Google", then a fallback: it now gets a fixed answer.
-
-
 @pytest.mark.parametrize("message", [
     "Who is your owner", "who are you?", "Who made you?", "what are you exactly",
     "are you chatgpt", "Are you a real person?", "which company created you",
@@ -324,9 +302,6 @@ def test_the_fixed_answer_is_honest_and_passes_the_checks() -> None:
     assert "not a person" in text
     assert check(text, Plan(mode="companion")).ok
 
-
-# --- short acknowledgements (demo testing, 2026-10-29) --------------------------------------
-# "food", "MOTHER": a short answer gets a short reply, not a paragraph.
 
 BRIEF = Plan(mode="companion", constraints=("brief", "no_advice", "no_praise"))
 
@@ -365,9 +340,6 @@ def test_a_short_reply_is_one_sentence_without_a_question() -> None:
     assert "one short sentence" in system
 
 
-# --- an occasional suggestion with hope (demo testing, 2026-10-29) ----------------------------
-
-
 def _turns(replies: int, mode: str = "companion") -> tuple[TurnRecord, ...]:
     """`replies` exchanges: a user message, then a reply ending in a question."""
     out: list[TurnRecord] = []
@@ -382,7 +354,7 @@ STRUGGLE = "my manager keeps shouting at me and I feel awful"
 
 
 def test_every_fourth_reply_to_a_difficulty_offers_one_idea_with_hope() -> None:
-    plan = plan_turn(STRUGGLE, state(history=_turns(3)[-1:]))  # only the last turn is loaded
+    plan = plan_turn(STRUGGLE, state(history=_turns(3)[-1:]))
     assert "offer_one_idea" in plan.constraints
     assert "encourage" in plan.constraints
     assert "no_advice" not in plan.constraints

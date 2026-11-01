@@ -30,7 +30,6 @@ GRID = (0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.97, 0.99)
 MAX_CURATED_BLOCKS = 1
 CONFIG = ROOT / "src" / "oasis" / "content" / "guard" / "nli.yaml"
 SHIPPED = "nli"
-# deberta-v3 xsmall (shipped), small and base; download the last two by hand to compare.
 MODELS = (SHIPPED, "nli-small", "nli-base")
 
 
@@ -78,7 +77,6 @@ def evaluate(folder: str) -> dict[str, Any]:
                                  if r or s >= t]  # fmt: skip
         report[name] = row
 
-    # Added latency per guarded reply: a two-sentence reply against one claim.
     samples = []
     for _ in range(30):
         start = time.perf_counter()
@@ -91,8 +89,6 @@ def evaluate(folder: str) -> dict[str, Any]:
 
 
 def main() -> None:
-    # The shipped model (models/nli, ml/fetch_models.py), and larger ones when present, for
-    # the size comparison in the report.
     folders = [f for f in MODELS if (ROOT / "models" / f / "model.onnx").exists()]
     report = {f: evaluate(f) for f in folders}
     t = report[SHIPPED]["threshold"]

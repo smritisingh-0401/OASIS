@@ -21,7 +21,6 @@ MODELS = {
     "nli": ("cross-encoder/nli-deberta-v3-xsmall", "a150876415327c80daeff35ca6f68f5ed8cf5c24"),
     "embed": ("sentence-transformers/all-MiniLM-L6-v2", "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"),
 }
-# The AVX2 build runs on any x86-64 CPU from the last decade.
 FILES = {"model.onnx": "onnx/model_quint8_avx2.onnx", "tokenizer.json": "tokenizer.json",
          "config.json": "config.json"}  # fmt: skip
 

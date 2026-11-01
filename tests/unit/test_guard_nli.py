@@ -41,9 +41,8 @@ def test_claims_are_said_back_to_the_user() -> None:
 
 def test_reworded_agreement_fails_no_agreeing() -> None:
     model = _Stub(0.9)
-    assert check(REWORDED, _plan()).ok  # the phrase lists miss it
+    assert check(REWORDED, _plan()).ok
     assert check(REWORDED, _plan(), agreement=model).reasons == ("no_agreeing",)
-    # Statements only, each against the claim said to the user; the question is skipped.
     assert model.seen == [
         ("The breakup really was your responsibility, and that's a lot to carry.",
          "it's all your fault that we broke up"),

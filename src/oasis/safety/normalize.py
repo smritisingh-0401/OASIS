@@ -10,7 +10,6 @@ from __future__ import annotations
 import re
 import unicodedata
 
-# Look-alike letters from Cyrillic and Greek (after case folding) mapped to Latin.
 _CONFUSABLES = str.maketrans(
     {
         "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x", "і": "i",
@@ -25,7 +24,6 @@ _STRETCH = re.compile(r"([^\W\d_])\1{2,}")
 _LEET = str.maketrans(
     {"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s", "!": "i"}
 )
-# Three or more single letters separated by one space/dot/dash/underscore/star: "k i l l".
 _SPACED = re.compile(r"(?<![^\W\d_])(?:[^\W\d_][ .\-_*]){2,}[^\W\d_](?![^\W\d_])")
 _SEPARATORS = re.compile(r"[ .\-_*]")
 
@@ -39,7 +37,6 @@ def base_form(text: str) -> str:
 
 
 def _leet(text: str) -> str:
-    # Only tokens that already contain a letter: "k1ll" decodes, "3 kids" does not.
     return " ".join(
         tok.translate(_LEET) if any(c.isalpha() for c in tok) else tok for tok in text.split(" ")
     )
@@ -81,7 +78,7 @@ def tolerant(pattern: str) -> str:
                 j += 1
             nxt = pattern[j + 1] if j + 1 < n else ""
             if nxt == "?" and pattern[j + 2 : j + 3] != "?":
-                out.append(c + "*")  # optional letter: zero or more ("wrists?" -> wristss)
+                out.append(c + "*")
                 i = j + 2
                 continue
             out.append(pattern[i : j + 1] if nxt and nxt in "?*+{" else c + "+")

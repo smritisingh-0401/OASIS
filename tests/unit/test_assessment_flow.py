@@ -59,9 +59,6 @@ def _answer_all(rec: AssessmentRecord, values: list[int]) -> tuple[AssessmentRec
     return rec, plan
 
 
-# --- offer and consent ---------------------------------------------------------------
-
-
 def test_explicit_request_offers_with_a_stored_reason() -> None:
     plan = plan_turn("could we do a depression questionnaire?", _state())
     assert plan.mode == "assessment"
@@ -87,7 +84,6 @@ def test_accept_shows_the_first_item_verbatim() -> None:
     assert (plan.card.step, plan.card.item, plan.card.item_count) == ("item", 1, 9)
     assert plan.card.options == PHQ9.options
     assert plan.text is not None
-    # The instruction comes once, as its own message before the first question; not on the card.
     assert plan.preface == PHQ9.stem
     assert plan.text.startswith("Question 1 of 9: ")
     assert PHQ9.items[0] in plan.text
@@ -104,9 +100,9 @@ def test_decline_is_stored_with_reason_and_starts_a_cooldown() -> None:
     assert reason["reason"] == "explicit_request"
     assert reason["declined_by"] == "button"
     unprompted = plan_turn("I've been feeling hopeless for weeks", _state(plan.assessment))
-    assert unprompted.card is None  # no new offer within 24 h
+    assert unprompted.card is None
     asked = plan_turn("can I take a depression test?", _state(plan.assessment))
-    assert asked.card is not None  # but the user can always ask
+    assert asked.card is not None
     assert asked.card.step == "offer"
 
 
@@ -117,9 +113,6 @@ def test_ignoring_an_offer_counts_as_not_now() -> None:
     assert plan.assessment is not None
     assert plan.assessment.status == "declined"
     assert json.loads(plan.assessment.offer_reason)["declined_by"] == "free_text"
-
-
-# --- items, functional question and result --------------------------------------------
 
 
 def test_full_phq9_asks_the_functional_question_then_scores() -> None:
@@ -151,12 +144,9 @@ def test_gad7_scores_after_the_last_item() -> None:
 def test_stale_or_repeated_click_changes_nothing() -> None:
     rec, _ = _answer_all(_accepted(), [1, 1])
     plan = plan_turn("Several days", _state(rec), _act("answer", 1, rec, item=1))
-    assert plan.assessment is None  # nothing to persist
+    assert plan.assessment is None
     assert plan.card is not None
-    assert plan.card.item == 3  # the current question is shown again
-
-
-# --- item 9 ---------------------------------------------------------------------------
+    assert plan.card.item == 3
 
 
 @pytest.mark.parametrize("value", [1, 2, 3])
@@ -166,7 +156,7 @@ def test_item9_positive_escalates_regardless_of_total(value: int) -> None:
     assert plan.mode == "crisis"
     assert plan.assessment is not None
     assert plan.assessment.status == "escalated"
-    assert plan.assessment.total is None  # never scored or shown that turn
+    assert plan.assessment.total is None
     assert plan.card is None
 
 
@@ -176,9 +166,6 @@ def test_item9_zero_does_not_escalate() -> None:
     assert plan.mode == "assessment"
     assert plan.card is not None
     assert plan.card.step == "functional"
-
-
-# --- pause, resume, abort ---------------------------------------------------------------
 
 
 def test_pause_and_resume_keep_answers() -> None:
@@ -195,7 +182,7 @@ def test_pause_and_resume_keep_answers() -> None:
     assert resumed.assessment.answers == (2, 2, 2)
     assert resumed.card is not None
     assert resumed.card.item == 4
-    assert resumed.preface == PHQ9.stem  # re-oriented after a break
+    assert resumed.preface == PHQ9.stem
 
 
 def test_free_text_mid_questionnaire_pauses_and_is_answered_normally() -> None:

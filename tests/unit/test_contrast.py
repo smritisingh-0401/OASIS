@@ -21,7 +21,6 @@ def test_ratio_and_compositing() -> None:
     white, black = (255, 255, 255, 1.0), (0, 0, 0, 1.0)
     assert C["ratio"](white, black) == pytest.approx(21.0)
     assert C["over"]((255, 255, 255, 0.5), black)[:3] == (127.5, 127.5, 127.5)
-    # A gradient gives one colour per stop; vars resolve through :root.
     css = ":root {\n  --a: #000000;\n}\n.x {\n  background: linear-gradient(var(--a), #fff);\n}\n"
     assert C["colours"](C["value"](".x", "background", css), css) == [black, white]
 

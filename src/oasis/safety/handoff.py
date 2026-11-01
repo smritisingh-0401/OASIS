@@ -36,7 +36,7 @@ CHECK_IN_REPLY = (
 def handoff_reply(tiers: frozenset[str]) -> str:
     """Harm to others alone gets its own reply, a classifier-only alert a check-in, and any
     other risk to self the reply above."""
-    rules = tiers - {"classifier"}  # a pattern match decides the reply on its own
+    rules = tiers - {"classifier"}
     if not rules:
         return CHECK_IN_REPLY
     return HARM_OTHERS_REPLY if rules == {"harm_others"} else HANDOFF_REPLY

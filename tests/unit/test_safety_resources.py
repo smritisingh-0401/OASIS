@@ -12,7 +12,6 @@ from oasis.safety.rules import SafetyConfigError
 RES = load_resources()
 BY_CODE = {c.code: c for c in RES.countries}
 
-# Tier 1 countries whose crisis line was confirmed on an official source (memory.md).
 TIER_1 = {
     "US", "CA", "MX", "GB", "IE", "FR", "ES", "DE", "IT", "NL", "PL", "SE", "UA", "AU", "NZ",
     "ZA", "NG", "BR", "AR", "PE", "IN", "BD", "LK", "NP", "BT", "MV", "CN", "HK", "TW", "JP",

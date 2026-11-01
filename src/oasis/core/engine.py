@@ -64,8 +64,6 @@ CRISIS_PLACEHOLDER = "A message here was answered with crisis support. Its text 
 turn_log = logging.getLogger("oasis.turn")
 log = logging.getLogger("oasis.engine")
 
-# Turns loaded per request: the prompt uses the last `history_turns`; the screening trigger
-# reads further back (window plus consecutive turns, design §3).
 HISTORY_LOAD = 20
 ITEM9_VERDICT = SafetyVerdict(
     is_crisis=True, tiers=frozenset({"item9"}), pattern_ids=("assessment.phq9.item9",)
@@ -74,7 +72,7 @@ ITEM9_VERDICT = SafetyVerdict(
 Action = AssessmentAction | ExerciseAction
 Planner = Callable[[str, ConversationState, Action | None], Plan]
 Guard = Callable[[str, Plan], GuardVerdict]
-Explainer = Callable[..., str]  # (message, plan, *, typed, attempts, ...) -> explanation JSON
+Explainer = Callable[..., str]
 
 
 class InvalidSession(Exception):
@@ -100,12 +98,9 @@ class TurnResult:
     verdict: SafetyVerdict = _CLEAR
     card: AssessmentCard | None = None
     exercise_card: ExerciseCard | None = None
-    # Assessment escalated by a PHQ-9 item-9 answer, saved after the handoff is sent.
     escalated: AssessmentRecord | None = None
-    preface: str | None = None  # shown as its own message before `reply`
-    explanation_id: str | None = None  # the reply's turn ID, once its explanation is stored
-    # Their recent messages are hedged: point them to the indirect style in Settings. Only a
-    # suggestion; the profile is never changed here (FR-CUL-2).
+    preface: str | None = None
+    explanation_id: str | None = None
     style_suggestion: bool = False
 
 
@@ -132,7 +127,6 @@ class ChatEngine:
         psychoed_matcher: SemanticMatcher | None = None,
     ) -> None:
         self.safety = safety
-        # The generation timeout lives in BoundedLLM (it starts once the model is free).
         self.llm = BoundedLLM(
             llm, max_concurrency=settings.llm_max_concurrency, queue_limit=settings.llm_queue_limit
         )
@@ -142,11 +136,7 @@ class ChatEngine:
         self.guard = guard
         self.explainer = explainer
         self.psychoed_matcher = psychoed_matcher
-        # The data notice a session must have accepted before a non-crisis reply (FR-PRV-1);
-        # None turns the gate off (engine unit tests). The app always sets it.
         self.consent_version = consent_version
-        # Sessions known to have accepted it, so the gate holds through a storage outage
-        # without locking them out (architecture §3.3). Same lifetime as _post_crisis.
         self._consented: set[str] = set()
         # Sessions in post-crisis mode, held in memory so the policy holds even when
         # storage is down (design §2.4). Known limit: grows with crisis sessions only and is
@@ -163,7 +153,6 @@ class ChatEngine:
     ) -> TurnResult:
         received_at = datetime.datetime.now(datetime.UTC)
         timeout = self.settings.request_timeout_s
-        # Reserve a tenth of the budget for recording, so generation never eats it all.
         deadline = time.monotonic() + timeout * 0.9
         turn_id = uuid.uuid4().hex
         clock = StageClock()
@@ -180,7 +169,6 @@ class ChatEngine:
             # entry is written by record_crisis after the response is sent.
             return self._crisis(session_hash, turn_id, clock, verdict)
 
-        # Stage 4 — load state. Storage failure means a stateless reply, not a failed turn.
         user_id: str | None = None
         history: list[TurnRecord] = []
         assessments: list[AssessmentRecord] = []
@@ -208,7 +196,6 @@ class ChatEngine:
             # After the safety gate, so a crisis is always answered (architecture §3.3).
             raise ConsentRequired
 
-        # Stage 5 — plan. A button press carries its label, not the user's words.
         match = None
         if self.psychoed_matcher and action is None:
             match = self.psychoed_matcher.match(message, router_state.psychoed_shown)
@@ -241,24 +228,20 @@ class ChatEngine:
             plan = await self._save_assessment(user_id, plan, degraded)
         rs = plan.router_state
         if rs is not None and rs != router_state:
-            # If saving fails, this reply is still right; the next turn starts from the last
-            # saved router memory.
             await self._best_effort(
                 user_id, degraded,
                 lambda uid: self.repo.set_router_state(uid, session_hash, dump_state(rs)),
             )  # fmt: skip
 
-        # Stages 6-7 — generate and guard, or use the fixed text the plan names.
         if plan.templated:
             text = plan.text or TEMPLATES[plan.template_id or "llm_unavailable"]
             draft = _Draft(text, 0, (), None)
         else:
             draft = await self._generate(plan, history, message, deadline)
             if plan.is_step and draft.fallback_reason is None:
-                draft.reply = f"{draft.reply} {plan.snippet}"  # the step itself, as written
+                draft.reply = f"{draft.reply} {plan.snippet}"
         clock.mark("generate", draft.fallback_reason or "ok")
 
-        # Stage 8 — explain, now that every decision is final, then record.
         try:
             explanation = self.explainer(
                 message,
@@ -268,7 +251,7 @@ class ChatEngine:
                 guard_outcomes=draft.guard_outcomes,
                 fallback_reason=draft.fallback_reason,
             )
-        except Exception:  # fail-soft boundary (FR-XAI-1): the reply never depends on it
+        except Exception:
             log.error("explanation error")
             explanation = unavailable("explain.error")
             degraded.add("explain.error")
@@ -310,8 +293,6 @@ class ChatEngine:
             except StorageError as exc:
                 degraded.add(_storage_code(exc))
         if persisted and action is None:
-            # Language features of what they typed (design §9.1); a button press is not
-            # their words. Numbers only; a failed write never fails the turn.
             features = turn_features(
                 message,
                 extract(message),
@@ -448,9 +429,7 @@ class ChatEngine:
         """One draft, one constrained retry on guard rejection, then the Socratic fallback."""
         outcomes: list[str] = []
         retry_reasons: tuple[str, ...] = ()
-        seed = len(history)  # deterministic per turn, and varies along a conversation
-        # A draft whose only faults are style rules (a repeated opener) is retried, but kept
-        # rather than replaced by the fixed fallback if the retry does no better.
+        seed = len(history)
         soft: _Draft | None = None
         for attempt in (1, 2):
             remaining = deadline - time.monotonic()
@@ -465,22 +444,16 @@ class ChatEngine:
             )
             budget = max(0.0, min(remaining, self.settings.llm_generate_timeout_s))
             try:
-                # The request deadline; the model client applies `budget` to the generation
-                # itself, after any wait for the model (BoundedLLM).
                 async with asyncio.timeout(max(0.0, remaining)):
                     raw = await self.llm.generate(
                         messages, max_tokens=self.settings.llm_max_tokens, timeout_s=budget
                     )
                 text = clean_reply(raw)
                 if plan.is_step:
-                    # The model tends to run on into a step of its own ("N is for Notice…")
-                    # after a good first sentence: keep only that sentence.
                     text = _FIRST_SENTENCE.match(text).group(0).strip()  # type: ignore[union-attr]
                 elif "no_question" in plan.constraints:
-                    # Asked to just listen, the model still tends to end on a question.
                     text = _without_questions(text)
                 elif "brief" in plan.constraints:
-                    # A short acknowledgement: the first sentence that is not a question.
                     text = _SENTENCE.match(_without_questions(text)).group(0).strip()  # type: ignore[union-attr]
             except TimeoutError:
                 return soft or _fallback(plan, "llm.timeout", attempt, outcomes, seed)
@@ -498,10 +471,9 @@ class ChatEngine:
 
 
 def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str], seed: int) -> _Draft:
-    if plan.snippet:  # an exercise step or item is its own vetted fallback, so it carries on
+    if plan.snippet:
         text = plan.snippet
     elif reason.startswith("guard.") and (plan.distortion_types or plan.mode in ("cbt", "dbt")):
-        # Reroute (design §8.3): validate the feeling, then one vetted Socratic question.
         text = socratic_question(plan.distortion_types, seed)
     elif reason.startswith("guard.") and (
         "no_question" in plan.constraints or "brief" in plan.constraints
@@ -513,7 +485,7 @@ def _fallback(plan: Plan, reason: str, attempts: int, outcomes: list[str], seed:
 
 
 _NO_DRAFT = _Draft("", 0, (), None)
-_FIRST_SENTENCE = re.compile(r"\s*[^.!?]*[.!?]*")  # always matches, possibly empty
+_FIRST_SENTENCE = re.compile(r"\s*[^.!?]*[.!?]*")
 _SENTENCE = re.compile(r"[^.!?]+[.!?]*")
 
 

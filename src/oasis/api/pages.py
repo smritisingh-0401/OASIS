@@ -20,7 +20,7 @@ from oasis.content import load_yaml, require_review
 from oasis.safety.resources import Country, CrisisLine, Resources, dial_string
 
 MARKER = "<!-- CRISIS_RESOURCES -->"
-_ZONE = re.compile(r"[A-Za-z0-9_+\-]+(?:/[A-Za-z0-9_+\-]+)+")  # "Asia/Kolkata"
+_ZONE = re.compile(r"[A-Za-z0-9_+\-]+(?:/[A-Za-z0-9_+\-]+)+")
 NOTICE_MARKER = "<!-- DATA_NOTICE -->"
 COUNTRY_MARKER = "<!-- COUNTRY OPTIONS -->"
 DEMO_MARKER = "<!-- DEMO BANNER -->"
@@ -42,8 +42,8 @@ class Disclosure:
     version: str
     title: str
     sections: tuple[Section, ...]
-    visible: int  # sections shown before "Read more"
-    agreement: str  # always shown, next to the buttons that give consent
+    visible: int
+    agreement: str
 
 
 def parse_disclosure(raw: Mapping[str, Any]) -> Disclosure:
@@ -149,8 +149,6 @@ def render_help(resources: Resources, zones: Mapping[str, str]) -> str:
             f"{''.join(_country(c, ' '.join(by_code.get(c.code, []))) for c in countries)}"
             "</details>"
         )
-    # One dropdown, open as rendered so the lines show with no script; app.js folds it under
-    # "Not right?" once it has put the time-zone country above. The fallback stays outside.
     return (
         '<details class="all-countries" open><summary>Choose your country</summary>'
         + "".join(regions)

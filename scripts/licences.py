@@ -25,7 +25,6 @@ def licence(dist: metadata.Distribution) -> str:
     ]
     if classifiers:
         return ", ".join(classifiers)
-    # Some packages paste the whole licence text into License; the first line names it.
     text = (meta.get("License") or "").strip()
     return text.splitlines()[0] if text else "not stated"
 
@@ -40,10 +39,9 @@ def runtime_closure(root: str) -> dict[str, metadata.Distribution]:
         try:
             dist = metadata.distribution(name)
         except metadata.PackageNotFoundError:
-            continue  # an extra or a platform marker that does not apply here
+            continue
         found[name] = dist
         for req in dist.requires or []:
-            # Skip optional extras; environment markers for other platforms fail lookup above.
             if "extra ==" not in req and (m := _NAME.match(req)):
                 todo.append(m.group())
     found.pop(root)
@@ -68,7 +66,6 @@ def main() -> None:
                 "",
                 "| Component | Version | Licence |",
                 "|---|---|---|",
-                # Not Python packages: checked on the project pages (Hugging Face card, GitHub).
                 "| llama.cpp `llama-server` | build 11552 | MIT |",
                 "| Qwen3.5-4B GGUF Q4_K_M (unsloth/Qwen3.5-4B-GGUF) | e87f176 | Apache-2.0 |",
                 *rows,

@@ -42,9 +42,9 @@ LABELS = {
     "anger": {"anger", "annoyance"},
     "shame": {"embarrassment", "remorse"},
 }
-K = 3.0  # logit above the threshold at which a score reaches 1
+K = 3.0
 C_GRID = (0.03, 0.1, 0.3, 1.0)
-_PLACEHOLDER = re.compile(r"\[[A-Z]+\]")  # GoEmotions masks names and religions: "[NAME]"
+_PLACEHOLDER = re.compile(r"\[[A-Z]+\]")
 
 
 def norm(text: str) -> str:
@@ -64,7 +64,6 @@ def raw(lex: Lexicon, text: str) -> float:
 def main() -> None:
     data = {s: goemotions(s) for s in ("train", "dev", "test")}
     texts = {s: [norm(t) for t, _ in rows] for s, rows in data.items()}
-    # Words only, so each one is the lexicon term \bword\b and counts match exactly.
     vec = CountVectorizer(token_pattern=r"\b[^\W\d_]+\b", lowercase=False, min_df=5)
     vec.fit(texts["train"])
     names = vec.get_feature_names_out()
@@ -102,7 +101,6 @@ def main() -> None:
         }
         learned = parse(doc)[emotion]
 
-        # The shipped scorer must be the model: (z - t) / K on one-sentence texts.
         probe = [p for p in texts["test"] if not re.search(r"[.!?;\n]", p)][:300]
         gap = np.abs(np.array([learned.linear(p, len(p.split())) * K + t for p in probe])
                      - model.decision_function(rates(vec, probe)))  # fmt: skip
@@ -117,7 +115,6 @@ def main() -> None:
             "C": best,
             "threshold_logit": round(t, 4),
             "terms": len(terms),
-            # AUC ranks the pre-clip value (the clip ties every message below 0).
             "hand_test_auc": round(roc_auc_score(yt, [raw(hand[emotion], p) for p in test]), 4),
             "learned_test_auc": round(roc_auc_score(yt, [raw(learned, p) for p in test]), 4),
             **{

@@ -63,7 +63,7 @@ _SENTENCE_END = re.compile(r"[.!?](?:\s|$)")
 @dataclass
 class Result:
     seconds: float
-    reason: str | None  # fallback reason from the trace, or the route's degraded code
+    reason: str | None
     first_pass: bool | None
 
 
@@ -136,7 +136,7 @@ def machine() -> str:
 async def profile(args: argparse.Namespace, traces: Traces, db: pathlib.Path) -> list[str]:
     times: list[float] = []
     async with client(settings_for(args, db), FakeLLM()) as c:
-        await send(c, await session(c), MESSAGES[0], traces)  # warm-up, not counted
+        await send(c, await session(c), MESSAGES[0], traces)
         for _ in range(20):
             token = await session(c)
             for message in MESSAGES[:30]:
@@ -201,7 +201,7 @@ async def load(args: argparse.Namespace, traces: Traces, db: pathlib.Path) -> li
     ]
     limit = 0
     async with client(s, LlamaServerClient.from_settings(s)) as c:
-        await send(c, await session(c), MESSAGES[0], traces)  # load the model, not counted
+        await send(c, await session(c), MESSAGES[0], traces)
         for n in args.levels:
             rss = RSS()
             watcher = asyncio.create_task(rss.watch())
@@ -237,7 +237,7 @@ class StreamingProbe:
     def __init__(self, s: Settings) -> None:
         self._s = s
         self._http = httpx.AsyncClient(base_url=s.llm_url)
-        self.timings: list[tuple[float, float, float]] = []  # first token, sentence, all
+        self.timings: list[tuple[float, float, float]] = []
 
     async def generate(
         self, messages: Sequence[ChatMessage], *, max_tokens: int, timeout_s: float
@@ -284,7 +284,7 @@ async def stream(args: argparse.Namespace, traces: Traces, db: pathlib.Path) -> 
     probe = StreamingProbe(s)
     results: list[Result] = []
     async with client(s, probe) as c:
-        await send(c, await session(c), MESSAGES[0], traces)  # warm-up
+        await send(c, await session(c), MESSAGES[0], traces)
         probe.timings.clear()
         for message in MESSAGES[: args.messages]:
             results.append(await send(c, await session(c), message, traces))

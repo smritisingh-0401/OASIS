@@ -43,8 +43,8 @@ AUDIT_EVENTS = frozenset(
 class SessionInfo:
     user_id: str
     post_crisis: bool = False
-    router_state: str = "{}"  # JSON owned by the router; storage never interprets it
-    consent_version: str | None = None  # the data notice the user accepted, if any
+    router_state: str = "{}"
+    consent_version: str | None = None
 
 
 @dataclass(frozen=True)
@@ -59,7 +59,7 @@ class UserSettings:
 @dataclass(frozen=True)
 class AuditRecord:
     event: str
-    detail: str  # JSON; never message text
+    detail: str
     created_at: str
 
 

@@ -40,7 +40,7 @@ def features(sentence: str) -> set[str]:
     return found
 
 
-@functools.lru_cache(maxsize=4096)  # words repeat across messages; keeps the gate fast
+@functools.lru_cache(maxsize=4096)
 def _pieces(word: str) -> frozenset[str]:
     padded = f" {word} "
     return frozenset(
@@ -52,7 +52,7 @@ def _pieces(word: str) -> frozenset[str]:
 class CrisisClassifier:
     version: str
     bias: float
-    threshold: float  # on the logit, chosen on held-out folds (ml/train_crisis.py)
+    threshold: float
     weights: dict[str, float]
 
     def logit(self, sentence: str) -> float:

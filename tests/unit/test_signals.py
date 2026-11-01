@@ -101,7 +101,6 @@ def test_valence_follows_the_vader_baseline() -> None:
 
 
 @pytest.mark.parametrize("message", [
-    # Demo testers' messages that plain VADER scored as positive (2026-10-29).
     "Even sleep feels horrible for me , because i get dreams like someone haunting me and "
     "saying I am not getting any job and I can't get any job and life is no horrible",
     "Eating less feels like keeping my self hungry for hours and moving more feels like over "
@@ -119,7 +118,7 @@ def test_valence_fixes_keep_ordinary_uses() -> None:
     assert valence("I am not happy") < 0
     assert valence("I am so happy today") > 0
     assert valence("Getting a job will make me comfortable") > 0
-    assert valence("Getting a job will make me comfortabale") == 0  # a typo is unknown
+    assert valence("Getting a job will make me comfortabale") == 0
 
 
 @pytest.mark.parametrize(("message", "expected"), [
@@ -151,9 +150,6 @@ def test_every_score_stays_in_range(text: str) -> None:
         assert 0.0 <= value <= 1.0
     assert -1.0 <= s.valence <= 1.0
     assert s.distortion_types <= BURNS
-
-
-# --- content files ------------------------------------------------------------------------
 
 
 def test_distortion_lexicon_has_exactly_the_burns_categories() -> None:
@@ -196,15 +192,11 @@ def test_valid_lexicon_content_parses() -> None:
     assert set(parse(_raw())) == {"x"}
 
 
-# --- per-sentence scoring (Phase 12 bias evaluation) -----------------------------------
-
-
 def test_sentences_dashes_and_a_leading_identity_clause_are_scored_apart() -> None:
     assert segments("im so angry. i live in leeds") == ("im so angry", " i live in leeds")
     assert segments("im so angry - aisha") == ("im so angry", "aisha")
     assert segments("as a muslim woman, im so angry") == ("as a muslim woman,", " im so angry")
     assert segments("at 68, work is hard") == ("at 68,", " work is hard")
-    # Any other comma stays inside its sentence, so a single sentence scores as before.
     assert segments("im so angry, i cant control it") == ("im so angry, i cant control it",)
     assert segments("...") == ("...",)
 

@@ -25,8 +25,6 @@ Mode = Literal[
     "fallback",
 ]
 
-# The modes the therapy router scores (design §7.1). Grounding is reached only through the
-# acute-overwhelm override, never by score.
 RouterMode = Literal["companion", "cbt", "dbt", "mindfulness"]
 ROUTER_MODES: tuple[RouterMode, ...] = ("companion", "cbt", "dbt", "mindfulness")
 
@@ -36,11 +34,9 @@ InstrumentId = Literal["PHQ9", "GAD7"]
 AssessmentStatus = Literal[
     "offered", "declined", "in_progress", "paused", "aborted", "escalated", "scored"
 ]
-# The user's chosen communication style (FR-CUL-1). Set only by the user, never inferred.
 Directness = Literal["direct", "balanced", "indirect"]
 Formality = Literal["casual", "neutral", "formal"]
 
-# Assessments that are still open: an offer awaiting an answer, or a questionnaire underway.
 ACTIVE_STATUSES = frozenset({"offered", "in_progress", "paused"})
 
 
@@ -59,7 +55,7 @@ class AssessmentRecord:
     assessment_id: str
     instrument: InstrumentId
     status: AssessmentStatus
-    offer_reason: str  # JSON reason code and score (design §3.2); never message text
+    offer_reason: str
     created_at: str
     answers: tuple[int, ...] = ()
     functional: int | None = None
@@ -74,8 +70,6 @@ class AssessmentAction:
 
     kind: Literal["accept", "decline", "answer", "pause", "resume", "abort"]
     value: int | None = None
-    # The item the card showed (None for the functional question). Used to ignore stale or
-    # repeated clicks, and for the item-9 check that runs before storage is touched.
     instrument: InstrumentId | None = None
     item: int | None = None
 
@@ -108,9 +102,9 @@ class Signals:
     distortion_types: frozenset[str] = frozenset()
     overwhelm: float = 0.0
     wants_to_talk: float = 0.0
-    opt_out: bool = False  # "stop the exercise"; read only while an exercise runs
-    psychoed_cue: bool = False  # stigma, "is it normal", "what's wrong with me" (Phase 5)
-    asks_advice: bool = False  # "what should I do?": lifts companion's no_advice (Phase 6)
+    opt_out: bool = False
+    psychoed_cue: bool = False
+    asks_advice: bool = False
 
 
 @dataclass(frozen=True)
@@ -119,18 +113,18 @@ class RouterState:
 
     current: Mode = "companion"
     challenger: RouterMode | None = None
-    streak: int = 0  # consecutive turns the challenger has led by the margin
-    offered: RouterMode | None = None  # structured mode waiting for Yes / Not now
-    exercise: str | None = None  # technique in progress
-    step: int = 0  # index of the next step to show
+    streak: int = 0
+    offered: RouterMode | None = None
+    exercise: str | None = None
+    step: int = 0
     consented: frozenset[RouterMode] = frozenset()
-    psychoed_shown: frozenset[str] = frozenset()  # psychoeducation items already given
+    psychoed_shown: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
 class Contribution:
     signal: str
-    value: float  # weight x feature value; exact, so bias + sum == score
+    value: float
 
 
 @dataclass(frozen=True)
@@ -138,7 +132,7 @@ class ModeScore:
     mode: RouterMode
     score: float
     bias: float
-    contributions: tuple[Contribution, ...]  # largest |value| first
+    contributions: tuple[Contribution, ...]
 
 
 @dataclass(frozen=True)
@@ -146,10 +140,10 @@ class RouteDecision:
     """The router's answer for one turn: the mode, why, and every mode's full breakdown."""
 
     mode: Mode
-    reason: str  # e.g. "switch", "hysteresis.2_of_3", "acute_override"
-    scores: tuple[ModeScore, ...]  # highest score first
-    state: RouterState  # router memory after this turn
-    offer: RouterMode | None = None  # structured mode to ask consent for
+    reason: str
+    scores: tuple[ModeScore, ...]
+    state: RouterState
+    offer: RouterMode | None = None
 
 
 @dataclass(frozen=True)
@@ -166,9 +160,9 @@ class ExerciseCard:
     step: Literal["offer", "active"]
     mode: Mode
     name: str
-    item: int | None = None  # the step just shown, 1-based
+    item: int | None = None
     item_count: int | None = None
-    instruction: str | None = None  # that step's fixed script text, shown on the card
+    instruction: str | None = None
 
 
 @dataclass(frozen=True)
@@ -188,30 +182,21 @@ class Plan:
     template_id: str | None = None
     constraints: tuple[str, ...] = ()
     reason_codes: tuple[str, ...] = ()
-    # Fixed reply text built by the decision plane (assessment steps); wins over template_id.
     text: str | None = None
-    # Fixed message sent as its own bubble before the reply (e.g. a questionnaire's instruction).
     preface: str | None = None
-    # Assessment state to persist before replying, and the card to show with the reply.
     assessment: AssessmentRecord | None = None
     card: AssessmentCard | None = None
-    # One vetted exercise step for the LLM to phrase; also the reply if the LLM fails.
     snippet: str | None = None
     exercise_card: ExerciseCard | None = None
-    # Router memory to persist (None: this turn did not route), and the full decision.
     router_state: RouterState | None = None
     route: RouteDecision | None = None
-    # How recent companion replies began (first three words, normalised): not to be reused.
     avoid_openers: tuple[str, ...] = ()
     # Thinking-trap turns (Phase 7): the categories found and each distorted clause of the
     # user's message as a set of content words, for the guard's echo checks. Derived from
     # user text, so never stored or traced (rules P2).
     distortion_types: frozenset[str] = frozenset()
     claims: tuple[frozenset[str], ...] = ()
-    # The same clauses as text, for the optional NLI agreement check (oasis.guard.nli).
     claim_texts: tuple[str, ...] = ()
-    # Attached by the engine after planning, so no decision can depend on it; read only by
-    # the prompt builder (design §6).
     style: StyleProfile = StyleProfile()
 
     @property
@@ -239,17 +224,17 @@ class ChatMessage:
 class TurnFeatures:
     """Language features of one user message (design §9.1). Numbers only, never text."""
 
-    valence: float  # VADER compound, -1..1
-    sadness: float  # emotion lexicon scores, 0..1
+    valence: float
+    sadness: float
     anxiety: float
     anger: float
     shame: float
     loneliness: float
-    fp_pronoun_rate: float  # I, me, myself per word
-    absolutist_rate: float  # absolutist words per word, negated uses left out
-    msg_length: int  # words
-    reply_latency_s: float | None  # since the previous reply in the session, capped
-    hour_of_day: int | None  # the user's local hour, from the client clock
+    fp_pronoun_rate: float
+    absolutist_rate: float
+    msg_length: int
+    reply_latency_s: float | None
+    hour_of_day: int | None
 
 
 @dataclass(frozen=True)
@@ -267,7 +252,7 @@ class TurnRecord:
     content: str
     mode: Mode | None
     created_at: str
-    has_explanation: bool = False  # the explanation itself is fetched on demand
+    has_explanation: bool = False
 
 
 @dataclass(frozen=True)
@@ -276,11 +261,9 @@ class ConversationState:
 
     history: tuple[TurnRecord, ...] = ()
     post_crisis: bool = False
-    assessments: tuple[AssessmentRecord, ...] = ()  # this user's, oldest first
+    assessments: tuple[AssessmentRecord, ...] = ()
     now: datetime.datetime | None = None
     router: RouterState = RouterState()
-    # The item the optional semantic matcher found for this message (oasis.psychoed.semantic),
-    # by id; the engine asks it before planning, so planning stays free of model calls.
     psychoed_match: str | None = None
 
 
@@ -304,4 +287,4 @@ class TurnTrace:
     fallback_reason: str | None
     degraded: frozenset[str] = field(default_factory=frozenset)
     reason_codes: tuple[str, ...] = ()
-    route: RouteDecision | None = None  # scores and contributions; signal names, never text
+    route: RouteDecision | None = None

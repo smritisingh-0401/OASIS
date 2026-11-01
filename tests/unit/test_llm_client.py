@@ -19,9 +19,6 @@ from oasis.types import ChatMessage
 MESSAGES = [ChatMessage("system", "sys"), ChatMessage("user", "hello")]
 
 
-# --- clean_reply -----------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
@@ -68,9 +65,6 @@ def test_reasoning_marker_never_leaks(before: str, reasoning: str, after: str) -
     assert "SECRET-REASONING" not in out
 
 
-# --- FakeLLM ---------------------------------------------------------------------
-
-
 @pytest.mark.anyio
 async def test_fake_llm_is_deterministic() -> None:
     a = await FakeLLM().generate(MESSAGES, max_tokens=10, timeout_s=1)
@@ -93,9 +87,6 @@ async def test_fake_llm_can_fail() -> None:
     with pytest.raises(LLMFailure) as info:
         await FakeLLM(fail="down").generate(MESSAGES, max_tokens=10, timeout_s=1)
     assert info.value.reason == "down"
-
-
-# --- BoundedLLM ------------------------------------------------------------------
 
 
 @pytest.mark.anyio
@@ -129,9 +120,6 @@ async def test_bounded_llm_releases_slot_after_failure() -> None:
             await bounded.generate(MESSAGES, max_tokens=10, timeout_s=1)
         assert info.value.reason == "down"
     assert await bounded.health() is True
-
-
-# --- LlamaServerClient (no network: httpx.MockTransport) --------------------------
 
 
 def _client(handler: httpx.MockTransport) -> LlamaServerClient:

@@ -51,7 +51,7 @@ class Stub(BaseHTTPRequestHandler):
         mode = self.server.mode  # type: ignore[attr-defined]
         if mode == "hang":
             time.sleep(30)
-        if mode == "trickle":  # headers at once, then a byte at a time: no read ever stalls
+        if mode == "trickle":
             self.send_response(200)
             self.send_header("Content-Length", "100000")
             self.end_headers()
@@ -138,9 +138,6 @@ def _assert_answered(resp: Any, elapsed: float, settings: Settings) -> dict[str,
     return body
 
 
-# --- LLM process (real client, stub server) ------------------------------------------
-
-
 @pytest.mark.parametrize(
     ("mode", "code"),
     [
@@ -165,7 +162,7 @@ def test_llm_misbehaving_gets_the_templated_reply(
     assert body["templated"] is True
     assert body["reply"] == TEMPLATES["llm_unavailable"]
     assert traces()[-1]["fallback_reason"] == code
-    if mode in ("hang", "trickle"):  # bounded by the generation budget, not the stub
+    if mode in ("hang", "trickle"):
         assert elapsed < settings.llm_generate_timeout_s + 1.5
 
 
@@ -212,8 +209,6 @@ async def test_waiting_for_the_model_does_not_eat_the_generation_budget(
             replies = await asyncio.gather(
                 *(c.post("/chat", json=body, headers={HEADER: t}) for t in tokens)
             )
-    # The second waited ~1.4 s for the slot, then generated for ~1.4 s: 2.8 s in all, past
-    # the 2 s generation timeout but well inside the request deadline.
     assert [r.json()["reply"] for r in replies] == [GOOD, GOOD]
 
 
@@ -223,7 +218,7 @@ async def test_queue_full_gets_the_busy_reply_at_once(
 ) -> None:
     one = settings.model_copy(update={"llm_max_concurrency": 1, "llm_queue_limit": 0})
     app = create_app(one, llm=FakeLLM(delay_s=1.5))
-    with TestClient(app) as sync:  # runs the lifespan and opens a session
+    with TestClient(app) as sync:
         token = start_session(sync)
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
@@ -235,15 +230,12 @@ async def test_queue_full_gets_the_busy_reply_at_once(
                 return r.json(), time.monotonic() - start
 
             first = asyncio.create_task(post())
-            await asyncio.sleep(0.3)  # the first now holds the only slot
+            await asyncio.sleep(0.3)
             busy, waited = await post()
             served, _ = await first
     assert busy["reply"] == TEMPLATES["busy"]
-    assert waited < 1.0  # fails fast instead of queuing behind the slow one
+    assert waited < 1.0
     assert served["templated"] is False
-
-
-# --- guard -----------------------------------------------------------------------------
 
 
 def _always_reject(draft: str, plan: Any) -> GuardVerdict:
@@ -285,9 +277,6 @@ def test_no_budget_for_a_retry_gets_the_vetted_fallback(
     assert (llm.calls, traces()[-1]["fallback_reason"]) == (1, "guard.no_budget")
 
 
-# --- storage ---------------------------------------------------------------------------
-
-
 def test_locked_database_still_answers_and_says_it_may_not_be_saved(
     settings: Settings, start_session: Callable[..., str], tmp_path: Path
 ) -> None:
@@ -301,7 +290,7 @@ def test_locked_database_still_answers_and_says_it_may_not_be_saved(
     with TestClient(create_app(on_disk, llm=FakeLLM(replies=[GOOD]))) as c:
         token = start_session(c)
         other = sqlite3.connect(on_disk.db_path, isolation_level=None)
-        other.execute("BEGIN EXCLUSIVE")  # another program holds the write lock
+        other.execute("BEGIN EXCLUSIVE")
         try:
             resp, elapsed = _turn(c, token)
         finally:
@@ -325,9 +314,6 @@ def test_dead_database_still_answers(
     body = _assert_answered(resp, elapsed, settings)
     assert (body["reply"], body["persisted"]) == (GOOD, False)
     assert "storage.down" in body["degraded"]
-
-
-# --- pipeline stages -------------------------------------------------------------------
 
 
 class BrokenGate:
@@ -411,8 +397,6 @@ def test_a_stuck_turn_still_hands_off_a_crisis(settings: Settings) -> None:
     fast = settings.model_copy(update={"request_timeout_s": 1.0})
     with TestClient(create_app(fast, llm=FakeLLM(), repo=StuckRepo())) as c:
         resp, elapsed = _turn(c, "any-token", "I want to kill myself")
-    # The test client also waits for the bookkeeping that runs after the handoff is sent,
-    # which gives up after the request timeout; a real server sends the handoff first.
     bound = fast.model_copy(update={"request_timeout_s": 2 * fast.request_timeout_s + 1.0})
     assert _assert_answered(resp, elapsed, bound)["reply"] == HANDOFF_REPLY
 
@@ -435,9 +419,6 @@ def test_invalid_safety_content_refuses_to_start() -> None:
         load_ruleset("schema: oasis.content/v1\nkind: safety_patterns\npatterns: []\n")
 
 
-# --- combined faults -------------------------------------------------------------------
-
-
 def test_everything_down_at_once_still_answers_and_hands_off(settings: Settings) -> None:
     with (
         stub_server("hang") as url,
@@ -446,8 +427,7 @@ def test_everything_down_at_once_still_answers_and_hands_off(settings: Settings)
         crisis, crisis_s = _turn(c, "unknown-session", "I don't want to live anymore")
         ordinary, ordinary_s = _turn(c, "unknown-session")
     assert _assert_answered(crisis, crisis_s, settings)["reply"] == HANDOFF_REPLY
-    assert crisis_s < 1.0  # the handoff never waits for the model or the database
-    # Consent cannot be checked, so an ordinary message is refused at once, not left hanging.
+    assert crisis_s < 1.0
     assert ordinary.status_code == 403
     assert ordinary_s < settings.request_timeout_s
 

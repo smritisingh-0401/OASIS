@@ -53,8 +53,6 @@ def test_template_without_both_markers_is_rejected(body: str) -> None:
         render_index(f"<body>{body}</body>", load_resources(HOSTILE), load_disclosure())
 
 
-# --- country suggested from the computer's time zone (2026-10-24) -----------------------------
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -63,7 +61,6 @@ def test_time_zones_map_to_their_country() -> None:
     for zone, code in [("Asia/Kolkata", "IN"), ("America/New_York", "US"),
                        ("Europe/London", "GB"), ("Australia/Sydney", "AU")]:  # fmt: skip
         assert zones[zone] == code, zone
-    # Browsers may report an older name (Chrome: "Asia/Calcutta"); it maps the same way.
     assert zones["Asia/Calcutta"] == "IN"
     assert zones["Europe/Kiev"] == "UA"
     assert all(len(c) == 2 and c.isupper() for c in zones.values())
@@ -89,7 +86,7 @@ def test_each_country_carries_its_zones_on_the_card() -> None:
     assert india is not None
     assert india.group(1) == ' data-zones="Asia/Calcutta Asia/Kolkata"'
     assert 'id="crisis-GB" data-zones="Europe/London"' in html
-    assert re.search(r'id="crisis-AF">', html)  # no zone given: no attribute
+    assert re.search(r'id="crisis-AF">', html)
 
 
 def test_every_zone_points_to_at_most_one_country_on_the_page() -> None:
@@ -127,7 +124,6 @@ def test_the_list_is_one_dropdown_that_starts_open() -> None:
     regions, after = html.split("</details>", 1)[0], html.rsplit("</details>", 1)[1]
     assert '<details class="region">' in html.split('<details class="all-countries" open>')[1]
     assert "Choose your region" not in html
-    # The emergency-number fallback stays visible even when the list is folded.
     assert "local emergency number" in after
     assert regions
 

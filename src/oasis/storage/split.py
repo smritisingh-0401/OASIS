@@ -35,7 +35,6 @@ class SplitRepository:
         return await store.create_user_session(session_hash)
 
     async def add_session(self, user_id: str, session_hash: str) -> None:
-        # A new conversation stays in the store holding the person: unsaved stays unsaved.
         await self._by_user(user_id).add_session(user_id, session_hash)
 
     async def get_session(self, session_hash: str) -> SessionInfo | None:
@@ -110,7 +109,6 @@ class SplitRepository:
         await self._by_user(user_id).delete_user(user_id)
 
     async def idle_users(self, before: datetime.datetime) -> list[str]:
-        # Unsaved sessions have their own, shorter expiry (MemoryRepository idle_timeout_s).
         return await self.saved.idle_users(before)
 
     async def ping(self) -> bool:

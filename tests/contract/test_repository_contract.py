@@ -244,9 +244,6 @@ async def test_invalid_assessments_are_rejected(repo: Repository, bad: dict[str,
     assert await repo.list_assessments(uid) == []
 
 
-# --- language features (Phase 8) ------------------------------------------------------------
-
-
 def _features(**kw: Any) -> TurnFeatures:
     base = TurnFeatures(valence=0.1, sadness=0.0, anxiety=0.2, anger=0.0, shame=0.0,
                         loneliness=0.0, fp_pronoun_rate=0.25, absolutist_rate=0.0,
@@ -278,9 +275,6 @@ async def test_signals_for_another_users_session_are_rejected(repo: Repository) 
     assert await repo.list_signals(a) == []
 
 
-# --- explanations (Phase 9) -----------------------------------------------------------------
-
-
 @pytest.mark.anyio
 async def test_explanation_round_trip_and_scoping(repo: Repository) -> None:
     a = await repo.create_user_session("a")
@@ -308,8 +302,6 @@ async def test_explanation_must_be_json(repo: Repository) -> None:
     assert await repo.recent_turns(a, "a", 10) == []
 
 
-# --- consent, export and delete (Phase 10) --------------------------------------------------
-
 MARKER = "zqx-marker lantern"
 
 
@@ -336,13 +328,10 @@ async def test_consent_round_trip_and_replace(repo: Repository) -> None:
     b = await repo.create_user_session("b")
     assert (await repo.get_session("a")).consent_version is None  # type: ignore[union-attr]
     await repo.set_consent(a, "1")
-    await repo.set_consent(a, "2")  # a newer notice replaces the older consent
+    await repo.set_consent(a, "2")
     assert (await repo.get_session("a")).consent_version == "2"  # type: ignore[union-attr]
     assert (await repo.get_session("b")).consent_version is None  # type: ignore[union-attr]
     assert b != a
-
-
-# --- settings (Phase 11) -------------------------------------------------------------------
 
 
 @pytest.mark.anyio
@@ -353,8 +342,8 @@ async def test_settings_default_until_set_then_round_trip(repo: Repository) -> N
     chosen = UserSettings(StyleProfile("direct", "casual"), "GB")
     await repo.set_settings(a, chosen)
     assert await repo.get_settings(a) == chosen
-    assert await repo.get_settings(b) == UserSettings()  # scoped to the user (rules P5)
-    await repo.set_settings(a, UserSettings())  # back to the defaults, country cleared
+    assert await repo.get_settings(b) == UserSettings()
+    await repo.set_settings(a, UserSettings())
     assert await repo.get_settings(a) == UserSettings()
 
 
@@ -402,7 +391,7 @@ async def test_export_holds_every_record_of_the_user_and_nothing_else(repo: Repo
     assert [c["disclosure_version"] for c in tables["consent"]] == ["1"]
     assert [(r["directness"], r["formality"], r["country"]) for r in tables["settings"]] == [
         ("indirect", "formal", "IN")]  # fmt: skip
-    json.dumps(tables)  # plain JSON, ready to download
+    json.dumps(tables)
 
 
 @pytest.mark.anyio

@@ -32,8 +32,6 @@ def leader(s: Signals, **extra: float) -> str:
     return score_modes(features(s, extra), CFG)[0].mode
 
 
-# --- scenario table: signals -> expected leading mode (>= 30 rows) ---------------------
-
 SCENARIOS: list[tuple[str, Signals, dict[str, float], str]] = [
     ("neutral message", sig(), {}, "companion"),
     ("wants to vent", sig(wants_to_talk=0.8), {}, "companion"),
@@ -69,8 +67,6 @@ SCENARIOS: list[tuple[str, Signals, dict[str, float], str]] = [
 ]
 
 
-# Natural phrasings from manual testing (2026-10-12). Each one alone must lead its mode by
-# the margin, so reworded messages in a row keep building the streak instead of resetting it.
 PHRASINGS = {
     "cbt": [
         "I'm such a failure, I always mess everything up",
@@ -118,7 +114,6 @@ PHRASINGS = {
 
 
 def test_anger_then_explode_offers_dbt_on_the_second_message() -> None:
-    # Manual testing, 2026-10-13: "so mad" alone used to lead companion and reset the streak.
     rs = RouterState()
     for message in ("I'm so angry, I want to scream, I can't control it", "i am so mad"):
         decision = route(extract(message), rs)
@@ -130,14 +125,14 @@ def test_anger_then_explode_offers_dbt_on_the_second_message() -> None:
                          [(m, t) for m, ts in PHRASINGS.items() for t in ts])  # fmt: skip
 def test_natural_phrasings_lead_their_mode(mode: str, message: str) -> None:
     s = extract(message)
-    assert s.overwhelm < CFG.acute_threshold  # an offer, not straight to grounding
+    assert s.overwhelm < CFG.acute_threshold
     first, second = score_modes(features(s, None), CFG)[:2]
     assert first.mode == mode
     assert first.score - second.score >= CFG.margin
 
 
 def test_a_mode_leads_for_two_turns_before_an_offer() -> None:
-    assert N == 2  # lowered from 3 (Smriti, 2026-10-12)
+    assert N == 2
 
 
 @pytest.mark.parametrize(("name", "signals", "extra", "expected"), SCENARIOS,
@@ -166,8 +161,6 @@ def test_scenario_table_is_big_enough() -> None:
     assert len(SCENARIOS) + len(ACUTE) >= 30
 
 
-# --- exact contributions (rules T2) ------------------------------------------------------
-
 FEATURE_NAMES = sorted({s for m in CFG.modes.values() for s in m.weights})
 
 
@@ -194,8 +187,6 @@ def test_features_turn_valence_into_a_negative_part_only() -> None:
     assert features(sig(valence=-0.6))["valence_neg"] == pytest.approx(0.6)
     assert features(sig(valence=0.6))["valence_neg"] == 0.0
 
-
-# --- margin and hysteresis -------------------------------------------------------------
 
 CBT = sig(distortion=0.9)
 DBT = sig(dysregulation=0.9)
@@ -251,7 +242,7 @@ def test_strong_cues_broken_by_ordinary_talk_never_build_a_streak() -> None:
 
 
 def test_a_narrow_lead_does_not_count() -> None:
-    narrow = sig(distortion=0.45)  # leads companion, but by less than the margin
+    narrow = sig(distortion=0.45)
     scores = score_modes(features(narrow), CFG)
     assert scores[0].mode == "cbt"
     assert scores[0].score - scores[1].score < CFG.margin
@@ -271,9 +262,6 @@ def test_every_decision_carries_all_mode_scores() -> None:
         assert {s.mode for s in decision.scores} == set(ROUTER_MODES)
 
 
-# --- acute override ----------------------------------------------------------------------
-
-
 def test_acute_overwhelm_interrupts_a_building_streak() -> None:
     rs = run([CBT] * (N - 1))[-1].state
     assert rs.streak == N - 1
@@ -287,7 +275,7 @@ def test_acute_overwhelm_interrupts_another_exercise_but_keeps_consents() -> Non
     rs = RouterState(current="cbt", exercise="thought_check", step=1, consented=frozenset({"cbt"}))
     decision = route(sig(overwhelm=0.9), rs)
     assert decision.reason == "acute_override"
-    assert decision.state.exercise is None  # the planner starts the grounding script
+    assert decision.state.exercise is None
     assert decision.state.consented == frozenset({"cbt"})
 
 
@@ -307,9 +295,6 @@ def test_grounding_ends_with_its_script() -> None:
     decision = route(sig(), RouterState(current="grounding"))
     assert decision.mode == "companion"
     assert decision.state.current == "companion"
-
-
-# --- exercise hold and opt-out -------------------------------------------------------------
 
 
 def test_no_switch_mid_exercise() -> None:
@@ -332,13 +317,10 @@ def test_opt_out_outside_an_exercise_changes_nothing() -> None:
     assert route(sig(opt_out=True), RouterState()).reason == "incumbent"
 
 
-# --- consent ------------------------------------------------------------------------------
-
-
 def test_typing_instead_of_answering_an_offer_counts_as_not_now() -> None:
     decision = route(CBT, RouterState(offered="cbt", challenger="cbt", streak=N))
     assert decision.state.offered is None
-    assert decision.state.streak <= 1  # the lead has to build up again
+    assert decision.state.streak <= 1
     assert decision.offer is None
 
 
@@ -367,9 +349,6 @@ def test_typing_stop_mid_exercise_goes_back_to_companion() -> None:
     assert (decision.state.current, decision.state.exercise) == ("companion", None)
 
 
-# --- persistence ---------------------------------------------------------------------------
-
-
 def test_router_state_survives_a_json_round_trip() -> None:
     rs = RouterState(
         current="cbt",
@@ -390,16 +369,12 @@ def test_router_state_survives_a_json_round_trip() -> None:
     '{"offered": "grounding"}', '{"step": 99, "exercise": "thought_check"}',
 ])  # fmt: skip
 def test_corrupt_router_state_falls_back_to_a_fresh_start(bad: str) -> None:
-    # A bad row must never break a turn; starting over in companion mode is always safe.
     assert load_state(bad) == RouterState()
 
 
 def test_accept_without_an_offer_is_a_bug() -> None:
     with pytest.raises(ValueError, match="no structured mode"):
         accept(RouterState())
-
-
-# --- invalid weights stop startup ----------------------------------------------------------
 
 
 def _weights(**over: Any) -> dict[str, Any]:

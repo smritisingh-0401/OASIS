@@ -38,7 +38,6 @@ def diagrams(doc: pathlib.Path) -> list[tuple[str, str]]:
     section = ""
     for m in _BLOCK.finditer(doc.read_text(encoding="utf-8")):
         if m.group(1):
-            # "3. Request flow for one message (8 stages)" -> "request-flow-for-one-message"
             title = re.sub(r"^[\d.]+\s*|\s*\(.*", "", m.group(1)).lower()
             section = re.sub(r"[^a-z0-9]+", "-", title).strip("-")
         else:

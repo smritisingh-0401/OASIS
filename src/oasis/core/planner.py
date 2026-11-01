@@ -41,15 +41,11 @@ _CONTINUE = re.compile(
     r"i(?:m| am) ready to) (?:keep|continue|carry on|go on) (?:talking|chatting)|"
     r"(?:keep|continue) talking)\b"
 )
-# Asking for no questions (demo testing, 2026-10-29: "you are asking me how much sad").
-# Clinician review pending: CR-14.
 _JUST_LISTEN = re.compile(
     r"\b(?:(?:stop|quit) asking|(?:no|dont want(?: any)?|do not want(?: any)?) (?:more )?"
     r"questions|too many questions|(?:just|only) (?:listen|vent)|(?:just |only )?need to vent|"
     r"(?:you|youre|you are|you keep|you always) (?:keep )?asking me)\b"
 )
-# A question about what OASIS is or who made it, as the whole message (demo testing,
-# 2026-10-29: "Who is your owner" got "created by Google"). Answered with a fixed text.
 _IDENTITY = re.compile(
     r"^(?:(?:hi|hey|hello|so|ok|okay|but|wait|oasis|tell me),? )*(?:"
     r"(?:who|what)(?: are|re) (?:you|u)|"
@@ -61,19 +57,17 @@ _IDENTITY = re.compile(
     r"a bot|a robot|an ai|ai|human|a human|a person|a real person|real)"
     r")(?: exactly| really| anyway| then| lol)?\s*[?.!]*\s*$"
 )
-LISTEN_AFTER = 2  # replies ending in a question in a row before one that only listens
-LONG_MESSAGE_WORDS = 40  # an outpouring this long gets a listening reply
-BRIEF_WORDS = 5  # a statement this short gets a one-sentence acknowledgement
-IDEA_EVERY = 4  # at most one unasked idea in this many replies
-NEUTRAL = 0.05  # VADER's own neutral band: a message below -NEUTRAL describes a difficulty
+LISTEN_AFTER = 2
+LONG_MESSAGE_WORDS = 40
+BRIEF_WORDS = 5
+IDEA_EVERY = 4
+NEUTRAL = 0.05
 _QUESTION_WORDS = frozenset({
     "who", "what", "why", "how", "when", "where", "which", "can", "could", "should", "would",
     "is", "are", "am", "do", "does", "did", "will", "was", "were",
 })  # fmt: skip
 
-# Plan constraints per mode (design §13.2); the prompt builder turns them into rules.
 CONSTRAINTS: dict[str, tuple[str, ...]] = {
-    # Suggestions (when asked for) come before the closing question, so no_advice sits first.
     "companion": ("validate_first", "no_advice", "one_question", "no_praise"),
     "cbt": ("validate_first", "one_question", "socratic"),
     "dbt": ("validate_first", "offer_not_instruct"),
@@ -81,10 +75,9 @@ CONSTRAINTS: dict[str, tuple[str, ...]] = {
     "psychoed": ("no_diagnosis", "use_snippet_only"),
 }
 STEP_CONSTRAINTS = ("ack_only",)
-# Added to any generated reply to a thinking-trap message, in every mode (design §8.2).
 DISTORTION_RULES = ("validate_first", "one_question", "socratic", "no_agreeing")
-RECENT_OPENERS = 3  # companion replies whose openers the next one must not reuse
-SHORT_REPLY_WORDS = 2  # "okay", "yes sure": nothing to respond to before an exercise step
+RECENT_OPENERS = 3
+SHORT_REPLY_WORDS = 2
 MODERATE_PLUS = frozenset({"moderate", "moderately severe", "severe"})
 
 Action = AssessmentAction | ExerciseAction
@@ -97,7 +90,6 @@ def wants_to_continue(message: str) -> bool:
 def plan_turn(message: str, state: ConversationState, action: Action | None = None) -> Plan:
     plan = _plan(message, state, action)
     if plan.is_step and not plan.templated and len(message.split()) <= SHORT_REPLY_WORDS:
-        # The model only had "Okay." or "That is a good start." to add (tone check, 2026-10-13).
         return replace(plan, templated=True, text=plan.snippet,
                        reason_codes=(*plan.reason_codes, "exercise.short_reply"))  # fmt: skip
     if plan.templated or plan.snippet is not None:
@@ -109,7 +101,6 @@ def plan_turn(message: str, state: ConversationState, action: Action | None = No
         plan = replace(plan, constraints=(*plan.constraints, "no_agreeing"))
     if plan.mode != "companion":
         return plan
-    # So a conversation does not open every reply the same way (tone check, 2026-10-11).
     said = [t.content for t in state.history if t.role == "assistant" and t.mode == "companion"]
     recent = (o for o in map(opener, said[-RECENT_OPENERS:]) if len(o.split()) == 3)
     plan = _listening(replace(plan, avoid_openers=tuple(dict.fromkeys(recent))), message, state)
@@ -142,7 +133,6 @@ def _listening(plan: Plan, message: str, state: ConversationState) -> Plan:
     row, or after a long message. Asked-for ideas and thinking traps keep their question."""
     if "one_question" not in plan.constraints or "offer_ideas" in plan.constraints:
         return plan
-    # Leaving crisis mode ("I'd like to keep talking.") keeps the full companion reply.
     if plan.distortion_types or "post_crisis.cleared" in plan.reason_codes:
         return plan
     replies = [t.content.rstrip() for t in state.history if t.role == "assistant"]
@@ -150,7 +140,6 @@ def _listening(plan: Plan, message: str, state: ConversationState) -> Plan:
     if _JUST_LISTEN.search(base_form(message)):
         why = "asked"
     elif replies and _short_statement(message):
-        # "food", "ok thanks": one sentence back, not a paragraph (demo testing, 2026-10-29).
         rules = ("brief", *(c for c in plan.constraints if c in ("no_advice", "no_praise")))
         return replace(plan, constraints=rules,
                        reason_codes=(*plan.reason_codes, "brief.short_message"))  # fmt: skip
@@ -183,13 +172,13 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
 
     if isinstance(action, ExerciseAction):
         return _exercise_button(action, state.router)
-    if action is not None:  # a button on the assessment card
+    if action is not None:
         if open_rec is None:
             return Plan(mode="assessment", templated=True, template_id="assessment_unavailable",
                         assessment=expired, reason_codes=("assessment.none_open",))  # fmt: skip
         return _from_step(flow.on_action(open_rec, action, now), f"assessment.{action.kind}")
 
-    if open_rec is not None:  # typed instead of pressing a button
+    if open_rec is not None:
         step = flow.on_free_text(open_rec, now)
         return Plan(mode="companion", constraints=rules_for("companion", extract(message)),
                     assessment=step.record, card=step.card,
@@ -199,7 +188,7 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
         return Plan(mode="companion", templated=True, text=TEMPLATES["identity"],
                     assessment=expired, reason_codes=("identity.asked",))  # fmt: skip
     signals = extract(message)
-    if state.router.exercise is not None:  # no offer or explanation mid-exercise (design §3.2)
+    if state.router.exercise is not None:
         return _routed(signals, state, now, expired)
     offer = trigger.decide(state.history, message, state.assessments, now)
     item = _explanation(message, signals, state)
@@ -207,8 +196,6 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
         plan = _from_step(flow.offer(offer.instrument, offer.reason, now), "assessment.offer")
         if item is None:
             return plan
-        # Asked for a questionnaire and cued an explanation: the item comes first, as its own
-        # message, then the offer (Smriti, 2026-10-11).
         rs, codes = _after_item(state.router, item)
         return replace(plan, preface=item.text, router_state=rs,
                        reason_codes=(*plan.reason_codes, *codes))  # fmt: skip
@@ -225,13 +212,12 @@ def _explanation(message: str, signals: Signals, state: ConversationState) -> ps
         return None
     if signals.psychoed_cue:
         return psychoed.select(message, state.router.psychoed_shown)
-    # Add-only: a question the cue lexicon missed, matched by meaning (oasis.psychoed.semantic).
     return next((i for i in psychoed.load_all() if i.id == state.psychoed_match), None)
 
 
 def _after_item(rs: RouterState, item: psychoed.Item) -> tuple[RouterState, tuple[str, ...]]:
     codes: tuple[str, ...] = (f"psychoed.{item.id}",)
-    if rs.offered is not None:  # typing over an exercise offer is "not now" (router rule)
+    if rs.offered is not None:
         rs = replace(rs, offered=None, challenger=None, streak=0)
         codes = (*codes, "exercise.offer_lapsed")
     return replace(rs, psychoed_shown=rs.psychoed_shown | {item.id}), codes
@@ -277,7 +263,6 @@ def _step_plan(
     codes: Sequence[str],
     expired: AssessmentRecord | None = None,
 ) -> Plan:
-    # The mode is the one the step belongs to, even on the last step (rs is companion again).
     return Plan(mode=mode, constraints=STEP_CONSTRAINTS, snippet=text, exercise_card=card,
                 router_state=rs, route=decision, assessment=expired,
                 reason_codes=tuple(codes))  # fmt: skip
@@ -297,7 +282,6 @@ def _exercise_button(action: ExerciseAction, rs: RouterState) -> Plan:
     rs = exercise.start(rs, exercise.technique_for(rs.current).id)
     mode = rs.current
     text, rs, card = exercise.deliver(rs)
-    # They just pressed "Yes": nothing to respond to, so the first step is shown as written.
     return replace(_step_plan(mode, None, text, rs, card, ("exercise.accepted",)),
                    templated=True, text=text)  # fmt: skip
 
@@ -315,7 +299,7 @@ def with_thinking_trap(plan: Plan, message: str) -> Plan:
 
 def rules_for(mode: str, signals: Signals) -> tuple[str, ...]:
     rules = CONSTRAINTS.get(mode, ())
-    if mode == "companion" and signals.asks_advice:  # advice was asked for (FR-CMP-2)
+    if mode == "companion" and signals.asks_advice:
         rules = tuple("offer_ideas" if r == "no_advice" else r for r in rules)
     return rules
 

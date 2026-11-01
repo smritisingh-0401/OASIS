@@ -58,8 +58,6 @@ class LlamaServerClient:
         timeout = httpx.Timeout(timeout_s, connect=self._connect_timeout_s)
         try:
             resp = await self._http.post("/v1/chat/completions", json=payload, timeout=timeout)
-        # A refused connection can surface as a connect timeout (Windows retries before it
-        # gives up): either way the model process is not there.
         except (httpx.ConnectError, httpx.ConnectTimeout):
             raise LLMFailure("down") from None
         except httpx.TimeoutException:
@@ -69,7 +67,6 @@ class LlamaServerClient:
         if resp.status_code != 200:
             raise LLMFailure("http_error")
         try:
-            # Only `content` is read; any separate `reasoning_content` field is ignored.
             content = resp.json()["choices"][0]["message"]["content"]
         except (ValueError, KeyError, IndexError, TypeError):
             raise LLMFailure("bad_response") from None

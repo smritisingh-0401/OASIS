@@ -34,9 +34,6 @@ def state(rs: RouterState | None = None, **kw: Any) -> ConversationState:
     return ConversationState(now=NOW, router=rs or RouterState(), **kw)
 
 
-# --- cue detection and selection ------------------------------------------------------
-
-
 @pytest.mark.parametrize("case", TRIGGERS, ids=lambda c: c["message"][:40])
 def test_trigger_set_fires_and_picks_the_expected_item(case: dict[str, str]) -> None:
     assert extract(case["message"]).psychoed_cue
@@ -58,9 +55,6 @@ def test_a_shown_topic_falls_back_to_the_general_item() -> None:
     item = select("why can't I sleep, is something wrong with me", frozenset({"sleep"}))
     assert item is not None
     assert item.id == "general"
-
-
-# --- content checks (FR-PSY-3, rules CL6) -----------------------------------------------
 
 
 def test_every_item_has_provenance_and_is_flagged_for_review() -> None:
@@ -114,11 +108,11 @@ def test_parse_accepts_a_valid_file() -> None:
     {"version": None},
     {"review_status": "clinician_reviewed_maybe"},
     {"reading_level": 1.0},
-    {"text": DENSE, "reading_level": round(reading_grade(DENSE), 1)},  # above the target
+    {"text": DENSE, "reading_level": round(reading_grade(DENSE), 1)},
     {"cues": [r"\b(unclosed"]},
     {"cues": "sleep"},
-    {"cues": []},  # a second item without cues: two general items
-    {"id": "general"},  # duplicate id
+    {"cues": []},
+    {"id": "general"},
 ])  # fmt: skip
 def test_parse_rejects_invalid_items(override: dict[str, Any]) -> None:
     with pytest.raises(ValueError, match="psychoed"):
@@ -137,9 +131,6 @@ def test_parse_rejects_a_file_without_review_status() -> None:
     del raw["review_status"]
     with pytest.raises(ValueError, match="psychoed"):
         parse(raw)
-
-
-# --- planner precedence -----------------------------------------------------------------
 
 
 def test_a_cue_gets_one_vetted_item_for_the_llm_to_phrase() -> None:
@@ -195,7 +186,7 @@ def test_acute_overwhelm_goes_to_grounding_not_an_explanation() -> None:
     plan = plan_turn("is this a panic attack? I can't breathe, everything is too much", state(rs))
     assert plan.mode == "grounding"
     assert plan.router_state is not None
-    assert plan.router_state.psychoed_shown == frozenset({"panic"})  # kept by the override
+    assert plan.router_state.psychoed_shown == frozenset({"panic"})
 
 
 def test_an_open_exercise_offer_lapses() -> None:
@@ -214,9 +205,6 @@ def test_post_crisis_and_open_questionnaires_come_first() -> None:
     assert "assessment.free_text" in plan.reason_codes
 
 
-# --- router memory and prompt ------------------------------------------------------------
-
-
 def test_shown_items_survive_the_router_memory_round_trip() -> None:
     rs = RouterState(psychoed_shown=frozenset({"sleep", "general"}))
     assert load_state(dump_state(rs)) == rs
@@ -233,6 +221,6 @@ def test_the_prompt_asks_for_a_plain_explanation_of_the_item() -> None:
 
 def test_parse_rejects_a_general_item_that_is_not_last() -> None:
     raw = _raw()
-    raw["items"].reverse()  # the general item would answer every cue before any topic
+    raw["items"].reverse()
     with pytest.raises(ValueError, match="last"):
         parse(raw)

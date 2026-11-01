@@ -57,7 +57,6 @@ def _default_llm(settings: Settings) -> LLMClient:
 
 
 def _default_repo(settings: Settings) -> Repository:
-    # The online demo never touches disk, whatever the storage setting says.
     if settings.demo or settings.storage_backend == "memory":
         return MemoryRepository()
     return SQLiteRepository(settings.db_path, busy_timeout_ms=settings.sqlite_busy_timeout_ms)
@@ -76,7 +75,7 @@ async def expire_idle(repo: Repository, days: int) -> int:
     except StorageError as exc:
         log.error("expiry incomplete: %s", type(exc).__name__)
     if deleted:
-        log.info("expired %d saved conversations", deleted)  # a count, never an ID
+        log.info("expired %d saved conversations", deleted)
     return deleted
 
 
@@ -100,8 +99,6 @@ def create_app(
     classifier = load_classifier() if settings.crisis_classifier else None
     safety = safety or RuleBasedSafetyGate(load_ruleset(), classifier)
     load_assessment_content()
-    # Signal lexicons, router weights, exercise scripts, psychoeducation items and reply
-    # checks: a bad file stops startup here.
     load_signal_content()
     router_config()
     load_techniques()
@@ -120,14 +117,11 @@ def create_app(
     trends_html = page("trends.html")
     why_html = page("why.html")
 
-    # Each session is saved or ephemeral, chosen when it starts (FR-PRV-4).
     ephemeral = MemoryRepository(
         idle_timeout_s=settings.ephemeral_idle_timeout_s,
         max_sessions=settings.max_ephemeral_sessions,
     )
     store = SplitRepository(repo or _default_repo(settings), ephemeral)
-    # The engine bounds the model client itself (BoundedLLM).
-    # The optional models (ml/fetch_models.py); without them the engine is wired as before.
     agreement = load_agreement(settings.guard_nli_dir)
     nli: dict[str, Any] = {}
     if agreement:
@@ -172,7 +166,6 @@ def create_app(
 
     @app.exception_handler(RequestValidationError)
     async def invalid(request: Request, exc: RequestValidationError) -> JSONResponse:
-        # Field names only — the default handler would echo the submitted text back.
         fields = sorted({".".join(str(p) for p in e["loc"][1:]) for e in exc.errors()})
         return error_response(422, "invalid_turn", "Invalid request: " + ", ".join(fields))
 

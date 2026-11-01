@@ -15,7 +15,6 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-# Safety-critical packages held to a higher bar (rules T5); checked once they exist.
 CRITICAL_PACKAGES = {"safety": 95.0, "assessment": 95.0, "router": 95.0}
 
 
@@ -64,7 +63,6 @@ def main() -> int:
             "bandit": run(
                 "bandit", [py, "-m", "bandit", "-q", "-c", "pyproject.toml", "-r", "src"]
             ),
-            # Audit exactly what the lockfile pins, with hashes, without touching pip.
             "pip-audit": run(
                 "uv export",
                 [

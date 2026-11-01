@@ -28,16 +28,13 @@ def _engine(settings: Settings, repo: Any = None) -> ChatEngine:
                       settings=settings, consent_version=VERSION)  # fmt: skip
 
 
-# --- consent gate (FR-PRV-1, architecture §3.3) --------------------------------------------
-
-
 @pytest.mark.anyio
 async def test_no_reply_before_consent(settings: Settings) -> None:
     engine = _engine(settings)
     uid = await engine.repo.create_user_session("h")
     with pytest.raises(ConsentRequired):
         await engine.handle_turn("h", "hello")
-    assert await engine.repo.recent_turns(uid, "h", 10) == []  # nothing stored either
+    assert await engine.repo.recent_turns(uid, "h", 10) == []
 
 
 @pytest.mark.anyio
@@ -112,9 +109,6 @@ async def test_forget_drops_the_remembered_consent(settings: Settings) -> None:
         await engine.handle_turn("h", "hello")
 
 
-# --- ephemeral storage (FR-PRV-4, design §11.1) --------------------------------------------
-
-
 class Clock:
     def __init__(self) -> None:
         self.t = 1000.0
@@ -133,7 +127,7 @@ async def test_idle_ephemeral_sessions_expire() -> None:
     clock.t += 3600
     await repo.create_user_session("new")
     await repo.get_session("new")
-    clock.t += 3601  # "old" idle for 2 h + 1 s; "new" only 1 h
+    clock.t += 3601
     assert await repo.get_session("new") is not None
     assert await repo.get_session("old") is None
     assert all(rows == [] for rows in (await repo.export_user(old)).values())
@@ -147,8 +141,7 @@ async def test_idle_unsaved_sessions_expire_on_any_request() -> None:
     temp = await split.create_user_session("temp", ephemeral=True)
     await split.create_user_session("kept")
     clock.t += 7201
-    await split.get_session("kept")  # a saved session's request, nothing else
-    # Looked up directly: has_user() would run the expiry itself and hide a missing call.
+    await split.get_session("kept")
     assert temp not in split.ephemeral._users
     assert all(rows == [] for rows in (await split.ephemeral.export_user(temp)).values())
 
@@ -185,7 +178,7 @@ async def test_split_storage_keeps_ephemeral_sessions_off_disk(tmp_path: Path) -
         await split.append_turn(uid, session, turn_id=session, role="user", content=session,
                                 mode=None, trace_json=None)  # fmt: skip
     assert (split.is_ephemeral("kept"), split.is_ephemeral("temp")) == (False, True)
-    assert await saved.get_session("temp") is None  # never reached SQLite
+    assert await saved.get_session("temp") is None
     assert [t.content for t in await split.recent_turns(temp, "temp", 5)] == ["temp"]
     assert [t.content for t in await saved.recent_turns(kept, "kept", 5)] == ["kept"]
     assert (await split.get_session("temp")).consent_version == "1"  # type: ignore[union-attr]
@@ -206,9 +199,6 @@ async def test_ephemeral_sessions_work_while_the_database_is_down(tmp_path: Path
     assert await split.get_session("temp") is not None
 
 
-# --- disclosure (FR-PRV-1, PRD L5) ---------------------------------------------------------
-
-
 def test_disclosure_covers_what_the_policy_must_say() -> None:
     d = load_disclosure()
     assert d.version
@@ -216,7 +206,7 @@ def test_disclosure_covers_what_the_policy_must_say() -> None:
     for must in ("not a diagnosis", "emergency", "crisis", "export", "delete",
                  "without saving", "this computer", "no one else"):  # fmt: skip
         assert must in text, must
-    assert "http" not in text  # no external links (rules F1)
+    assert "http" not in text
 
 
 @pytest.mark.parametrize("change", [
@@ -248,7 +238,6 @@ def test_onboarding_is_rendered_escaped_with_its_version() -> None:
     assert "<script>" not in html
     assert "&lt;script&gt;" in html
     assert "A &amp; B" in html
-    # The first section is open; the rest is under "Read more"; the agreement stays outside it.
     shown, folded = html.split("<summary>Read more</summary>")
     assert "A &amp; B" in shown
     assert "Later" not in shown
@@ -281,7 +270,7 @@ async def test_an_unsaved_person_is_forgotten_only_when_every_conversation_is_id
     uid = await repo.create_user_session("old")
     now[0] = 90
     await repo.add_session(uid, "new")
-    now[0] = 150  # "old" idle for 150 s, "new" for 60 s
+    now[0] = 150
     assert await repo.get_session("new") is not None
     now[0] = 300
     assert await repo.get_session("new") is None

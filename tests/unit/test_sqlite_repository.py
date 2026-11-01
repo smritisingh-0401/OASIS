@@ -51,7 +51,7 @@ async def test_migrations_are_recorded_and_idempotent(tmp_path: Path) -> None:
         for f in (Path(oasis.storage.__file__).parent / "migrations").glob("*.sql")
     )
     assert versions == shipped
-    assert shipped == list(range(1, len(shipped) + 1))  # numbered without gaps
+    assert shipped == list(range(1, len(shipped) + 1))
 
 
 @pytest.mark.anyio
@@ -66,18 +66,12 @@ async def test_schema_constraints_are_enforced(tmp_path: Path) -> None:
         "VALUES ('h', 'u', 'x', 'x')"
     )
     bad_rows = [
-        # role outside the CHECK list
         "INSERT INTO turns VALUES ('t1','u','h',1,'system','x',NULL,'x',NULL,NULL)",
-        # STRICT: seq must be an integer
         "INSERT INTO turns VALUES ('t2','u','h','one','user','x',NULL,'x',NULL,NULL)",
-        # foreign key: unknown user
         "INSERT INTO turns VALUES ('t3','ghost','h',1,'user','x',NULL,'x',NULL,NULL)",
-        # an explanation must be JSON
         "INSERT INTO turns VALUES ('t4','u','h',1,'assistant','x',NULL,'x',NULL,'not json')",
-        # assessment answers are 0-3 at the database level, not only in code
         "INSERT INTO assessment_answers VALUES ('a','u',1,4,'x')",
         "INSERT INTO assessment_answers VALUES ('a','u',10,1,'x')",
-        # a scored assessment must carry its total and band; GAD-7 totals stop at 21
         "INSERT INTO assessments (assessment_id, user_id, instrument, status, offer_reason,"
         " created_at) VALUES ('b','u','PHQ9','scored','{}','x')",
         "INSERT INTO assessments (assessment_id, user_id, instrument, status, offer_reason,"
@@ -134,15 +128,13 @@ async def test_signals_are_deleted_with_their_user(tmp_path: Path) -> None:
         assert conn.execute("SELECT COUNT(*) FROM turn_signals").fetchone() == (0,)
 
 
-# --- verifiable erasure (Phase 10, rules P9) --------------------------------------------------
-
 MARKER = "zqx-erasure-marker lantern"
 
 
 async def _user_with_marker(repo: SQLiteRepository, session: str) -> str:
     uid = await repo.create_user_session(session)
     await repo.set_consent(uid, "1")
-    for i in range(20):  # enough rows to spread over several pages
+    for i in range(20):
         await repo.append_turn(uid, session, turn_id=f"{session}{i}", role="user",
                                content=f"{MARKER} {i}", mode=None, trace_json=None)  # fmt: skip
     await repo.append_audit(uid, "crisis_handoff", '{"tiers":["passive"]}')
@@ -166,11 +158,10 @@ async def test_delete_leaves_zero_rows_in_every_table(tmp_path: Path) -> None:
     await repo.delete_user(uid)
     await repo.close()
     tables = _user_tables(path)
-    assert len(tables) >= 8  # the crawl found the schema, not nothing
+    assert len(tables) >= 8
     with closing(sqlite3.connect(path)) as conn:
         for table in tables:
             (n,) = conn.execute(
-                # Table names come from the schema itself, not from input.
                 f"SELECT COUNT(*) FROM {table} WHERE user_id = ?",  # noqa: S608
                 (uid,),
             ).fetchone()
@@ -181,15 +172,15 @@ async def test_delete_leaves_zero_rows_in_every_table(tmp_path: Path) -> None:
 async def test_deleted_text_is_gone_from_the_database_and_wal_files(tmp_path: Path) -> None:
     path = tmp_path / "m.db"
     repo = SQLiteRepository(path)
-    keep = await _user_with_marker(repo, "keep")  # another user's rows stay
+    keep = await _user_with_marker(repo, "keep")
     gone = await _user_with_marker(repo, "gone")
     files = [path, path.with_name(path.name + "-wal")]
-    assert any(MARKER.encode() in f.read_bytes() for f in files if f.exists())  # sanity
+    assert any(MARKER.encode() in f.read_bytes() for f in files if f.exists())
 
     await repo.delete_user(gone)
-    for f in files:  # while the connection is still open
+    for f in files:
         if f.exists():
-            assert f.read_bytes().count(MARKER.encode()) <= 20, f.name  # only "keep" remains
+            assert f.read_bytes().count(MARKER.encode()) <= 20, f.name
     assert len(await repo.recent_turns(keep, "keep", 50)) == 20
     await repo.delete_user(keep)
     for f in files:
@@ -233,10 +224,10 @@ async def test_a_blocked_overwrite_is_reported_then_finished(tmp_path: Path) -> 
     reader = _reader(path)
     with pytest.raises(ErasureIncomplete):
         await repo.delete_user(uid)
-    assert await repo.get_session("h") is None  # the rows are gone at once
-    assert _marker_on_disk(path)  # but the old bytes are still in the files
+    assert await repo.get_session("h") is None
+    assert _marker_on_disk(path)
     reader.close()
-    await repo.ping()  # any later call finishes the overwrite
+    await repo.ping()
     assert not _marker_on_disk(path)
     wal = path.with_name(path.name + "-wal")
     assert not wal.exists() or wal.stat().st_size == 0
@@ -252,7 +243,7 @@ async def test_retrying_a_blocked_overwrite_never_waits(tmp_path: Path) -> None:
     with pytest.raises(ErasureIncomplete):
         await repo.delete_user(uid)
     start = time.monotonic()
-    await repo.ping()  # still blocked: the retry must not hold up the request
+    await repo.ping()
     assert time.monotonic() - start < 0.5
     reader.close()
     await repo.close()
@@ -270,7 +261,7 @@ async def test_a_pending_overwrite_is_finished_after_a_restart(tmp_path: Path) -
     with pytest.raises(ErasureIncomplete):
         await repo.delete_user(uid)
     await repo.close()
-    reopened = SQLiteRepository(path, busy_timeout_ms=100)  # still blocked at startup
+    reopened = SQLiteRepository(path, busy_timeout_ms=100)
     assert _marker_on_disk(path)
     reader.close()
     await reopened.ping()
