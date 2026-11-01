@@ -40,8 +40,6 @@ _MAX_TOTAL = {"PHQ9": 27, "GAD7": 21}
 
 
 class MemoryRepository:
-    # No lock: every method body runs without awaiting, so on one event loop it is atomic.
-
     def __init__(
         self,
         *,
@@ -52,25 +50,23 @@ class MemoryRepository:
         self._idle_timeout_s = idle_timeout_s
         self._max_sessions = max_sessions
         self._clock = clock
-        self._users: dict[str, str] = {}  # user_id -> created_at
-        self._sessions: dict[str, str] = {}  # session_hash -> user_id
-        self._session_times: dict[str, list[str]] = {}  # session_hash -> [created, last seen]
-        self._idle_since: dict[str, float] = {}  # session_hash -> clock() at last use
-        self._turns: dict[str, list[TurnRecord]] = {}  # session_hash -> turns
-        self._traces: dict[str, str] = {}  # turn_id -> trace JSON
-        self._post_crisis: set[str] = set()  # session hashes
-        self._router: dict[str, str] = {}  # session_hash -> router state JSON
-        self._audit: dict[str, list[tuple[str, AuditRecord]]] = {}  # user_id -> (id, record)
-        self._assessments: dict[str, list[AssessmentRecord]] = {}  # user_id -> records
-        self._answered_at: dict[str, str] = {}  # assessment_id -> when its answers were saved
-        self._signals: dict[str, list[tuple[int, SignalRecord]]] = {}  # user_id -> (id, record)
+        self._users: dict[str, str] = {}
+        self._sessions: dict[str, str] = {}
+        self._session_times: dict[str, list[str]] = {}
+        self._idle_since: dict[str, float] = {}
+        self._turns: dict[str, list[TurnRecord]] = {}
+        self._traces: dict[str, str] = {}
+        self._post_crisis: set[str] = set()
+        self._router: dict[str, str] = {}
+        self._audit: dict[str, list[tuple[str, AuditRecord]]] = {}
+        self._assessments: dict[str, list[AssessmentRecord]] = {}
+        self._answered_at: dict[str, str] = {}
+        self._signals: dict[str, list[tuple[int, SignalRecord]]] = {}
         self._signal_ids = 0
-        self._explanations: dict[tuple[str, str], str] = {}  # (user_id, turn_id) -> JSON
-        self._consent: dict[str, tuple[str, str]] = {}  # user_id -> (version, given_at)
-        self._settings: dict[str, tuple[UserSettings, str]] = {}  # user_id -> (value, updated)
+        self._explanations: dict[tuple[str, str], str] = {}
+        self._consent: dict[str, tuple[str, str]] = {}
+        self._settings: dict[str, tuple[UserSettings, str]] = {}
 
-    # SplitRepository asks these on every request, saved or not, so an idle unsaved session
-    # is cleared out by the next request of any kind, not only by another unsaved one.
     def has_session(self, session_hash: str) -> bool:
         self._expire()
         return session_hash in self._sessions
@@ -154,7 +150,7 @@ class MemoryRepository:
     ) -> TurnRecord:
         self._owns(user_id, session_hash)
         if explanation_json is not None:
-            try:  # mirrors the SQLite json_valid CHECK
+            try:
                 json.loads(explanation_json)
             except ValueError:
                 raise StorageUnavailable("invalid explanation") from None
@@ -196,7 +192,6 @@ class MemoryRepository:
         return self._settings.get(user_id, (UserSettings(), ""))[0]
 
     async def set_settings(self, user_id: str, value: UserSettings) -> None:
-        # Mirrors the SQLite CHECK constraints so both backends reject the same values.
         style = value.style
         if (
             user_id not in self._users
@@ -216,7 +211,6 @@ class MemoryRepository:
         return [record for _, record in self._audit.get(user_id, [])]
 
     async def save_assessment(self, user_id: str, record: AssessmentRecord) -> None:
-        # Mirrors the SQLite CHECK constraints so both backends reject the same records.
         valid = (
             user_id in self._users
             and len(record.answers) <= 9

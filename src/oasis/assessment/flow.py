@@ -28,11 +28,11 @@ ITEM9 = ("PHQ9", 9)  # any answer >= 1 triggers the crisis protocol (rules S11)
 
 @dataclass(frozen=True)
 class Step:
-    record: AssessmentRecord | None  # state to persist; None when nothing changed
-    text: str | None  # fixed reply; None means "answer the message normally"
+    record: AssessmentRecord | None
+    text: str | None
     card: AssessmentCard | None = None
     escalate: bool = False
-    preface: str | None = None  # a separate message shown before `text`
+    preface: str | None = None
 
 
 def offer(inst_id: InstrumentId, reason: str, now: datetime.datetime) -> Step:
@@ -81,7 +81,6 @@ def on_action(rec: AssessmentRecord, action: AssessmentAction, now: datetime.dat
         return _show(replace(rec, status="in_progress"), inst, changed=True, intro=True)
     if status in ("in_progress", "paused") and kind == "abort":
         return Step(_aborted(rec, now), _step_text("aborted"))
-    # A stale or repeated click: show the current step again and change nothing.
     if status == "paused":
         return Step(None, _step_text("paused"), _paused_card(rec, inst))
     if status == "offered":
@@ -105,7 +104,7 @@ def _answer(
     expected = _next_item(rec, inst)
     if action.instrument != rec.instrument or action.item != expected or action.value is None:
         return _show(rec, inst, changed=False)
-    if expected is None:  # the functional question: recorded, never scored
+    if expected is None:
         total, band = score(inst, rec.answers)
         done = replace(rec, status="scored", functional=action.value, total=total, band=band,
                        completed_at=_iso(now))  # fmt: skip

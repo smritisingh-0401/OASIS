@@ -69,7 +69,7 @@ def main() -> None:
     )
     OUT.parent.mkdir(parents=True, exist_ok=True)
     text = header + yaml.safe_dump(body, sort_keys=False)
-    OUT.write_text(text, encoding="utf-8", newline="\n")  # same bytes on every platform
+    OUT.write_text(text, encoding="utf-8", newline="\n")
     print(f"{len(body['zones'])} zones -> {OUT}")
 
 

@@ -50,8 +50,8 @@ class TriggerConfig:
 @dataclass(frozen=True)
 class Offer:
     instrument: InstrumentId
-    reason: str  # JSON
-    explicit: bool = False  # the user asked for it
+    reason: str
+    explicit: bool = False
 
 
 @functools.cache
@@ -139,7 +139,7 @@ def _instrument(window: Iterable[list[Domain]]) -> InstrumentId:
         for d in ds:
             if d.instrument:
                 totals[d.instrument] += d.weight
-    return "GAD7" if totals["GAD7"] > totals["PHQ9"] else "PHQ9"  # tie -> PHQ-9
+    return "GAD7" if totals["GAD7"] > totals["PHQ9"] else "PHQ9"
 
 
 def _recently_completed(

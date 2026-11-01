@@ -74,7 +74,7 @@ def test_hung_llm_answers_within_request_timeout(
         elapsed = time.monotonic() - start
     assert resp.status_code == 200
     assert resp.json()["templated"] is True
-    assert elapsed < 3.0  # far below the 60 s hang; slack absorbs a loaded test machine
+    assert elapsed < 3.0
 
 
 def test_storage_down_still_answers_chat(
@@ -83,7 +83,7 @@ def test_storage_down_still_answers_chat(
     repo = FailingRepo()
     with TestClient(create_app(settings, repo=repo)) as c:
         token = start_session(c)
-        repo.down = True  # consent is remembered in memory (architecture §3.3)
+        repo.down = True
         resp = _post(c, token)
         assert c.get("/health").json()["storage"] == "down"
     assert resp.status_code == 200

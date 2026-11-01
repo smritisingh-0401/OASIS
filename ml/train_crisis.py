@@ -135,14 +135,12 @@ def main() -> None:
     OUT.write_text(header + yaml.safe_dump(doc, sort_keys=False, allow_unicode=True), "utf-8")
     print(f"wrote {OUT.relative_to(ROOT)}: {len(weights)} weights, C={best}")
 
-    # The shipped pure-Python scorer must give sklearn's numbers (weights are rounded).
     clf = load_classifier()
     sample = texts[:: max(1, len(texts) // 500)]
     gap = np.abs(np.array([clf.logit(s) for s in sample]) - model.decision_function(
         vec.transform(sample)))  # fmt: skip
     assert gap.max() < 0.05, gap.max()  # noqa: S101
 
-    # Message-level false alarms on Reddit comments no step above has seen.
     gate = RuleBasedSafetyGate(load_ruleset())
     test = [t for t, _ in goemotions("test") if not gate.check(t).is_crisis]
     flagged = [t for t in test if clf.flags(t)]

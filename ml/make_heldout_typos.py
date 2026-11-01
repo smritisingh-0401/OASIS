@@ -15,7 +15,7 @@ import yaml
 from common import TESTS, typo
 
 OUT = TESTS / "safety" / "heldout_typos.yaml"
-SEED = 2026  # not common.SEED, which the training uses
+SEED = 2026
 
 
 def main() -> None:
@@ -27,7 +27,7 @@ def main() -> None:
         doc = yaml.safe_load((TESTS / "safety" / name).read_text(encoding="utf-8"))
         for group, items in doc["phrases"].items():
             if group == "harm_others":
-                continue  # the classifier is trained on risk to self only
+                continue
             groups.setdefault(group, []).extend(typo(p, rng, e) for p in items for e in (1, 2))
     header = (
         "# Held-out crisis phrases with keyboard typos, GENERATED once by\n"

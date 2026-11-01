@@ -2,7 +2,7 @@
 
 How to run OASIS with the real model on one computer and give testers a link to it (decision 2026-10-28). The host computer runs everything; testers only need a browser.
 
-> **Made-up messages only.** The link reaches anyone who has it. The crisis wording awaits clinician review, and testing with people's real feelings needs ethics approval first (open items 4 and 5 in [memory.md](memory.md)). Demo mode shows a banner saying so on every page.
+> Made-up messages only. The link reaches anyone who has it. The crisis wording awaits clinician review, and testing with people's real feelings needs ethics approval first (open items 4 and 5 in [memory.md](memory.md)). Demo mode shows a banner saying so on every page.
 
 ## What demo mode changes
 
@@ -62,7 +62,7 @@ OASIS_STORAGE_BACKEND=memory
 
 ## 2. Start (each session), in three terminals
 
-**Terminal 1, the model.** The first start downloads it (2.7 GB):
+Terminal 1, the model: The first start downloads it (2.7 GB):
 
 ```powershell
 llama-server -hf unsloth/Qwen3.5-4B-GGUF:Q4_K_M --no-mmproj --jinja -c 4096 -np 1 -ngl 0 --host 127.0.0.1 --port 8080
@@ -70,13 +70,13 @@ llama-server -hf unsloth/Qwen3.5-4B-GGUF:Q4_K_M --no-mmproj --jinja -c 4096 -np 
 
 `-ngl 0` keeps the model on the CPU. With a graphics card that has 4 GB or more of its own memory, leave it out to use the card.
 
-**Terminal 2, OASIS**, from the `OASIS` folder:
+Terminal 2, OASIS, from the `OASIS` folder:
 
 ```powershell
 uv run uvicorn oasis.api.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-**Terminal 3, the link:**
+Terminal 3, the link:
 
 ```powershell
 cloudflared tunnel --url http://127.0.0.1:8000
@@ -108,7 +108,7 @@ bash scripts/host_autostart.sh link
 `status` shows whether the three are running, `restart` restarts them (new link), `stop` stops them until the next boot, and `uninstall` removes the services. Logs: `journalctl -u oasis-model`, `oasis-app` or `oasis-link`.
 
 Two settings help it come back on its own:
-- In the computer's BIOS/UEFI setup, set **Restore on AC power loss** (sometimes "After power failure") to **Power on**, so it switches itself on when the power returns.
+- In the computer's BIOS/UEFI setup, set Restore on AC power loss (sometimes "After power failure") to Power on, so it switches itself on when the power returns.
 - Keep it awake: Settings, Power, set automatic suspend to off. Nobody has to log in: the services run at boot.
 
 ## What testers see and what is kept

@@ -1,9 +1,5 @@
 "use strict";
 
-// Why replies (design §10, FR-XAI-3): every reply of this conversation, newest first, each a
-// closed panel whose plain-language reasons are fetched when opened. Moved here from under each
-// reply (demo testing, 2026-10-29). The session token goes only in the X-OASIS-Session header
-// (rules P3, F5); all text goes in with textContent (rules F4).
 
 const status = document.getElementById("why-status");
 const list = document.getElementById("why-list");
@@ -20,7 +16,6 @@ function snippet(text) {
   return text.length > SNIPPET_CHARS ? text.slice(0, SNIPPET_CHARS).trimEnd() + "…" : text;
 }
 
-// One reply: the start of its text as the summary; the reasons load when it is opened.
 function whyPanel(reply, explanationId) {
   const panel = document.createElement("details");
   panel.className = "why";
@@ -38,11 +33,8 @@ function whyPanel(reply, explanationId) {
     try {
       resp = await api("/explanations/" + encodeURIComponent(explanationId));
     } catch {
-      // No connection: said below and tried again on the next open.
     }
     delete panel.dataset.loading;
-    // No answer, or the server could not load it right now: say which, and fetch again the
-    // next time the panel is opened. Only a definite answer is kept.
     if (!resp || resp.status >= 500) {
       note = line("p", resp
         ? "OASIS couldn't load this right now. Close and reopen this to try again."
@@ -84,7 +76,6 @@ async function load() {
     status.textContent = "";
     list.replaceChildren(...items.map((t) => {
       const item = document.createElement("li");
-      // A crisis reply is never saved, nor are its details (CR-06).
       item.appendChild(t.role === "placeholder"
         ? line("p", "This was crisis support. Its details are not kept.", "why-note")
         : whyPanel(t.content, t.explanation_id));

@@ -13,15 +13,15 @@ from oasis.safety.normalize import base_form, normalise, tolerant
     ("raw", "expected"),
     [
         ("KILL", "kill"),
-        ("ｋｉｌｌ", "kill"),  # fullwidth -> NFKC
-        ("kіll", "kill"),  # Cyrillic i
-        ("ki​ll", "kill"),  # zero-width space
-        ("ki­ll", "kill"),  # soft hyphen
-        ("don’t", "dont"),  # curly apostrophe removed
+        ("ｋｉｌｌ", "kill"),
+        ("kіll", "kill"),
+        ("ki​ll", "kill"),
+        ("ki­ll", "kill"),
+        ("don’t", "dont"),
         ("I'm", "im"),
-        ("kiiiiill", "kiill"),  # runs of 3+ letters reduced to 2
+        ("kiiiiill", "kiill"),
         ("a   b\n\t c", "a b c"),
-        ("ΚILL", "kill"),  # Greek capital kappa
+        ("ΚILL", "kill"),
     ],
 )
 def test_base_form(raw: str, expected: str) -> None:

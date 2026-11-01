@@ -18,7 +18,6 @@ HEADER = "X-OASIS-Session"
 
 @pytest.fixture
 def demo(settings: Settings) -> Settings:
-    # sqlite on purpose: demo mode must still write nothing to disk.
     return settings.model_copy(update={"demo": True, "storage_backend": "sqlite"})
 
 

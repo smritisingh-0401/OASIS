@@ -19,7 +19,6 @@ from oasis.safety.rules import SafetyConfigError
 
 _CODE = re.compile(r"^[A-Z]{2}$")
 _EMERGENCY_NUMBER = re.compile(r"^\+?[\d ()-]+$")
-# Crisis lines may add a menu option or extension: "16000 (option 4)", "119 ext. 8".
 _LINE_NUMBER = re.compile(r"^\+?[\d ()*.-]+(?: ?\((?:option|ext\.?) ?\d+\))?$|^\d+ ext\. \d+$")
 _DIAL_PREFIX = re.compile(r"^\+?[\d ()*.-]+?(?=\s*(?:\(|ext\.|$))")
 

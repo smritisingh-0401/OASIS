@@ -19,13 +19,13 @@ from oasis.types import Signals, TurnFeatures
 LABEL = "language-based mood trend, not a clinical measure"
 FEATURES = tuple(f.name for f in fields(TurnFeatures))
 _WORD = re.compile(r"[a-z]+(?:'[a-z]+)*")
-_STRAIGHT = {0x2018: "'", 0x2019: "'"}  # curly apostrophes count as straight ones
+_STRAIGHT = {0x2018: "'", 0x2019: "'"}
 
 
 @dataclass(frozen=True)
 class FeatureInfo:
-    source: str | None  # a checked citation, or None when exploratory
-    note: str | None  # what the source does and does not show
+    source: str | None
+    note: str | None
     exploratory: bool
 
 
@@ -68,7 +68,6 @@ def parse(raw: Mapping[str, Any]) -> TrackingConfig:
         not_before=_words(raw, "not_before"),
         features=info,
     )
-    # A baseline SD needs at least two sessions.
     if not (0 < cfg.ewma_alpha <= 1 and cfg.baseline_sessions >= 2 and cfg.change_z > 0
             and cfg.latency_cap_s > 0):  # fmt: skip
         raise ValueError(f"{what}: aggregation values out of range")
@@ -97,7 +96,7 @@ def turn_features(
 ) -> TurnFeatures:
     cfg = cfg or load_config()
     words = _WORD.findall(message.lower().translate(_STRAIGHT))
-    n = len(words) or 1  # no words: both rates are 0
+    n = len(words) or 1
     absolutist = sum(
         w in cfg.absolutist and (i == 0 or words[i - 1] not in cfg.not_before)
         for i, w in enumerate(words)
@@ -118,5 +117,5 @@ def turn_features(
         absolutist_rate=absolutist / n,
         msg_length=len(words),
         reply_latency_s=latency,
-        hour_of_day=client_ts.hour if client_ts else None,  # the client's own offset: local
+        hour_of_day=client_ts.hour if client_ts else None,
     )

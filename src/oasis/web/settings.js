@@ -1,8 +1,5 @@
 "use strict";
 
-// Settings (design §15.1, FR-CUL-1, FR-PRV-2, FR-PRV-3): how OASIS words replies, the help
-// card's country, whether this conversation is saved, export and delete. Uses the chat's session token from browser storage, sent only in the X-OASIS-Session
-// header (rules P3, F5). All text goes in with textContent (rules F4).
 
 const CONFIRM = "DELETE";
 
@@ -16,7 +13,7 @@ const styleForm = document.getElementById("style-form");
 const styleStatus = document.getElementById("style-status");
 const country = document.getElementById("country");
 const styleInputs = [...styleForm.querySelectorAll("input"), country];
-let saved = null; // the settings as last stored, put back if a change does not save
+let saved = null;
 
 async function load() {
   try {
@@ -57,7 +54,6 @@ async function loadStyle(ephemeral) {
   if (ephemeral) styleStatus.textContent = "These choices last as long as this conversation.";
 }
 
-// Saved as soon as one is chosen. Only the user changes these; OASIS never does (FR-CUL-2).
 styleForm.addEventListener("change", async () => {
   const value = {
     directness: styleForm.elements.directness.value,
@@ -79,7 +75,6 @@ styleForm.addEventListener("change", async () => {
   }
 });
 
-// The file is built in the page and saved with a temporary link; nothing leaves the computer.
 exportButton.addEventListener("click", async () => {
   status.textContent = "";
   try {
@@ -99,7 +94,6 @@ exportButton.addEventListener("click", async () => {
   }
 });
 
-// Two steps: open the confirmation, then type the word (design §15.1).
 deleteStart.addEventListener("click", () => {
   confirmForm.hidden = false;
   deleteStart.hidden = true;
@@ -133,12 +127,10 @@ confirmForm.addEventListener("submit", async (event) => {
       localStorage.removeItem(SESSION_KEY);
       sessionStorage.removeItem(SESSION_KEY);
     } catch {
-      // Nothing to remove.
     }
     confirmForm.hidden = true;
     exportButton.disabled = true;
     for (const el of styleInputs) el.disabled = true;
-    // erasure_pending: deleted, but another program holds the file, so the overwrite waits.
     mode.textContent = code === "erasure_pending"
       ? body.error.message
       : "Everything OASIS kept about you has been deleted.";

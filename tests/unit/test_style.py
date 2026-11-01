@@ -39,9 +39,6 @@ def _system(style: StyleProfile, plan: Plan = PLAN) -> str:
     ].content
 
 
-# --- framing --------------------------------------------------------------------------------
-
-
 def test_every_style_gives_a_different_prompt() -> None:
     prompts = {s: _system(s) for s in STYLES}
     assert len(set(prompts.values())) == len(STYLES) == 9
@@ -91,15 +88,12 @@ def test_the_framing_file_needs_every_value_and_a_review_flag() -> None:
     for broken in (
         {**good, "review_status": "ok"},
         {**good, "directness": {"direct": "a", "balanced": ""}},
-        {**good, "formality": {**good["formality"], "neutral": "x"}},  # the default adds text
-        {**good, "suggest": {**good["suggest"], "min_hedged": 4}},  # more than the window
+        {**good, "formality": {**good["formality"], "neutral": "x"}},
+        {**good, "suggest": {**good["suggest"], "min_hedged": 4}},
         {**good, "suggest": {**good["suggest"], "hedges": []}},
     ):
         with pytest.raises(ValueError, match=r"style|framing"):
             parse_framing(broken)
-
-
-# --- the indirect-phrasing suggestion (FR-CUL-2) --------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -108,7 +102,7 @@ def test_the_framing_file_needs_every_value_and_a_review_flag() -> None:
         "maybe it's nothing",
         "I guess I'm a bit tired",
         "it's sort of hard to say",
-        "I\u2019m not sure it matters",  # a curly apostrophe
+        "I\u2019m not sure it matters",
         "Perhaps I overreacted",
     ],
 )
@@ -131,7 +125,6 @@ def test_two_hedged_messages_out_of_three_suggest_the_indirect_style() -> None:
     earlier = ["I guess work was long", "fine"]
     assert suggest("maybe it's nothing", earlier, StyleProfile())
     assert suggest("maybe it's nothing", earlier, StyleProfile("direct", "formal"))
-    # Only the latest messages count, and this one must be hedged itself.
     assert not suggest("maybe it's nothing", ["I guess so", "fine", "ok", "sure"], StyleProfile())
     assert not suggest("I am tired", ["I guess so", "maybe"], StyleProfile())
 
@@ -139,8 +132,6 @@ def test_two_hedged_messages_out_of_three_suggest_the_indirect_style() -> None:
 def test_no_suggestion_when_the_style_is_already_indirect() -> None:
     assert not suggest("maybe it's nothing", ["I guess so"], StyleProfile("indirect"))
 
-
-# --- engine: style is read, never written, and changes framing only -------------------------
 
 GATE = RuleBasedSafetyGate(load_ruleset())
 
@@ -187,7 +178,6 @@ async def test_the_engine_reads_the_users_style_into_the_prompt(settings: Settin
     await engine.handle_turn("h", "work was long today")
     system = llm.prompts[-1][0].content
     assert framing(StyleProfile("indirect", "casual")) in system
-    # The country is for the help card only.
     assert "India" not in system
     assert "IN" not in system.split()
 
@@ -207,7 +197,6 @@ async def test_a_suggestion_never_changes_the_profile(settings: Settings) -> Non
 async def test_no_suggestion_on_a_button_press(settings: Settings) -> None:
     from oasis.types import ExerciseAction
 
-    # A button label is not their own words, even when the reply to it is generated.
     engine = _engine(settings, FakeLLM(), MemoryRepository(), [])
     engine.planner = lambda message, state, action: Plan(mode="companion")
     await engine.repo.create_user_session("h")
@@ -235,8 +224,6 @@ async def test_storage_down_means_the_default_style(settings: Settings) -> None:
     assert not result.templated
 
 
-# Messages that exercise every decision: crisis, screening trigger, psychoeducation, thinking
-# traps, anger, acute overwhelm, the continue phrase, hedging and small talk.
 POOL = [
     "I want to kill myself",
     "I don't want to be here anymore",
@@ -265,7 +252,6 @@ async def _run(messages: Sequence[str], style: StyleProfile, settings: Settings)
         r = await engine.handle_turn("h", m)
         out.append((r.reply, r.mode, r.templated, r.verdict, r.card, r.exercise_card, r.preface,
                     r.persisted, r.degraded, r.fallback_reason))  # fmt: skip
-    # The prompts may differ in the style line only.
     for prompt in llm.prompts:
         system = "\n".join(ln for ln in prompt[0].content.split("\n")
                            if not ln.startswith(STYLE_MARK))  # fmt: skip
@@ -284,8 +270,6 @@ def test_decisions_are_identical_under_every_style(messages: list[str]) -> None:
     runs = [asyncio.run(_run(messages, s, cfg)) for s in STYLES]
     assert all(run == runs[0] for run in runs[1:])
 
-
-# --- no demographic inference (PRD L3c) -----------------------------------------------------
 
 DEMOGRAPHIC = ("ethnic", "nationality", "race", "religion", "gender", "dialect", "accent")
 

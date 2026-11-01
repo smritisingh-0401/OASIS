@@ -37,7 +37,6 @@ def is_question(message: str) -> bool:
 
 class Embedder:
     def __init__(self, folder: Path) -> None:
-        # Imported here: the `ml` extra is optional (load_matcher handles its absence).
         import numpy as np
         import onnxruntime
         from tokenizers import Tokenizer
@@ -80,7 +79,7 @@ class SemanticMatcher:
             return None
         try:
             sims = self.similarities(message)
-        except Exception:  # fail-soft boundary: the cue lexicon already ran on this message
+        except Exception:
             log.warning("psychoed semantic match failed")
             return None
         ranked = sorted(zip(sims, self.items, strict=True), key=lambda p: -p[0])

@@ -24,18 +24,12 @@ def features(message: str, **kw: Any) -> TurnFeatures:
     return turn_features(message, extract(message), **kw)
 
 
-# --- per-turn features (FR-TRK-1) ---------------------------------------------------------
-
-
 def test_golden_features() -> None:
     message = "I always mess everything up and I'm not completely sure why, my friends say."
     f = features(message)
     s = extract(message)
-    # 14 words; "I" and "I'm" count, possessive "my" does not (Tackman et al. 2019).
     assert f.msg_length == 14
     assert f.fp_pronoun_rate == pytest.approx(2 / 14)
-    # "always" and "everything" count; "not completely" is a negated use (Al-Mosaiwi &
-    # Johnstone 2018 subtract these false positives).
     assert f.absolutist_rate == pytest.approx(2 / 14)
     assert f.valence == s.valence
     assert {e: getattr(f, e) for e in EMOTIONS} == s.emotions
@@ -45,8 +39,8 @@ def test_golden_features() -> None:
     ("I me myself", 3),
     ("Im tired and ive had enough", 2),
     ("I'd rather I'll go", 2),
-    ("my mine our we you", 0),      # possessives and other persons do not count
-    ("I feel ill, id card lost", 1),  # "ill" and "id" are words, not "I'll" / "I'd"
+    ("my mine our we you", 0),
+    ("I feel ill, id card lost", 1),
 ])  # fmt: skip
 def test_first_person_singular_counts_subject_object_and_reflexive(
     message: str, count: int
@@ -56,7 +50,7 @@ def test_first_person_singular_counts_subject_object_and_reflexive(
 
 
 def test_curly_apostrophes_count_like_straight_ones() -> None:
-    curly = "I" + chr(0x2019) + "m done"  # a curly apostrophe
+    curly = "I" + chr(0x2019) + "m done"
     assert features(curly).fp_pronoun_rate == features("I'm done").fp_pronoun_rate
 
 
@@ -77,16 +71,13 @@ def test_reply_latency_is_capped_and_absent_on_the_first_message() -> None:
     sec = datetime.timedelta(seconds=1)
     assert features("hi", last_reply_at=NOW - 42 * sec).reply_latency_s == pytest.approx(42)
     assert features("hi", last_reply_at=NOW - 2 * 3600 * sec).reply_latency_s == cap
-    assert features("hi", last_reply_at=NOW + 5 * sec).reply_latency_s == 0.0  # clock skew
+    assert features("hi", last_reply_at=NOW + 5 * sec).reply_latency_s == 0.0
 
 
 def test_hour_of_day_is_the_clients_local_hour() -> None:
     local = datetime.datetime.fromisoformat("2026-10-20T23:30:00+05:30")
     assert features("hi", client_ts=local).hour_of_day == 23
     assert features("hi").hour_of_day is None
-
-
-# --- citations and the label (FR-TRK-3, FR-TRK-4) -------------------------------------------
 
 
 def test_every_feature_has_a_source_or_is_exploratory() -> None:
@@ -138,9 +129,6 @@ def test_an_invalid_config_is_rejected(change: Any) -> None:
         parse(raw)
 
 
-# --- aggregation on synthetic timelines (FR-TRK-2) ------------------------------------------
-
-
 def _record(
     session: str, minute: int, valence: float, latency: float | None = None
 ) -> SignalRecord:
@@ -156,9 +144,9 @@ def test_session_mean_and_variance_are_exact() -> None:
     s1, s2 = summarise(records)
     assert (s1.session, s1.turns, s2.session, s2.turns) == (1, 3, 2, 1)
     assert s1.mean["valence"] == pytest.approx(0.5)
-    assert s1.variance["valence"] == pytest.approx(0.13)  # sample variance
+    assert s1.variance["valence"] == pytest.approx(0.13)
     assert s2.mean["valence"] == pytest.approx(-0.5)
-    assert s2.variance["valence"] is None  # one turn: no spread to measure
+    assert s2.variance["valence"] is None
 
 
 def test_sessions_are_ordered_by_their_first_turn() -> None:
@@ -181,17 +169,15 @@ def test_ewma_matches_the_recurrence() -> None:
 
 def test_the_change_flag_waits_for_a_baseline_of_k_sessions() -> None:
     calm = [0.1, 0.2, 0.1, 0.2, 0.15]
-    # A dramatic drop as the 5th session is not flagged: only 4 sessions came before it.
     assert change_flags([*calm[:4], -0.9], k=5, z=1.5) == [False] * 5
-    # The same drop as the 6th session is: 5 sessions of baseline exist.
     assert change_flags([*calm, -0.9], k=5, z=1.5) == [False] * 5 + [True]
 
 
 def test_the_change_flag_needs_more_than_z_baseline_sds() -> None:
-    calm = [0.1, 0.2, 0.1, 0.2, 0.15]  # mean 0.15, sample SD 0.05
-    assert change_flags([*calm, 0.2], k=5, z=1.5) == [False] * 6  # 1.0 SD away
-    assert change_flags([*calm, 0.25], k=5, z=1.5) == [False] * 5 + [True]  # 2.0 SDs
-    assert change_flags([*calm, 0.05], k=5, z=1.5) == [False] * 5 + [True]  # both directions
+    calm = [0.1, 0.2, 0.1, 0.2, 0.15]
+    assert change_flags([*calm, 0.2], k=5, z=1.5) == [False] * 6
+    assert change_flags([*calm, 0.25], k=5, z=1.5) == [False] * 5 + [True]
+    assert change_flags([*calm, 0.05], k=5, z=1.5) == [False] * 5 + [True]
 
 
 def test_no_flag_when_the_baseline_has_no_spread() -> None:

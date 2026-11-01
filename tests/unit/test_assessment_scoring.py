@@ -13,9 +13,6 @@ GAD7 = instrument("GAD7")
 OPTIONS = ("Not at all", "Several days", "More than half the days", "Nearly every day")
 
 
-# --- shipped content matches the published forms -----------------------------------
-
-
 def test_published_structure() -> None:
     assert len(PHQ9.items) == 9
     assert len(GAD7.items) == 7
@@ -25,7 +22,7 @@ def test_published_structure() -> None:
     )
     assert GAD7.items[0] == "Feeling nervous, anxious or on edge"
     assert PHQ9.functional_question is not None
-    assert GAD7.functional_question is None  # the published GAD-7 form has none
+    assert GAD7.functional_question is None
     for inst in (PHQ9, GAD7):
         assert inst.source.startswith("https://www.phqscreeners.com/")
         assert inst.max_total == 3 * len(inst.items)
@@ -55,9 +52,6 @@ def _answers_summing_to(total: int, n: int) -> list[int]:
         answers.append(min(3, total))
         total -= answers[-1]
     return answers
-
-
-# --- properties ----------------------------------------------------------------------
 
 
 @given(st.sampled_from(INSTRUMENT_IDS), st.data())
@@ -98,8 +92,6 @@ def test_incomplete_or_invalid_answers_are_never_scored(inst_id: str, data: st.D
         score(inst, bad)
 
 
-# --- loader refuses bad content ------------------------------------------------------
-
 GOOD = """
 instrument: GAD7
 name: GAD-7
@@ -125,8 +117,8 @@ def test_minimal_instrument_loads() -> None:
         GOOD.replace("instrument: GAD7", "instrument: PHQ9"),
         GOOD.replace('"Nearly every day"]', '"Always"]'),
         GOOD.replace('items: ["a", "b"]', "items: []"),
-        GOOD.replace("{min: 3, max: 6", "{min: 4, max: 6"),  # gap at 3
-        GOOD.replace("{min: 3, max: 6", "{min: 3, max: 5"),  # does not reach the maximum
+        GOOD.replace("{min: 3, max: 6", "{min: 4, max: 6"),
+        GOOD.replace("{min: 3, max: 6", "{min: 3, max: 5"),
         GOOD.replace("https://www.phqscreeners.com/x.pdf", "http://example.com"),
         GOOD.replace("verified_on: 2026-10-08", "verified_on: 2999-01-01"),
     ],

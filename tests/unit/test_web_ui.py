@@ -62,8 +62,6 @@ def test_the_help_card_fits_a_phone_screen() -> None:
     assert re.search(r"\.top \{[^}]*position: relative", block)
 
 
-# --- demo testing, 2026-10-29: fixed chat panel, auto-scroll, typing animation -------------
-
 HTML = (Path(oasis.__file__).parent / "web" / "index.html").read_text(encoding="utf-8")
 
 
@@ -71,7 +69,7 @@ def test_only_the_conversation_scrolls_so_the_composer_stays_in_view() -> None:
     assert '<body class="chat-page">' in HTML
     page = _rule("body.chat-page")
     assert "height: 100dvh" in page
-    assert "overflow-y: auto" in page  # a very short window scrolls the page instead
+    assert "overflow-y: auto" in page
     assert "min-height: 320px" in _rule(".chat-page .chat")
     conversation = _rule(".chat-page .messages")
     assert "overflow-y: auto" in conversation
@@ -97,7 +95,7 @@ def test_replies_type_out_but_crisis_replies_never_do() -> None:
     assert 'const animate = body.mode !== "crisis" && body.mode !== "post_crisis"' in JS
     assert 'messages.setAttribute("aria-busy", "true")' in JS
     assert 'messages.setAttribute("aria-busy", "false")' in JS
-    assert "busy || typing" in JS  # setBusy(false) waits for the typing to finish
+    assert "busy || typing" in JS
     assert "msg bot typing" in JS
     assert "prefers-reduced-motion" in CSS
 

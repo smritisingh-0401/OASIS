@@ -17,7 +17,7 @@ from typing import Any
 from oasis.content import REVIEW, load_yaml, require_review
 from oasis.safety.normalize import base_form
 
-MAX_GRADE = 8.0  # Flesch-Kincaid grade ceiling for every item (CR-13)
+MAX_GRADE = 8.0
 _FIELDS = ("id", "topic", "text", "source", "version")
 _WORD = re.compile(r"[a-z]+(?:'[a-z]+)?")
 _VOWEL_GROUP = re.compile(r"[aeiouy]+")
@@ -41,7 +41,7 @@ def _syllables(word: str) -> int:
     # pronunciation dictionary if the grade check ever needs to be exact.
     n = len(_VOWEL_GROUP.findall(word))
     if n > 1 and word.endswith("e") and not word.endswith(("le", "ee")):
-        n -= 1  # silent final e
+        n -= 1
     return max(1, n)
 
 

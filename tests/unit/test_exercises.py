@@ -21,7 +21,6 @@ from oasis.types import RouterState
 
 MODES = ("cbt", "dbt", "mindfulness", "grounding")
 
-# Rules CL7: v1 scripts are low-risk skills only.
 FORBIDDEN = re.compile(
     r"hold (?:your|the) breath|breath[- ]?hold|holding your breath|cold water|\bice\b"
     r"|\bsprint|\brun\b|push-?ups?|exercise hard|until it hurts",
@@ -69,15 +68,13 @@ def test_steps_are_delivered_in_order_and_the_exercise_then_ends() -> None:
             assert card is not None
             assert (card.step, card.mode, card.item, card.item_count) == (
                 "active", "dbt", k, len(t.steps))  # fmt: skip
-            # The fixed step text is on the card, so the step is never lost if the model
-            # drops it from its reply (manual test, 2026-10-12).
             assert card.instruction == text
             assert rs.exercise == t.id
         else:
             assert card is None
             assert (rs.exercise, rs.step) == (None, 0)
     assert seen == list(t.steps)
-    assert rs.current == "companion"  # back to talking once the exercise is over
+    assert rs.current == "companion"
 
 
 def test_card_for_restores_an_offer_or_the_running_step() -> None:
@@ -91,9 +88,6 @@ def test_card_for_restores_an_offer_or_the_running_step() -> None:
     assert (active.step, active.item, active.item_count) == ("active", 2, len(t.steps))
     assert active.instruction == t.steps[1]
     assert offer.instruction is None
-
-
-# --- invalid content stops startup -----------------------------------------------------------
 
 
 def _raw(**over: Any) -> dict[str, Any]:

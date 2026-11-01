@@ -62,7 +62,6 @@ def test_health(client: TestClient) -> None:
 
 def test_multi_turn_chat_and_history(client: TestClient) -> None:
     token = _session(client)
-    # Over five words each, so neither gets the short acknowledgement (2026-10-29).
     first, second = "my first message about the day", "my second message about the day"
     for text in (first, second):
         resp = _chat(client, token, text)
@@ -119,7 +118,6 @@ def test_invalid_turns_get_typed_422(client: TestClient, body: dict[str, Any]) -
     resp = client.post("/chat", json=body, headers={HEADER: token})
     assert resp.status_code == 422
     assert resp.json()["error"]["code"] == "invalid_turn"
-    # Validation errors must not echo the submitted text back into responses or logs.
     assert "x" * 50 not in resp.text
 
 
@@ -156,8 +154,6 @@ def test_chat_page_has_help_card_and_disclaimer(client: TestClient) -> None:
     html = client.get("/").text
     assert "Need help now?" in html
     assert "not a diagnosis" in html
-    # Owner's wording (2026-10-12, CR-03): an invitation to talk in person, not an
-    # emergency instruction, at the top of the card.
     assert "<h2>Talk to someone now</h2>" in html
     assert "If you feel like talking to someone in person" in html
     assert "If you are in danger right now" not in html
@@ -185,13 +181,11 @@ def test_help_card_lists_crisis_lines_without_external_loads(client: TestClient)
     assert "<!-- CRISIS_RESOURCES -->" not in html
     assert "Tele-MANAS" in html
     assert 'href="tel:14416"' in html
-    # Crisis-line websites are user-initiated links; nothing is loaded from elsewhere.
     assert not re.search(r"""\bsrc=["']?(https?:)?//""", html, re.I)
 
 
 def test_web_assets_make_no_external_requests() -> None:
     web = Path(oasis.__file__).parent / "web"
-    # What the browser parses; the font is binary and its licence text is never loaded.
     files = [p for p in web.rglob("*") if p.suffix in {".html", ".css", ".js"}]
     assert files
     for path in files:
@@ -204,9 +198,6 @@ def test_session_token_never_travels_in_urls() -> None:
     js = (Path(oasis.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
     assert "?session" not in js.lower()
     assert HEADER in js
-
-
-# --- shortcut and failure paths through HTTP -------------------------------------
 
 
 class AlwaysCrisis:
@@ -259,9 +250,6 @@ def test_default_llm_backend_is_llama_server(settings: Settings) -> None:
     assert resp.json()["templated"] is True
 
 
-# --- crisis flow through the real gate (design §2.4) ------------------------------
-
-
 CRISIS = "I want to kill myself"
 
 
@@ -280,9 +268,8 @@ def test_crisis_writes_audit_and_holds_post_crisis_mode(settings: Settings) -> N
     assert crisis["persisted"] is False
     assert held["mode"] == "post_crisis"
     assert cleared["mode"] == "companion"
-    assert llm.calls == 1  # only the turn after the user chose to continue
+    assert llm.calls == 1
 
-    # The crisis message itself is never stored; a placeholder stands in for it.
     assert CRISIS not in json.dumps(turns)
     assert turns[0]["role"] == "placeholder"
     assert turns[0]["mode"] == "crisis"
@@ -294,9 +281,6 @@ def test_crisis_writes_audit_and_holds_post_crisis_mode(settings: Settings) -> N
     assert detail["source"] == "text"
     assert detail["pattern_ids"] == ["explicit.kill_self"]
     assert CRISIS not in audit.detail
-
-
-# --- assessment through HTTP (design §4, §12) -------------------------------------------
 
 
 def _act(client: TestClient, token: str, label: str, action: dict[str, Any]) -> Any:
@@ -325,7 +309,6 @@ def test_instruction_is_its_own_message_before_the_first_question(settings: Sett
     )
     assert first["preface"] == stem
     assert first["reply"].startswith("Question 1 of 9: ")
-    # Stored as two assistant turns, so a reload shows two bubbles in the same order.
     assert [t["content"] for t in turns[-2:]] == [stem, first["reply"]]
     assert {t["role"] for t in turns[-2:]} == {"assistant"}
 
@@ -412,8 +395,6 @@ def test_invalid_actions_get_typed_422(client: TestClient, action: dict[str, Any
     assert resp.json()["error"]["code"] == "invalid_turn"
 
 
-# --- therapy router over HTTP (Phase 4) ----------------------------------------------
-
 DISTORTED = "I'm such a failure, I always mess everything up"
 
 
@@ -476,9 +457,6 @@ def test_malformed_exercise_actions_are_rejected(
     assert resp.status_code == 422
 
 
-# --- psychoeducation over HTTP (Phase 5) ---------------------------------------------
-
-
 def test_psychoeducation_over_http(settings: Settings) -> None:
     general = next(i for i in load_psychoed() if i.id == "general")
     with TestClient(create_app(settings, repo=MemoryRepository())) as c:
@@ -490,8 +468,6 @@ def test_psychoeducation_over_http(settings: Settings) -> None:
     assert combined["preface"]
     assert combined["assessment"]["step"] == "offer"
 
-
-# --- mood trend (Phase 8, FR-TRK-3) ----------------------------------------------------------
 
 LABEL = "language-based mood trend, not a clinical measure"
 
@@ -522,7 +498,7 @@ def test_new_chat_starts_a_conversation_with_its_own_graph(client: TestClient) -
     assert second != first
     assert resp.json()["ephemeral"] is False
     assert client.get("/history", headers={HEADER: second}).json()["turns"] == []
-    assert _chat(client, second, "work was fine today").status_code == 200  # no new consent
+    assert _chat(client, second, "work was fine today").status_code == 200
     body = client.get("/trends", headers={HEADER: second}).json()
     assert [len(s["valence"]) for s in body["sessions"]] == [1, 1]
     assert [s["is_current"] for s in body["sessions"]] == [False, True]
@@ -547,11 +523,11 @@ def test_why_replies_have_their_own_page(client: TestClient) -> None:
     page = client.get("/why.html")
     assert page.status_code == 200
     assert 'src="why.js"' in page.text
-    assert 'href="/"' in page.text  # back to chat
+    assert 'href="/"' in page.text
     why_js = client.get("/why.js").text
     assert "/history?limit=200" in why_js
-    assert "reverse()" in why_js  # newest first
-    assert "crisis support" in why_js  # a crisis reply's details are never kept
+    assert "reverse()" in why_js
+    assert "crisis support" in why_js
 
 
 def test_trends_need_a_session(client: TestClient) -> None:
@@ -574,7 +550,7 @@ def test_the_trend_sources_are_a_closed_dropdown(client: TestClient) -> None:
     assert '<details class="basis-more">' in page
     assert "<summary>What it is based on</summary>" in page
     head, folded = page.split('<details class="basis-more">', 1)
-    assert LABEL in head  # FR-TRK-3: never behind a toggle
+    assert LABEL in head
     assert 'id="basis"' in folded.split("</details>")[0]
 
 
@@ -584,9 +560,6 @@ def test_memory_storage_writes_nothing_to_disk(settings: Settings, tmp_path: Pat
         _chat(c, token, "I always feel so tired")
         assert c.get("/trends", headers={HEADER: token}).status_code == 200
     assert list(tmp_path.iterdir()) == []
-
-
-# --- explanations (Phase 9) -----------------------------------------------------------------
 
 
 def test_every_reply_links_to_its_explanation(client: TestClient) -> None:
@@ -632,12 +605,8 @@ def test_the_why_panel_is_fetched_on_demand() -> None:
     """Since 2026-10-29 the panels live on their own page (why.html), one per reply."""
     js = (Path(oasis.__file__).parent / "web" / "why.js").read_text(encoding="utf-8")
     assert "/explanations/" in js
-    # No raw record in the panel (Smriti, 2026-10-24); GET /explanations and export keep it.
     assert "See details" not in js
-    # The scope note stays in the record (GET /explanations, export), not in the panel.
     assert "scope_note" not in js
     assert "Explanation unavailable for this reply." in js
-    # A connection failure says so and is tried again on the next open; only a definite
-    # answer from the server (the explanation, or none) is kept.
     assert "Couldn't reach OASIS" in js
     assert "Close and reopen this to try again." in js

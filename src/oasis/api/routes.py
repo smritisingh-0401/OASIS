@@ -146,9 +146,8 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
 
     @router.post("/session", status_code=201)
     async def create_session(body: SessionRequest | None = None) -> SessionResponse:
-        # The online demo never saves, whatever the page asked for.
         ephemeral = demo or (body is not None and body.ephemeral)
-        token = secrets.token_urlsafe(32)  # 256 bits
+        token = secrets.token_urlsafe(32)
         try:
             await repo.create_user_session(hash_token(token), ephemeral=ephemeral)
         except StorageBusy:
@@ -185,7 +184,7 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
     async def consent(body: ConsentRequest, session: SessionHeader = None) -> Response:
         session_hash, info = await resolve(session)
         if body.disclosure_version != load_disclosure(demo).version:
-            raise OUTDATED_NOTICE  # accepted text must be the text shown
+            raise OUTDATED_NOTICE
         detail = json.dumps({"disclosure_version": body.disclosure_version})
         try:
             await repo.set_consent(info.user_id, body.disclosure_version)
@@ -210,7 +209,7 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
         """Only the user changes their settings; OASIS never sets them (FR-CUL-2)."""
         _, info = await resolve(session)
         if info.consent_version != load_disclosure(demo).version:
-            raise CONSENT_REQUIRED  # nothing is stored before the notice is accepted
+            raise CONSENT_REQUIRED
         if body.country is not None and body.country not in countries:
             raise UNKNOWN_COUNTRY
         new = UserSettings(StyleProfile(body.directness, body.formality), body.country)
@@ -218,7 +217,7 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
             old = _settings_out(await repo.get_settings(info.user_id))
             await repo.set_settings(info.user_id, new)
             changed = sorted(k for k, v in body.model_dump().items() if getattr(old, k) != v)
-            if changed:  # field names only: the chosen country stays in the settings row
+            if changed:
                 detail = json.dumps({"fields": changed})
                 await repo.append_audit(info.user_id, "settings_changed", detail)
         except StorageError:
@@ -248,7 +247,7 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
         try:
             await repo.delete_user(info.user_id)
         except ErasureIncomplete:
-            engine.forget(session_hash)  # the rows are gone, so is the session
+            engine.forget(session_hash)
             raise ERASURE_PENDING from None
         except StorageError:
             raise STORAGE_DOWN from None
@@ -269,8 +268,8 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
             raise INVALID_SESSION from None
         except ConsentRequired:
             raise CONSENT_REQUIRED from None
-        except Exception as exc:  # last line of defence: the user always gets a reply
-            log.error("chat failed: %s", type(exc).__name__)  # type only: messages may hold text
+        except Exception as exc:
+            log.error("chat failed: %s", type(exc).__name__)
             reason = "request.deadline" if isinstance(exc, TimeoutError) else "internal.error"
             return ChatResponse(
                 turn_id=uuid.uuid4().hex,

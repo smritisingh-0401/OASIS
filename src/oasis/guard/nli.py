@@ -26,8 +26,6 @@ log = logging.getLogger("oasis.guard")
 
 _SENTENCE = re.compile(r"[^.!?]+[.!?]*")
 _WORD = re.compile(r"[a-z]+")
-# Base-form first-person words and what they become said to the user, and the contractions
-# the base form strips of their apostrophe ("cant"), which the model's tokenizer would split.
 _TO_YOU = {"i": "you", "im": "you are", "ive": "you have", "id": "you would", "ill": "you will",
            "me": "you", "my": "your", "mine": "yours", "myself": "yourself", "am": "are",
            "its": "it's", "cant": "can't", "dont": "don't", "doesnt": "doesn't",
@@ -43,7 +41,6 @@ def to_second_person(clause: str) -> str:
 
 class AgreementModel:
     def __init__(self, folder: Path, threshold: float) -> None:
-        # Imported here: the `ml` extra is optional (load_agreement handles its absence).
         import numpy as np
         import onnxruntime
         from tokenizers import Tokenizer
@@ -82,7 +79,7 @@ class AgreementModel:
     def agrees(self, reply: str, claims: Sequence[str]) -> bool:
         try:
             return self.score(reply, claims) >= self.threshold
-        except Exception:  # fail-soft boundary: the phrase lists already ran on this reply
+        except Exception:
             log.warning("nli agreement check failed")
             return False
 

@@ -1,31 +1,31 @@
-# OASIS — Product Requirements Document
+# OASIS product requirements
 
 | Field | Value |
 |---|---|
-| Product | OASIS — lightweight, explainable, safety-first mental health chatbot |
+| Product | OASIS, a lightweight, explainable, safety-first mental health chatbot |
 | Document owner | Smriti |
 | Status | Draft for approval (Step A) |
 | Last updated | 2026-10-07 |
-| Related docs | [architecture.md](architecture.md), [design.md](design.md), [rules.md](rules.md), [phases.md](phases.md), [memory.md](memory.md), [clinical_review.md](clinical_review.md) |
+| Related docs | [architecture.md](architecture.md), [design.md](design.md), [rules.md](rules.md), [reports.md](reports.md), [memory.md](memory.md), [clinical_review.md](clinical_review.md) |
 
 ---
 
 ## 1. Problem statement
 
-Mental health chatbots (MHCs) such as Woebot, Leora, Emohaa, Fido and ChatPal have shown that conversational agents can deliver structured psychological support at scale. A literature review of **97 papers covering 16,620 participants** identified ten recurring limitations in these systems (section 4). They cluster into four themes:
+Mental health chatbots (MHCs) such as Woebot, Leora, Emohaa, Fido and ChatPal have shown that conversational agents can deliver structured psychological support at scale. A review of the literature identified ten recurring limitations in these systems (section 4). They cluster into four themes:
 
-1. **Trust** — the reasoning behind a reply is opaque (black box), and replies are either canned (repetitive scripting) or over-agreeable (sycophancy / hypercompliance).
-2. **Fairness** — training data is dominated by WEIRD (Western, Educated, Industrialised, Rich, Democratic) populations, and outputs may be biased against groups.
-3. **Access and cost** — paid APIs and heavy infrastructure exclude users and deploying organisations.
-4. **Experience and control** — unclear data practices, little user control over data, low engagement, and technical glitches at the moments users most need the system to work.
+1. Trust: the reasoning behind a reply is opaque (black box), and replies are either canned (repetitive scripting) or over-agreeable (sycophancy / hypercompliance).
+2. Fairness: training data is dominated by WEIRD (Western, Educated, Industrialised, Rich, Democratic) populations, and outputs may be biased against groups.
+3. Access and cost: paid APIs and heavy infrastructure exclude users and deploying organisations.
+4. Experience and control: unclear data practices, little user control over data, low engagement, and technical glitches at the moments users most need the system to work.
 
 General-purpose LLM chatbots solve fluency but make most of these worse: they are black boxes, generic and sycophantic, culturally narrow, costly to deploy at scale, and prone to failure modes that are unacceptable during an acute moment.
 
 ## 2. Positioning
 
-> **OASIS is the lightweight, explainable, low-cost, safety-first alternative.**
+> OASIS is the lightweight, explainable, low-cost, safety-first alternative.
 
-**Core design principle:** *a rule-based decision plane plans each reply; the LLM only phrases it.* Safety decides before the LLM ever runs, and any failure falls back to a templated reply.
+Core design principle: *a rule-based decision plane plans each reply; the LLM only phrases it.* Safety decides before the LLM ever runs, and any failure falls back to a templated reply.
 
 | Property | General-purpose LLM chatbot | OASIS |
 |---|---|---|
@@ -39,8 +39,8 @@ General-purpose LLM chatbots solve fluency but make most of these worse: they ar
 ## 3. Users, context and clinical boundary
 
 ### 3.1 Target users
-- **Primary:** adults (18+) experiencing everyday, subclinical distress — stress, low mood, worry, loneliness — who want a private, low-friction space to talk and learn coping skills.
-- **Secondary:** researchers and clinicians who need to inspect *why* the system chose a response strategy (debug view, exportable summary that the user chooses to share).
+- Primary: adults (18+) experiencing everyday, subclinical distress (stress, low mood, worry, loneliness) who want a private, low-friction space to talk and learn coping skills.
+- Secondary: researchers and clinicians who need to inspect *why* the system chose a response strategy (debug view, exportable summary that the user chooses to share).
 
 ### 3.2 Use context
 - Single user on their own device, through a web browser, talking to a locally hosted backend.
@@ -48,15 +48,15 @@ General-purpose LLM chatbots solve fluency but make most of these worse: they ar
 - Sessions are short and irregular; the system must answer quickly and remember context between sessions (unless the user chose ephemeral mode).
 
 ### 3.3 Clinical boundary (shown in the product, not only in docs)
-- OASIS is a **subclinical support and screening tool, not a diagnostic system**. It complements and never replaces a clinician.
+- OASIS is a subclinical support and screening tool, not a diagnostic system. It complements and never replaces a clinician.
 - This statement appears in onboarding, in the persistent footer of the chat page, alongside every assessment result, and in the README.
-- PHQ-9 and GAD-7 use their **standard published items and scoring bands only**. No other instrument, threshold or clinical rule is invented.
-- Any clinical logic beyond standard PHQ-9/GAD-7 scoring (crisis phrases, post-crisis policy, router weights, technique scripts, trigger thresholds, etc.) is flagged **"needs review by a qualified clinician"** and tracked in [clinical_review.md](clinical_review.md).
+- PHQ-9 and GAD-7 use their standard published items and scoring bands only. No other instrument, threshold or clinical rule is invented.
+- Any clinical logic beyond standard PHQ-9/GAD-7 scoring (crisis phrases, post-crisis policy, router weights, technique scripts, trigger thresholds, etc.) is flagged "needs review by a qualified clinician" and tracked in [clinical_review.md](clinical_review.md).
 - No reply may contain a diagnosis or medication advice.
 
 ## 4. The ten limitations → feature requirements
 
-Each row is a feature with an acceptance criterion that an automated test (or, where marked **[manual]**, a scripted manual check) can verify.
+Each row is a feature with an acceptance criterion that an automated test (or, where marked [manual], a scripted manual check) can verify.
 
 | # | Limitation | Feature requirement | Acceptance criterion | Phase |
 |---|---|---|---|---|
@@ -66,9 +66,9 @@ Each row is a feature with an acceptance criterion that an automated test (or, w
 | L4 | Access disparity | Quantised open-source LLM (Qwen3.5-4B GGUF Q4_K_M by default) served locally by `llama-server`; no paid API. | No outbound network call except to the configured local LLM endpoint (test with network sockets blocked); dependency licences listed. | 1, 14 |
 | L5 | Ambiguous privacy | Plain-language data-use disclosure at first use; an explicit, documented policy for self-harm disclosures (what is stored, for how long, who can see it). | API rejects chat with `403 consent_required` until consent is recorded; disclosure text and self-harm policy present in UI and docs (snapshot test). | 10 |
 | L6 | Lack of autonomy | Export all of my data; delete account and data; ephemeral (session-only) mode. | (a) Export → import into a fresh store reproduces the same records; (b) after delete, an automated crawl of every table finds zero rows for the user and a marker string is absent from the DB and WAL files; (c) ephemeral session creates no files on disk (filesystem diff test). | 10 |
-| L7 | High implementation cost | Runs on one mid-range CPU laptop; measured and documented cost profile (RAM, latency, concurrency). | Fresh-machine install from README succeeds **[manual]**; measured RAM, p50/p95 latency and max concurrency recorded in `docs/reports/`. | 13, 14 |
+| L7 | High implementation cost | Runs on one mid-range CPU laptop; measured and documented cost profile (RAM, latency, concurrency). | Fresh-machine install from README succeeds [manual]; measured RAM, p50/p95 latency and max concurrency recorded in `docs/reports/`. | 13, 14 |
 | L8 | Access bias | Offline bias-evaluation suite over demographic, dialect and cultural variants of identical scenarios. | One command runs the suite; decision-plane outputs (crisis flag, mode, triggers) match exactly across variants (100%); tone/length/resource-surfacing disparities computed and flagged against thresholds; report committed. | 12 |
-| L9 | Low engagement | Fast replies, session continuity, warm companion/listening mode. | Companion replies follow "validate, then one gentle question" (automated checks); history restored after restart; latency targets met on the reference laptop **[manual measurement]**. | 1, 6, 13 |
+| L9 | Low engagement | Fast replies, session continuity, warm companion/listening mode. | Companion replies follow "validate, then one gentle question" (automated checks); history restored after restart; latency targets met on the reference laptop [manual measurement]. | 1, 6, 13 |
 | L10 | Technical & usability glitches | Graceful degradation: every request ends in a real or fallback reply within a hard timeout; safety survives any pipeline failure; usability checklist. | Fault-injection matrix (LLM down/slow/empty, guard rejects twice, DB locked/unavailable, explainability error) passes: every request answers within the timeout, crisis handoff works with LLM killed and storage broken; static help button works with the backend down. | 2, 13 |
 
 ## 5. Functional requirements
@@ -78,11 +78,11 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 ### 5.1 Safety (FR-SAF)
 | ID | Requirement |
 |---|---|
-| FR-SAF-1 | Every user message passes the safety layer **before** any storage access, planning or LLM call. |
+| FR-SAF-1 | Every user message passes the safety layer before any storage access, planning or LLM call. |
 | FR-SAF-2 | The safety layer normalises text (Unicode NFKC, case-fold, stretched letters, spacing/punctuation tricks, common leetspeak) then matches tiered phrase patterns from versioned data files: explicit intent, passive ideation, plan/method references, burden statements. |
-| FR-SAF-3 | Any match triggers the crisis handoff. There is **no negation-based suppression**. The only false-positive reduction is a short allow-list of unambiguous idioms, each with its own test. |
+| FR-SAF-3 | Any match triggers the crisis handoff. There is no negation-based suppression. The only false-positive reduction is a short allow-list of unambiguous idioms, each with its own test. |
 | FR-SAF-4 | An optional classifier may only *add* alerts, never remove them. |
-| FR-SAF-5 | The crisis handoff returns a fixed reply with verified crisis/human-help resources, makes **zero LLM calls**, and runs no routing, companion or guard logic. |
+| FR-SAF-5 | The crisis handoff returns a fixed reply with verified crisis/human-help resources, makes zero LLM calls, and runs no routing, companion or guard logic. |
 | FR-SAF-6 | The safety layer fails closed: an internal error is treated as a crisis verdict. |
 | FR-SAF-7 | The handoff works with the LLM process killed and the database unavailable. The audit entry is written afterwards, in saved mode only, and its failure never affects the reply. |
 | FR-SAF-8 | Post-crisis (provisional, clinician review): every later message still passes the safety gate first; the bot stays in minimal supportive mode until the user says they want to continue. |
@@ -90,7 +90,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 | FR-SAF-10 | A static "Need help now?" button on every page shows crisis resources without any backend call. |
 | FR-SAF-11 | Until Phase 2 passes, a startup tripwire refuses to start with the safety stub unless a development flag is set, and the UI shows a development banner. (Retired in Phase 2 with the stub.) |
 
-### 5.2 Symptom screening — PHQ-9 / GAD-7 (FR-ASM)
+### 5.2 Symptom screening: PHQ-9 and GAD-7 (FR-ASM)
 | ID | Requirement |
 |---|---|
 | FR-ASM-1 | Official item wording and answer options stored in data files, verified against the published source in Phase 3. |
@@ -101,7 +101,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 | FR-ASM-6 | The functional-difficulty question is recorded, not scored. Incomplete questionnaires are never scored. |
 | FR-ASM-7 | Results are shown in plain language with the non-diagnostic statement, and fed to the planner and router. |
 
-### 5.3 Therapy router — CBT / DBT / mindfulness (FR-RTR)
+### 5.3 Therapy router: CBT, DBT and mindfulness (FR-RTR)
 | ID | Requirement |
 |---|---|
 | FR-RTR-1 | A first-class, deterministic component: signals object in, mode decision + ranked per-signal contributions out. |
@@ -136,7 +136,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 |---|---|
 | FR-TRK-1 | Text-only per-turn features: valence, emotion scores, first-person pronoun rate, absolutist-word rate, message length, within-session reply latency (capped), time of day. |
 | FR-TRK-2 | Aggregation: per-session mean and variance, exponentially weighted trend, change flag against the user's own baseline once enough sessions exist. |
-| FR-TRK-3 | Viewable, exportable, deletable; labelled **"language-based mood trend, not a clinical measure."** |
+| FR-TRK-3 | Viewable, exportable, deletable; labelled "language-based mood trend, not a clinical measure." |
 | FR-TRK-4 | Each feature carries a citation (checked in Phase 8) or is labelled exploratory. |
 
 ### 5.8 Explainability (FR-XAI)
@@ -161,7 +161,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 |---|---|
 | FR-CUL-1 | User-editable style profile: directness (direct / balanced / indirect), formality (casual / neutral / formal). |
 | FR-CUL-2 | The system may *suggest* a change when it notices indirect phrasing; it never switches silently and never infers ethnicity or nationality. |
-| FR-CUL-3 | Style changes framing only — never routing, triggers or safety (invariance tests). |
+| FR-CUL-3 | Style changes framing only, never routing, triggers or safety (invariance tests). |
 
 ## 6. Non-functional requirements
 
@@ -173,7 +173,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 | End-to-end | Every request ends in a real or fallback reply inside a hard timeout (default 30 s, configurable) |
 | Reply length | ~150 tokens cap; returned whole, not streamed (guard must see the full draft) |
 | Prompt | Token-budgeted (system text, plan, short history, one snippet) |
-| Concurrency | Measured in Phase 14: 2 people at once with every message served on the reference laptop; beyond that "busy" at once ([phase-14.md](reports/phase-14.md)) |
+| Concurrency | Measured in Phase 14: 2 people at once with every message served on the reference laptop; beyond that "busy" at once ([reports.md](reports.md)) |
 
 ### 6.2 Reliability
 - No silent hang: every failure path maps to a defined user-facing message ([design.md §12](design.md)).
@@ -214,7 +214,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 6. Crisis policy as in FR-SAF-5..9, provisional pending clinician review.
 
 ## 9. Ground rules
-- Nobody uses the bot — not even friends — until Phase 2 (safety) passes.
+- Nobody uses the bot, not even friends, until Phase 2 (safety) passes.
 - No real user data is collected until Phase 10 (privacy controls) exists.
 - Testing with human participants needs institutional ethics approval and is outside this build.
 
@@ -235,7 +235,7 @@ Requirement IDs are referenced by tests (`# covers: FR-SAF-3`).
 | # | Item | Owner | Needed by |
 |---|---|---|---|
 | O1 | Open-source licence choice for the repository: MIT (2026-10-27) | Smriti | Done |
-| O2 | Crisis resource list — two tiers decided 2026-10-07; built in Phase 2 as 40 Tier 1 countries with a verified crisis line and 184 Tier 2 countries and territories with the emergency number (target was 64 Tier 1; the rest could not be verified on an official site); originally India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia); numbers verified against official sources at build time | Build | Phase 2 |
+| O2 | Crisis resource list: two tiers decided 2026-10-07; built in Phase 2 as 40 Tier 1 countries with a verified crisis line and 184 Tier 2 countries and territories with the emergency number (target was 64 Tier 1; the rest could not be verified on an official site); originally India, Pakistan, Bangladesh, Sri Lanka, Nepal, Bhutan, Myanmar, China, South Korea, Japan, Thailand, Maldives, Vietnam, Hong Kong, Taiwan, Cambodia, Malaysia, Singapore, Russia); numbers verified against official sources at build time | Build | Phase 2 |
 | O3 | Qualified clinician reviewer for [clinical_review.md](clinical_review.md) | Smriti | Before any real use |
 | O4 | Institutional ethics approval for any human-participant testing | Smriti | Before usability testing with participants |
 | O5 | Optional PostgreSQL adapter | Smriti decides | Phase 14, only if requested |

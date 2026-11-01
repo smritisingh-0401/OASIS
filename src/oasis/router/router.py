@@ -29,21 +29,17 @@ def route(
     def decide(reason: str, state: RouterState, offer: RouterMode | None = None) -> RouteDecision:
         return RouteDecision(state.current, reason, scores, state, offer)
 
-    # Grounding keeps going under fresh overwhelm instead of restarting at step one; any
-    # other exercise gives way to the acute override below.
     acute = signals.overwhelm >= cfg.acute_threshold
     if rs.exercise is not None and not signals.opt_out and (rs.current == "grounding" or not acute):
         return decide("mid_exercise_hold", rs)
     if acute:
-        # Immediate, even mid-hysteresis or mid-exercise; consents and shown items are kept.
         fresh = RouterState(current="grounding", consented=rs.consented,
                             psychoed_shown=rs.psychoed_shown)  # fmt: skip
         return decide("acute_override", fresh)
 
     if rs.exercise is not None or rs.current == "grounding":
-        rs = finish(rs)  # opted out; grounding lasts as long as its script
+        rs = finish(rs)
     if rs.offered is not None:
-        # Typing instead of answering counts as "not now"; the lead must build up again.
         rs = replace(rs, offered=None, challenger=None, streak=0)
 
     leader, runner = scores[0], scores[1]

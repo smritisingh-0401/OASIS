@@ -1,8 +1,5 @@
 "use strict";
 
-// Mood-trend view (design §9, FR-TRK-3). Uses the chat's session token from browser storage,
-// sent only in the X-OASIS-Session header (rules P3, F5). All text goes in with textContent
-// (rules F4); the charts are plain SVG built here, with no outside requests.
 
 // The SVG namespace, read from an <svg> the HTML parser already made, so no URL-like
 // string appears in the page's code (see the no-external-requests test).
@@ -10,7 +7,6 @@ const SVG = document.querySelector(".chart svg").namespaceURI;
 const W = 600;
 const H = 200;
 const PAD = 24;
-// VADER's own cut-offs for positive, neutral and negative text.
 const NEUTRAL = 0.05;
 const NAMES = {
   valence: "How positive or negative the words are",
@@ -44,8 +40,6 @@ function messageCount(n) {
   return n === 1 ? "1 message" : `${n} messages`;
 }
 
-// One chart on a -1..1 scale: a solid line with dots, an optional dashed line, rings on
-// flagged points, and a zero line.
 function chart(container, values, { dashed = [], flags = [], label }) {
   const x = (i, n) => (n === 1 ? W / 2 : PAD + (i * (W - 2 * PAD)) / (n - 1));
   const y = (v) => PAD + ((1 - v) / 2) * (H - 2 * PAD);
@@ -84,7 +78,6 @@ function showNow(current) {
   note.textContent = label;
 }
 
-// One graph per earlier conversation, newest first (New chat, 2026-10-29).
 function showEarlier(sessions) {
   const earlier = sessions.filter((s) => !s.is_current).reverse();
   document.getElementById("earlier").hidden = earlier.length === 0;

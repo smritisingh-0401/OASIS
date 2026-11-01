@@ -21,13 +21,10 @@ TEMPLATES: dict[str, str] = {
         'find them under "Need help now?". Whenever you feel ready to keep talking, just '
         'say so or press "Continue talking".'
     ),
-    # An assessment step could not be saved, or a card button arrived with no open
-    # questionnaire (CR-18).
     "assessment_unavailable": (
         "I can't keep track of the questionnaire right now, so let's leave it for the moment. "
         "We can keep talking, and you can try it again later."
     ),
-    # Exercise consent and control (CR-18, CR-12).
     "exercise_declined": "That's completely fine. We can just keep talking. What's on your mind?",
     "exercise_stopped": (
         "Okay, let's stop the exercise there. We can keep talking about whatever feels right."
@@ -35,16 +32,12 @@ TEMPLATES: dict[str, str] = {
     "exercise_unavailable": (
         "That exercise isn't open any more, so let's leave it for now. We can keep talking."
     ),
-    # Companion drafts rejected twice: neutral, so it fits good news as well as bad (CR-18).
     "companion_fallback": "I hear you. What feels most important to talk about right now?",
-    # "Who is your owner?" and the like (demo testing, 2026-10-29): fixed, so the model
-    # cannot name a company. True in both the local and the shared test version.
     "identity": (
         "I'm OASIS, a listening companion. I'm an independent project that runs an open "
         "language model, and I'm not made by any company. I'm not a person, a therapist or a "
         "doctor. What would you like to talk about?"
     ),
-    # The same for a listening reply, which asks nothing (demo testing, 2026-10-29).
     "listen_fallback": "I hear you. Take your time, I'm listening.",
 }
 

@@ -26,7 +26,7 @@ from oasis.types import ConversationState
 NOW = datetime.datetime(2026, 11, 1, 12, 0, tzinfo=datetime.UTC)
 ITEMS = load_all()
 SLEEP = [i.id for i in ITEMS].index("sleep")
-UNCUED = "can bad sleep make my mood worse?"  # no cue phrase, asks to understand
+UNCUED = "can bad sleep make my mood worse?"
 
 
 class _Embedder(Embedder):
@@ -38,7 +38,7 @@ class _Embedder(Embedder):
     def embed(self, texts: Sequence[str]) -> Any:
         if self.fail and len(texts) == 1:
             raise RuntimeError("onnx")
-        if len(texts) > 1:  # the items, at start-up
+        if len(texts) > 1:
             return np.eye(len(texts))
         v = np.zeros(len(ITEMS))
         v[self.target] = self.similarity
@@ -61,7 +61,7 @@ def test_only_questions_are_matched(message: str, question: bool) -> None:
 def test_the_closest_item_above_the_threshold_wins() -> None:
     assert _matcher().match(UNCUED, ()) == ITEMS[SLEEP]
     assert _matcher(similarity=0.4).match(UNCUED, ()) is None
-    assert _matcher().match(UNCUED, {"sleep"}) is None  # each item once per session
+    assert _matcher().match(UNCUED, {"sleep"}) is None
 
 
 def test_a_model_error_means_no_item() -> None:
@@ -76,7 +76,7 @@ def test_the_planner_uses_the_match_only_when_the_cue_lexicon_found_nothing() ->
     plan = plan_turn(UNCUED, ConversationState(now=NOW, psychoed_match="sleep"))
     assert (plan.mode, plan.reason_codes) == ("psychoed", ("psychoed.sleep",))
     assert plan_turn(UNCUED, ConversationState(now=NOW)).mode != "psychoed"
-    cued = "is it normal to have panic attacks?"  # the lexicon's item wins
+    cued = "is it normal to have panic attacks?"
     assert plan_turn(cued, ConversationState(now=NOW, psychoed_match="sleep")).reason_codes == (
         "psychoed.panic",
     )

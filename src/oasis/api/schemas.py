@@ -25,7 +25,7 @@ class AnswerAction(BaseModel):
     type: Literal["assessment_answer"]
     value: int = Field(ge=0, le=3)
     instrument: InstrumentId
-    item: int | None = Field(ge=1, le=9)  # None answers the functional question
+    item: int | None = Field(ge=1, le=9)
 
 
 class StepAction(BaseModel):
@@ -56,10 +56,7 @@ Action = Annotated[
 class ChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # With an action this is the label of the button pressed, so history stays readable
-    # and the safety gate still sees text (design §12).
     message: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
-    # Client clock: used later for local hour-of-day only, never for latency (design §9.1).
     client_ts: AwareDatetime
     action: Action | None = None
 
@@ -86,7 +83,7 @@ class ExerciseCardOut(BaseModel):
 
 class ChatResponse(BaseModel):
     turn_id: str
-    preface: str | None = None  # a fixed message shown as its own bubble before `reply`
+    preface: str | None = None
     reply: str
     mode: Mode
     templated: bool
@@ -94,9 +91,7 @@ class ChatResponse(BaseModel):
     degraded: list[str]
     assessment: AssessmentCardOut | None = None
     exercise: ExerciseCardOut | None = None
-    # GET /explanations/{explanation_id}; None for a crisis reply or an unsaved turn.
     explanation_id: str | None = None
-    # Point them to the indirect style in Settings; never changes the profile (FR-CUL-2).
     style_suggestion: bool = False
 
 
@@ -113,7 +108,7 @@ class UserSettingsBody(BaseModel):
 class SessionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    ephemeral: bool = False  # kept in memory only, never written to disk (FR-PRV-4)
+    ephemeral: bool = False
 
 
 class SessionResponse(BaseModel):
@@ -123,7 +118,7 @@ class SessionResponse(BaseModel):
 
 class SessionStatus(BaseModel):
     ephemeral: bool
-    consented: bool  # accepted the current data notice
+    consented: bool
     disclosure_version: str
 
 
@@ -136,7 +131,7 @@ class ConsentRequest(BaseModel):
 class DeleteRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    confirm: Literal["DELETE"]  # typed by the user on the settings page
+    confirm: Literal["DELETE"]
 
 
 class HistoryTurn(BaseModel):
@@ -150,13 +145,13 @@ class HistoryTurn(BaseModel):
 
 class HistoryResponse(BaseModel):
     turns: list[HistoryTurn]
-    assessment: AssessmentCardOut | None = None  # card of the open questionnaire, if any
-    exercise: ExerciseCardOut | None = None  # open exercise offer or running exercise, if any
+    assessment: AssessmentCardOut | None = None
+    exercise: ExerciseCardOut | None = None
 
 
 class FeatureInfoOut(BaseModel):
     name: str
-    source: str | None  # a checked citation; None when exploratory (FR-TRK-4)
+    source: str | None
     note: str | None
     exploratory: bool
 
@@ -167,7 +162,7 @@ class SessionTrendOut(BaseModel):
     turns: int
     mean: dict[str, float | None]
     variance: dict[str, float | None]
-    valence: list[float]  # turn by turn (New chat, 2026-10-29)
+    valence: list[float]
     is_current: bool
 
 
@@ -177,12 +172,12 @@ class TurnPointOut(BaseModel):
 
 
 class TrendsResponse(BaseModel):
-    label: str  # "language-based mood trend, not a clinical measure" (FR-TRK-3)
+    label: str
     features: list[FeatureInfoOut]
     sessions: list[SessionTrendOut]
     ewma: list[float]
     change_flags: list[bool]
-    current: list[TurnPointOut]  # this session, turn by turn
+    current: list[TurnPointOut]
 
 
 class HealthResponse(BaseModel):

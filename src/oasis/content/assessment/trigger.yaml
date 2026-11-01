@@ -12,7 +12,7 @@ repeat_after_days: 10   # 14 until 2026-10-12
 paused_expiry_hours: 24
 max_evidence: 1.0       # cap on one turn's evidence
 # Weights were raised from 0.5 to 0.7 (duration and uncontrolled worry 0.3 to 0.4) after the
-# first measurement on the labelled conversations; see docs/reports/phase-03.md.
+# first measurement on the labelled conversations; see docs/reports.md.
 domains:
   # PHQ-9 items 1-8 (item 9 is handled by the safety layer)
   anhedonia:

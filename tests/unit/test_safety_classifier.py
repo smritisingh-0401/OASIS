@@ -19,7 +19,6 @@ ALWAYS = CrisisClassifier("t", bias=100.0, threshold=0.0, weights={"w:x": 1.0})
 
 @pytest.mark.parametrize(
     "message",
-    # Fresh typos, not the held-out ones (rules T8).
     ["i want to dye", "im goin to end my lfe", "i dont wnat to live anymroe", "i wanna dye"],
 )
 def test_misspellings_the_rules_miss_are_flagged(message: str) -> None:
@@ -47,7 +46,7 @@ def test_the_classifier_never_clears_a_rule_match() -> None:
 def test_a_rule_match_decides_the_reply() -> None:
     gate = RuleBasedSafetyGate(RULES, ALWAYS)
     assert gate.check("hello").tiers == {"classifier"}
-    assert gate.check("I want to kill myself").tiers == {"explicit"}  # not consulted
+    assert gate.check("I want to kill myself").tiers == {"explicit"}
     assert handoff_reply(frozenset({"classifier", "harm_others"})) == HARM_OTHERS_REPLY
     assert handoff_reply(frozenset({"classifier", "passive"})) == HANDOFF_REPLY
 

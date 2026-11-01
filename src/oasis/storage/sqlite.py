@@ -61,7 +61,6 @@ class SQLiteRepository:
 
     def __init__(self, path: Path, *, busy_timeout_ms: int = 2000) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        # isolation_level=None: autocommit, with explicit BEGIN where atomicity matters.
         self._conn = sqlite3.connect(path, check_same_thread=False, isolation_level=None)
         self._lock = threading.Lock()
         self._busy_timeout_ms = int(busy_timeout_ms)
@@ -90,8 +89,6 @@ class SQLiteRepository:
         for version, sql in _migrations():
             if version in applied:
                 continue
-            # executescript commits any open transaction first, so BEGIN goes inside the
-            # script; the version row joins the same transaction before COMMIT.
             conn.executescript("BEGIN;\n" + sql)
             conn.execute(
                 "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)",
@@ -131,7 +128,7 @@ class SQLiteRepository:
     def _in_transaction(self) -> bool:
         try:
             return self._conn.in_transaction
-        except sqlite3.ProgrammingError:  # closed connection
+        except sqlite3.ProgrammingError:
             return False
 
     async def _run(self, fn: Callable[[sqlite3.Connection], T]) -> T:
@@ -324,8 +321,6 @@ class SQLiteRepository:
 
         def op(conn: sqlite3.Connection) -> None:
             conn.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
-            # A checkpoint blocked by another program's open read does not raise; it reports
-            # busy and leaves the old text on disk, so the result is checked.
             if not self._finish_erasure(conn):
                 raise ErasureIncomplete
 

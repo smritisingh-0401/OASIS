@@ -58,9 +58,6 @@ def _detectors() -> list[tuple[str, Any]]:
     return [(f"{f}.{name}", lex) for f in LEXICONS for name, lex in load(f).items()]
 
 
-# --- SHAP values ---------------------------------------------------------------------------
-
-
 @settings(max_examples=200, deadline=None)
 @given(st.lists(st.sampled_from(VOCAB), min_size=1, max_size=40).map(" ".join))
 def test_additivity_holds_for_every_detector(text: str) -> None:
@@ -98,7 +95,7 @@ def test_features_are_ranked_and_never_zero() -> None:
     values = [abs(f.phi) for f in e.features]
     assert values == sorted(values, reverse=True)
     assert all(v > 0 for v in values)
-    assert e.features[0].phi > 0  # "always" and "nobody" pushed the score up
+    assert e.features[0].phi > 0
 
 
 def test_a_score_below_zero_is_marked_clipped() -> None:
@@ -115,9 +112,6 @@ def test_a_score_past_the_clip_is_marked_clipped() -> None:
     e = explain_lexicon("distortions.overgeneralisation", lex, norm, len(norm.split()))
     assert e.output > 1.0
     assert e.clipped
-
-
-# --- the record ----------------------------------------------------------------------------
 
 
 def test_record_has_the_design_fields() -> None:
@@ -153,8 +147,6 @@ def test_router_breakdown_is_exact() -> None:
 def test_same_input_gives_byte_identical_json(message: str) -> None:
     text = build(message, _plan(message))
     assert text == build(message, _plan(message))
-    # Canonical form (sorted keys, no spaces): the bytes do not depend on the order the code
-    # happens to build the record in.
     assert text == json.dumps(json.loads(text), sort_keys=True, separators=(",", ":"),
                               ensure_ascii=False)  # fmt: skip
 
@@ -177,7 +169,7 @@ def test_harsh_label_rule_is_part_of_the_sum() -> None:
 
 
 def test_button_press_explains_the_plan_but_no_detectors() -> None:
-    r = _record(MESSAGES[0], typed=False)  # words that would fire several scorers if typed
+    r = _record(MESSAGES[0], typed=False)
     assert r["detectors"] == []
     assert r["status"] == "ok"
 
@@ -213,7 +205,6 @@ def test_a_wrong_shap_value_marks_the_record_inconsistent(
 def test_a_wrong_harsh_label_share_marks_the_record_inconsistent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Long enough that the rule's share (4.5 / 12 words) stays below the clip when doubled.
     message = "honestly most days I think I'm a horrible person and that is that"
     assert _record(message)["status"] == "ok"
     real = builder._with_harsh_label
@@ -225,9 +216,6 @@ def test_unavailable_record_says_why() -> None:
     r = json.loads(unavailable("explain.error"))
     assert (r["status"], r["reason"], r["scope_note"]) == ("unavailable", "explain.error",
                                                             SCOPE_NOTE)  # fmt: skip
-
-
-# --- plain language ------------------------------------------------------------------------
 
 
 def test_thinking_trap_is_named_in_plain_words() -> None:
@@ -249,7 +237,6 @@ def test_a_fallback_reply_says_it_was_prewritten() -> None:
     assert any("pre-written" in b for b in r["plain_language"])
 
 
-# Every planner reason code that decides a reply without the router (planner.py).
 UNROUTED_CODES = [
     "assessment.accept", "assessment.answer", "assessment.decline", "assessment.pause",
     "assessment.resume", "assessment.abort", "assessment.none_open", "assessment.free_text",
@@ -270,7 +257,7 @@ def test_a_psychoeducation_reply_says_what_prompted_it() -> None:
     assert plan.mode == "psychoed"
     bullets = _record(MESSAGES[6])["plain_language"]
     assert builder.config().reasons["psychoed.*"] in bullets
-    assert builder.config().modes["psychoed"] not in bullets  # one bullet, not two
+    assert builder.config().modes["psychoed"] not in bullets
 
 
 @pytest.mark.parametrize(("message", "key"), [
@@ -322,8 +309,6 @@ def test_an_invalid_config_is_rejected(change: Any) -> None:
     with pytest.raises(ValueError):  # noqa: PT011 - any validation message
         builder.parse(raw)
 
-
-# --- engine: every reply explained, fail-soft ----------------------------------------------
 
 GATE = RuleBasedSafetyGate(load_ruleset())
 
@@ -431,7 +416,6 @@ def test_a_longer_message_explains_the_sentence_that_was_scored(message: str) ->
     from oasis.core.signals import extract
 
     signals = extract(message)
-    # An emotion is the larger of its hand-written and learned scorers (add-only).
     used = {(f"emotions.{e}", f"emotions_learned.{e}"): v for e, v in signals.emotions.items()}
     used |= {("cues.dysregulation",): signals.dysregulation, ("cues.overwhelm",): signals.overwhelm}
     record = _record(message)

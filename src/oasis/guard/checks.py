@@ -52,17 +52,14 @@ HARD_RULES = frozenset({"no_praise", "no_advice", "no_dependency", "no_agreeing"
                         "brief", "no_self_label", "no_presupposing", "no_diagnosis",
                         "no_medication", "not_empty", "ack_only", "no_exercise_step",
                         "no_maker_claim", "no_toxic_positivity"})  # fmt: skip
-# Checked on every generated reply: (rule, phrase list).
 EVERY_REPLY = (("no_self_label", "self_label"), ("no_diagnosis", "diagnosis"),
                ("no_medication", "medication"), ("no_dependency", "no_dependency"),
                ("no_exercise_step", "made_up_step"), ("no_maker_claim", "maker_claim"),
                ("no_toxic_positivity", "toxic_positivity"))  # fmt: skip
-REFUSABLE = frozenset({"diagnosis", "medication"})  # a refusal clause may name these
-BRIEF_MAX = 25  # words in a short acknowledgement
-ECHO = 0.6  # share of a claim's content words a sentence must repeat to echo it (design §8.2)
+REFUSABLE = frozenset({"diagnosis", "medication"})
+BRIEF_MAX = 25
+ECHO = 0.6
 
-# Function words dropped before comparing a reply with a claim, so "I'm such a failure" and
-# "you are a failure" share their content word. Matched on the base form.
 _STOP = (
     "i im ive id ill me my myself mine you youre youve youd youll your yours yourself a "
     "an the is am are was were be been being to of at in on for it its that this these "
@@ -76,11 +73,9 @@ _CLAUSE = re.compile(r"[,;:]+|\b(?:and|but)\b")
 
 Rules = Mapping[str, tuple[re.Pattern[str], ...]]
 
-# Global labels (G-LABEL), beyond the listed phrasings: "<subject> (such) a/an/the" and up to
-# three words, harsh when they hold a harsh word or a person word after a negative adjective.
 FIRST_PERSON = r"im|i am|i feel like(?: im| i am)?"
 SECOND_PERSON = r"youre|you are"
-HARSH = -0.3  # VADER score at or below which an adjective before a person word is harsh
+HARSH = -0.3
 _INTENSIFIERS = r"(?: (?:such|so|really|just|truly|basically|literally|kind of|sort of))*"
 _LABEL = (
     r"(?<!mean )(?<!make )\b(?:{subject})" + _INTENSIFIERS + r" (?:a|an|the)((?: [a-z]+){{1,3}})"
@@ -117,7 +112,7 @@ def parse_guard(raw: Mapping[str, Any]) -> dict[str, tuple[re.Pattern[str], ...]
 
 @functools.cache
 def vader() -> SentimentIntensityAnalyzer:
-    return SentimentIntensityAnalyzer()  # loads the bundled lexicon once
+    return SentimentIntensityAnalyzer()
 
 
 @functools.cache
@@ -169,14 +164,14 @@ def check(draft: str, plan: Plan, agreement: AgreementModel | None = None) -> Gu
         if "one_question" in active and (norm.count("?") != 1 or not norm.rstrip().endswith("?")):
             failed.append("one_question")
         if "no_question" in active and "?" in norm:
-            failed.append("no_question")  # a listening reply (demo testing, 2026-10-29)
+            failed.append("no_question")
         sentences = [s for s in re.split(r"(?<=[.!?])\s+", norm.strip()) if s]
         if "brief" in active and (
             "?" in norm or len(sentences) > 1 or len(norm.split()) > BRIEF_MAX
         ):
-            failed.append("brief")  # a short acknowledgement (demo testing, 2026-10-29)
+            failed.append("brief")
     if plan.is_step and _any(rules["no_praise"], norm):
-        failed.append("no_praise")  # "That is a good start." before a step (tone check)
+        failed.append("no_praise")
     if plan.mode == "companion":
         active = [r for r in COMPANION_RULES if r in plan.constraints]
         failed += [r for r in ("no_praise", "no_advice") if r in active and _any(rules[r], norm)]
@@ -188,7 +183,6 @@ def check(draft: str, plan: Plan, agreement: AgreementModel | None = None) -> Gu
         failed += _claim_rules(norm, plan.claims, rules)
         if agreement and "no_agreeing" not in failed and agreement.agrees(draft, plan.claim_texts):
             failed.append("no_agreeing")
-    # "I agree with you" agrees even when the reply words the claim differently from theirs.
     strong = _any(rules["strong_agreement"], norm)
     if strong and "no_agreeing" in plan.constraints and "no_agreeing" not in failed:
         failed.append("no_agreeing")

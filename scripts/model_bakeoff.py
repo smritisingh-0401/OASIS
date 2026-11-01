@@ -7,7 +7,7 @@ Usage (one --model per candidate, NAME=PATH):
         --model qwen3.5-4b=models/Qwen3.5-4B-Q4_K_M.gguf \
         --model gemma4-e4b=models/gemma-4-E4B-it-Q4_K_M.gguf \
         --model phi4-mini=models/Phi-4-mini-instruct-Q4_K_M.gguf \
-        --out docs/reports/bakeoff.json
+        --out bakeoff.json
 
 Record the llama.cpp build (`llama-server --version`) with the results: the hybrid
 architecture of Qwen3.5 needs a recent build, and the build is pinned from these runs.
@@ -108,7 +108,7 @@ def bench_model(args: argparse.Namespace, name: str, model_path: str) -> dict[st
     try:
         wait_healthy(url, args.load_timeout)
         proc = psutil.Process(server.pid)
-        stream_once(url, "Hello.", 16)  # warm-up, not measured
+        stream_once(url, "Hello.", 16)
         runs = [stream_once(url, p, args.max_tokens) for _ in range(args.runs) for p in PROMPTS]
         rss_mb = proc.memory_info().rss / 2**20
     finally:

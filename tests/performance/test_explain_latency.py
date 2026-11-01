@@ -14,7 +14,7 @@ MESSAGES = [
     "I had a long day at work and I'm tired",
     "I always mess everything up and nobody likes me",
     "I'm so anxious and worried, everything is too much and I can't cope",
-    "I always feel like a failure and nobody cares " * 40,  # ~1 900 characters
+    "I always feel like a failure and nobody cares " * 40,
 ]
 
 
@@ -22,8 +22,7 @@ def test_explanation_stays_under_20ms_per_reply() -> None:
     state = ConversationState(now=NOW)
     for text in MESSAGES:
         plan = plan_turn(text, state)
-        build(text, plan)  # first call loads the content files and background means
-        # Best of 5 measures the builder's own cost, not scheduler noise.
+        build(text, plan)
         best = min(_elapsed_ms(text, plan) for _ in range(5))
         assert best < 20, f"{best:.2f} ms for {text[:30]!r}"
 

@@ -33,7 +33,6 @@ def security_middleware(
     async def middleware(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        # Fast path for an honest Content-Length; BodyLimit counts the bytes themselves.
         length = request.headers.get("content-length")
         if length is not None and (not length.isdigit() or int(length) > max_body_bytes):
             response: Response = error_response(413, "body_too_large", "Request is too large.")

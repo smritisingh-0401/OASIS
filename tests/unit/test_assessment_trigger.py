@@ -18,7 +18,6 @@ LABELLED = (
     Path(__file__).resolve().parents[1] / "data" / "assessment" / "labelled_conversations.yaml"
 )
 
-# With W = 6 and k = 2 (k lowered from 3, 2026-10-12) these offer on the fourth turn.
 LOW_MOOD = [
     "I've been feeling really down for weeks",
     "nothing feels enjoyable anymore",
@@ -73,8 +72,6 @@ def test_explicit_request_offers_immediately(text: str, inst: str) -> None:
     assert json.loads(offer.reason)["reason"] == "explicit_request"
 
 
-# --- guards: all but the decline cooldown also block an explicit request ---------------
-
 REQUEST = "can I take a depression test?"
 
 
@@ -93,7 +90,6 @@ def test_recent_decline_blocks_unprompted_offers_for_24_hours() -> None:
 
 
 def test_explicit_request_overrides_a_recent_decline() -> None:
-    # The cooldown stops OASIS from asking again; it never refuses a user who asks (CR-10).
     declined = _record("PHQ9", "declined", datetime.timedelta(minutes=5))
     offer = decide((), REQUEST, (declined,), NOW)
     assert offer is not None
@@ -109,9 +105,6 @@ def test_completed_instrument_is_not_repeated_within_10_days() -> None:
 
 
 def test_an_earlier_crisis_does_not_block_offers() -> None:
-    # Once post-crisis mode is cleared (the planner holds everything until then), an earlier
-    # crisis no longer stops an offer (Smriti, 2026-10-12; was blocked since 2026-10-09).
-    # Item 9 still escalates to crisis during the questionnaire.
     crisis = (TurnRecord("p", 99, "placeholder", "x", "crisis", ""),)
     assert decide(_history(*LOW_MOOD[:-1]) + crisis, LOW_MOOD[-1], (), NOW) is not None
     offer = decide(crisis, REQUEST, (), NOW)
@@ -124,9 +117,6 @@ def test_no_offer_until_post_crisis_mode_is_cleared() -> None:
     plan = plan_turn(LOW_MOOD[-1], held)
     assert plan.mode == "post_crisis"
     assert plan.card is None
-
-
-# --- labelled conversations (reported in full by scripts/trigger_eval.py) -------------
 
 
 def test_labelled_conversations_meet_the_reported_floor() -> None:
@@ -164,5 +154,4 @@ def test_symptoms_described_about_someone_else_do_not_count() -> None:
         "he has no energy and has stopped eating",
     ]
     assert decide(_history(*about_friend[:-1]), about_friend[-1], (), NOW) is None
-    # The same symptoms in the first person do lead to an offer.
     assert decide(_history(*LOW_MOOD[:-1]), LOW_MOOD[-1], (), NOW) is not None

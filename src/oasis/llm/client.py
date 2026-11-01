@@ -48,7 +48,6 @@ def clean_reply(raw: str) -> str:
     opening = _THINK_OPEN.search(text)
     if opening is not None:
         text = text[: opening.start()]
-    # Collapse the gaps left by removed blocks without touching paragraph breaks.
     text = re.sub(r"[ \t]{2,}", " ", text).strip()
     if not text:
         raise LLMFailure("empty")
@@ -75,8 +74,6 @@ class BoundedLLM:
             raise LLMFailure("busy")
         self._pending += 1
         try:
-            # The wait for a slot is bounded by the caller's request deadline; the generation
-            # timeout starts once the model is free, so a queued message is not cut short.
             async with self._slots, asyncio.timeout(timeout_s):
                 return await self._inner.generate(
                     messages, max_tokens=max_tokens, timeout_s=timeout_s

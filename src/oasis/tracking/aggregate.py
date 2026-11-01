@@ -17,22 +17,22 @@ from oasis.types import SignalRecord
 
 @dataclass(frozen=True)
 class SessionSummary:
-    session: int  # 1-based, in order of each session's first turn
+    session: int
     started_at: str
     turns: int
-    mean: Mapping[str, float | None]  # None: the feature had no value in this session
-    variance: Mapping[str, float | None]  # None: fewer than two values
-    valence: tuple[float, ...] = ()  # turn by turn, for the conversation's own graph
-    is_current: bool = False  # the conversation the request came from
+    mean: Mapping[str, float | None]
+    variance: Mapping[str, float | None]
+    valence: tuple[float, ...] = ()
+    is_current: bool = False
 
 
 @dataclass(frozen=True)
 class Trend:
     label: str
     sessions: list[SessionSummary]
-    ewma: list[float]  # over session mean valence
+    ewma: list[float]
     change_flags: list[bool]
-    current: list[tuple[str, float]]  # this session's turns: (time, valence)
+    current: list[tuple[str, float]]
 
 
 def summarise(records: Sequence[SignalRecord], current: str = "") -> list[SessionSummary]:
@@ -77,7 +77,7 @@ def change_flags(values: Sequence[float], k: int, z: float) -> list[bool]:
 
 def trend(records: Sequence[SignalRecord], session_hash: str, cfg: TrackingConfig) -> Trend:
     sessions = summarise(records, session_hash)
-    means = [s.mean["valence"] or 0.0 for s in sessions]  # every turn has a valence
+    means = [s.mean["valence"] or 0.0 for s in sessions]
     current = [(r.created_at, r.features.valence)
                for r in sorted(records, key=lambda r: r.created_at)
                if r.session_hash == session_hash]  # fmt: skip

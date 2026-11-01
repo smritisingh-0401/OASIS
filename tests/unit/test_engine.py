@@ -133,9 +133,6 @@ async def _session(engine: ChatEngine, session_hash: str = "h") -> str:
     return await engine.repo.create_user_session(session_hash)
 
 
-# --- normal path -----------------------------------------------------------------
-
-
 @pytest.mark.anyio
 async def test_normal_turn_is_generated_and_recorded(settings: Settings) -> None:
     llm = FakeLLM(replies=["That sounds long. How are you feeling about it?"])
@@ -172,9 +169,6 @@ async def test_unknown_session_is_rejected(settings: Settings) -> None:
         await _engine(settings).handle_turn("never-created", "hello")
 
 
-# --- safety ordering (rules S1-S5) ------------------------------------------------
-
-
 @pytest.mark.anyio
 async def test_safety_runs_before_any_storage_access(settings: Settings) -> None:
     events: list[str] = []
@@ -204,9 +198,6 @@ async def test_safety_error_fails_closed_into_handoff(settings: Settings) -> Non
     result = await engine.handle_turn("h", "text")
     assert result.mode == "crisis"
     assert result.reply == HANDOFF_REPLY
-
-
-# --- LLM failures (architecture shortcut P3) ---------------------------------------
 
 
 @pytest.mark.anyio
@@ -249,7 +240,6 @@ async def test_unexpected_llm_exception_is_not_swallowed_by_engine(settings: Set
 
     engine = _engine(settings, llm=Weird())
     await _session(engine)
-    # The API layer turns unexpected errors into a templated reply (tested there).
     with pytest.raises(ValueError, match="not an LLMFailure"):
         await engine.handle_turn("h", "hello")
 
@@ -264,9 +254,6 @@ async def test_slow_llm_is_cut_off_by_the_deadline(settings: Settings) -> None:
     assert time.monotonic() - start < 1.0
     assert result.fallback_reason == "llm.timeout"
     assert result.templated is True
-
-
-# --- guard flow (architecture shortcut P4) ----------------------------------------
 
 
 def _guard_rejecting(times: int) -> Any:
@@ -297,7 +284,7 @@ async def test_guard_rejecting_twice_uses_the_fallback(settings: Settings) -> No
     await _session(engine)
     result = await engine.handle_turn("h", "hello")
     assert llm.calls == 2
-    assert result.reply == TEMPLATES["companion_fallback"]  # a companion turn
+    assert result.reply == TEMPLATES["companion_fallback"]
     assert result.fallback_reason == "guard.fallback"
 
 
@@ -310,9 +297,6 @@ async def test_guard_retry_skipped_when_budget_is_short(settings: Settings) -> N
     result = await engine.handle_turn("h", "hello")
     assert llm.calls == 1
     assert result.fallback_reason == "guard.no_budget"
-
-
-# --- planner hook -----------------------------------------------------------------
 
 
 @pytest.mark.anyio
@@ -336,9 +320,6 @@ async def test_planner_error_falls_back_to_template(settings: Settings) -> None:
     result = await engine.handle_turn("h", "hello")
     assert result.templated is True
     assert "planner.error" in result.degraded
-
-
-# --- storage failures -------------------------------------------------------------
 
 
 @pytest.mark.anyio
@@ -367,9 +348,6 @@ async def test_storage_failure_on_record_still_replies(settings: Settings) -> No
 
 def test_llm_failure_carries_reason() -> None:
     assert LLMFailure("down").reason == "down"
-
-
-# --- post-crisis mode and the crisis audit (rules S2, S10) ---------------------------
 
 
 @pytest.mark.anyio
@@ -446,7 +424,7 @@ async def test_record_crisis_writes_audit_flag_and_placeholder_without_text(
 async def test_record_crisis_swallows_storage_errors(settings: Settings) -> None:
     engine = _engine(settings, repo=BrokenRepo("load"))
     verdict = SafetyVerdict(is_crisis=True, tiers=frozenset({"explicit"}))
-    await engine.record_crisis("h", verdict)  # must not raise
+    await engine.record_crisis("h", verdict)
 
 
 @pytest.mark.anyio
@@ -455,10 +433,8 @@ async def test_record_crisis_ignores_unknown_sessions(settings: Settings) -> Non
     await engine.record_crisis("nobody", SafetyVerdict(is_crisis=True))
 
 
-# --- router (Phase 4) ----------------------------------------------------------------
-
 DISTORTED = "I'm such a failure, I always mess everything up"
-N = router_config().hysteresis_turns  # turns a mode must lead before its offer
+N = router_config().hysteresis_turns
 ACUTE = "I can't breathe, everything is too much, I'm falling apart"
 
 
@@ -492,7 +468,7 @@ async def test_an_exercise_step_follows_the_models_sentence_word_for_word(
     step = technique_for("grounding").steps[0]
     assert result.mode == "grounding"
     assert result.reply == f"That sounds like a lot right now. {step}"
-    assert step not in llm.last_messages[0].content  # nothing for the model to rephrase
+    assert step not in llm.last_messages[0].content
     assert result.exercise_card is not None
 
 
@@ -508,8 +484,6 @@ async def test_only_the_first_sentence_is_kept_before_the_step(settings: Setting
 
 @pytest.mark.anyio
 async def test_an_invented_step_is_replaced_by_the_real_one(settings: Settings) -> None:
-    # Manual testing, 2026-10-13: asked to rephrase "T is for Take a step back", the 4B model
-    # wrote "N is for Name what you are feeling".
     llm = FakeLLM(replies=["N is for Name what you are feeling. What is the hardest part?"])
     engine = _engine(settings, llm=llm)
     await _session(engine)
@@ -544,7 +518,7 @@ async def test_routing_needs_no_llm(settings: Settings) -> None:
     await _session(engine)
     for _ in range(N):
         result = await engine.handle_turn("h", DISTORTED)
-    assert result.exercise_card is not None  # the offer is templated: no LLM needed
+    assert result.exercise_card is not None
     assert llm.calls == N - 1
 
 
@@ -594,9 +568,6 @@ async def test_exercise_buttons_reach_the_planner(settings: Settings) -> None:
     assert stopped.exercise_card is None
 
 
-# --- psychoeducation (Phase 5) -----------------------------------------------------------
-
-
 @pytest.mark.anyio
 async def test_a_psychoed_item_reaches_the_prompt_and_is_its_own_fallback(
     settings: Settings,
@@ -614,9 +585,6 @@ async def test_a_psychoed_item_reaches_the_prompt_and_is_its_own_fallback(
     fallback = await down.handle_turn("h", "what's wrong with me?")
     assert fallback.reply == general.text
     assert fallback.fallback_reason == "llm.down"
-
-
-# --- companion checks through the default guard (Phase 6) ------------------------------------
 
 
 @pytest.mark.anyio
@@ -649,7 +617,7 @@ async def test_a_reply_failing_only_form_rules_is_kept_after_its_retry(settings:
     engine = _engine(settings, llm=llm)
     await _session(engine)
     result = await engine.handle_turn("h", "I'm moving to a new city")
-    assert llm.calls == 2  # retried, naming the rules
+    assert llm.calls == 2
     assert result.reply == "Moving adds a layer of uncertainty. What do you hope for? And fear?"
     assert result.fallback_reason is None
 
@@ -657,8 +625,6 @@ async def test_a_reply_failing_only_form_rules_is_kept_after_its_retry(settings:
 @pytest.mark.anyio
 @pytest.mark.parametrize("error", [TimeoutError(), LLMFailure("down")])
 async def test_a_kept_draft_survives_a_failed_retry(settings: Settings, error: Exception) -> None:
-    # Tone check, 2026-10-13: a draft breaking only a style rule was replaced by the
-    # "trouble finding the right words" reply because its retry timed out.
     engine = _engine(settings, llm=SoftThenFails(error))
     await _session(engine)
     result = await engine.handle_turn("h", "I'm moving to a new city")
@@ -675,7 +641,7 @@ async def test_other_modes_keep_the_socratic_fallback(settings: Settings) -> Non
     await engine.handle_turn("h", "Yes, let's try", ExerciseAction("accept"))
     result = await engine.handle_turn("h", "It's the thought that I always fail")
     assert result.mode == "cbt"
-    assert result.reply == technique_for("cbt").steps[1]  # an exercise step is its own fallback
+    assert result.reply == technique_for("cbt").steps[1]
 
 
 SAID = "It sounds like a long day. What was the hardest part?"
@@ -701,7 +667,7 @@ async def test_a_repeated_opener_alone_never_costs_the_reply(settings: Settings)
     await _session(engine)
     await engine.handle_turn("h", "I had a long day at work")
     result = await engine.handle_turn("h", "and then the bus was really late")
-    assert result.reply == SAID  # style, not safety: no fallback
+    assert result.reply == SAID
     assert result.fallback_reason is None
 
 
@@ -725,10 +691,7 @@ async def test_a_soft_draft_is_kept_when_there_is_no_time_to_retry(settings: Set
     await engine.handle_turn("h", "I had a long day at work")
     result = await engine.handle_turn("h", "and then the bus was really late")
     assert result.reply == SAID
-    assert llm.calls == 2  # one per turn: no retry
-
-
-# --- language features (Phase 8, FR-TRK-1) --------------------------------------------------
+    assert llm.calls == 2
 
 
 class SignalsFail(MemoryRepository):
@@ -745,7 +708,7 @@ async def test_a_turn_records_its_language_features(settings: Settings) -> None:
     (rec,) = await engine.repo.list_signals(uid)
     assert rec.session_hash == "h"
     assert (rec.features.msg_length, rec.features.hour_of_day) == (4, 22)
-    assert rec.features.reply_latency_s is None  # nothing to reply to yet
+    assert rec.features.reply_latency_s is None
     assert all(v is None or isinstance(v, int | float) for v in asdict(rec.features).values())
     await engine.handle_turn("h", "still tired")
     second = (await engine.repo.list_signals(uid))[1]

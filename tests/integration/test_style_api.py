@@ -74,7 +74,7 @@ def test_settings_are_saved_only_after_consent(client: TestClient) -> None:
     [
         {"directness": "blunt"},
         {"formality": "posh"},
-        {"country": "XX"},  # not a country on the help card
+        {"country": "XX"},
         {"country": "in"},
         {"directness": None},
     ],
@@ -94,7 +94,7 @@ def test_a_change_is_audited_by_field_name_only(
     with TestClient(create_app(settings, repo=MemoryRepository())) as c:
         token = start_session(c)
         _put(c, token, directness="direct", country="GB")
-        _put(c, token, directness="direct", country="GB")  # nothing changed: no entry
+        _put(c, token, directness="direct", country="GB")
         export = c.get("/export", headers={HEADER: token}).json()
     entries = [a for a in export["tables"]["audit_log"] if a["event"] == "settings_changed"]
     assert [json.loads(a["detail"]) for a in entries] == [{"fields": ["country", "directness"]}]
@@ -141,22 +141,19 @@ def test_deleting_the_account_removes_the_settings(
     assert client.get("/settings", headers={HEADER: token}).status_code == 401
 
 
-# --- pages ----------------------------------------------------------------------------------
-
-
 def test_settings_page_offers_both_style_controls_with_examples(client: TestClient) -> None:
     page = client.get("/settings.html").text
     for value in ("direct", "balanced", "indirect", "casual", "neutral", "formal"):
         assert f'value="{value}"' in page
     assert page.count('type="radio"') == 6
     assert page.count('class="example"') == 6
-    assert "never guesses" in page  # says the style is never inferred
+    assert "never guesses" in page
 
 
 def test_settings_page_lists_every_help_card_country(client: TestClient) -> None:
     page = client.get("/settings.html").text
     assert "<!-- COUNTRY OPTIONS -->" not in page
-    assert '<option value="">' in page  # no country chosen: the time zone suggestion
+    assert '<option value="">' in page
     for country in load_resources().countries:
         assert f'<option value="{country.code}">' in page
 
@@ -180,7 +177,7 @@ def test_the_help_card_opens_the_chosen_country_first() -> None:
     body = body[: body.index("\n}\n")]
     assert "chosenCountry" in body
     assert "Your chosen country:" in body
-    assert "fetch" not in body  # the card itself still needs no server (rules S12)
+    assert "fetch" not in body
 
 
 def test_the_suggestion_is_shown_once_and_links_to_settings() -> None:

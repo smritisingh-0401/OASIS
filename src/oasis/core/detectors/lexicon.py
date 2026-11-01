@@ -27,14 +27,11 @@ from oasis.content import load_yaml
 # message scores exactly as before.
 _SENTENCE = re.compile(r"[.!?;\n]+|\s[-\u2013\u2014]+\s")
 _FRAMING = re.compile(r"^\s*(?:as (?:a|an) [^,]{1,40}|at \d{1,3}),")
-# A term that is one plain word, '\bsad\b', matches exactly the runs of word characters equal
-# to that word, so it is counted from one split of the text instead of its own regex scan.
-# The learned lexicons (ml/train_emotions.py) have hundreds of such terms.
 _PLAIN = re.compile(r"\\b(\w+)\\b")
 _RUN = re.compile(r"\w+")
 
 
-@functools.lru_cache(maxsize=256)  # every scorer of a message splits the same text
+@functools.lru_cache(maxsize=256)
 def segments(norm: str) -> tuple[str, ...]:
     """The parts of a normalised message that are scored separately."""
     parts: list[str] = []
@@ -88,7 +85,7 @@ class Lexicon:
     def linear(self, norm: str, n_tokens: int, counts: tuple[int, ...] | None = None) -> float:
         """The pre-clip value: the linear model the explanation decomposes (design §10.1).
         `counts` skips the matching when the caller already has them."""
-        if counts is None:  # the same sum, by word lookup: no vector of mostly zeros
+        if counts is None:
             words, other = self._index
             total = sum(words.get(r, 0.0) * k for r, k in _runs(norm).items())
             total += sum(w * len(p.findall(norm)) for p, w in other)

@@ -1,6 +1,5 @@
-/* Glassmorphism in soft blue, light only (design §15.2). Self-hosted font only: no external requests. */
 
-/* Nunito (SIL OFL, see fonts/OFL.txt), variable 400-800, Latin subset; other glyphs fall back. */
+
 @font-face {
   font-family: "Nunito";
   font-style: normal;
@@ -22,7 +21,7 @@
   /* Text colours stay AA over the darkest orb under the clear glass (scripts/contrast_check.py). */
   --muted: #283244;
   --accent: #1e4aa8;
-  --accent-deep: #1e3f8f;  /* accent text on the blue OASIS bubble */
+  --accent-deep: #1e3f8f;
   --cta: linear-gradient(145deg, #3a6fd8, #2a55c4);
   --focus: #1a56c4;
   --radius: 16px;
@@ -41,7 +40,6 @@ body {
   flex-direction: column;
 }
 
-/* Background scene: glossy orbs and dot patches. Kept light so any text over them stays AA. */
 .orbs { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .orbs i { position: absolute; border-radius: 50%; }
 
@@ -52,7 +50,7 @@ body {
     inset 10px 12px 30px rgba(255, 255, 255, 0.55),
     0 30px 60px rgba(60, 100, 200, 0.22);
 }
-/* Sharp specular glint on top of the soft highlight. */
+
 .orbs i:not(.dots)::after {
   content: "";
   position: absolute;
@@ -75,7 +73,6 @@ body {
 .orbs .dots:nth-of-type(4) { top: 22%; right: 7%; }
 .orbs .dots:nth-of-type(5) { bottom: 14%; left: 6%; width: 98px; }
 
-/* One frosted surface, shared by every glass panel. */
 .help summary,
 .pill,
 .help-card,
@@ -108,8 +105,6 @@ body {
   margin: 0 auto;
 }
 
-/* Wordmark: gradient navy-to-blue lettering.
-   Large bold text: both gradient ends stay above 3:1 even over an orb. */
 .brand {
   margin: 0;
   font-size: 26px;
@@ -131,8 +126,7 @@ body {
   font-weight: 600;
   text-decoration: none;
 }
-/* Icon-only pill: a circle as tall as the text pills beside it. Two classes, so the
-   narrow-screen .pill padding below does not squeeze the icon. */
+
 .pill.icon-pill {
   display: inline-flex;
   align-items: center;
@@ -165,7 +159,7 @@ button.pill { font: inherit; cursor: pointer; }
   overflow-y: auto;
   margin-top: 10px;
   padding: 18px;
-  /* Same glass as the chat panel, a little denser: crisis text must stay readable. */
+
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.5));
   box-shadow: 0 20px 50px rgba(40, 80, 170, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   border-radius: 28px;
@@ -175,7 +169,7 @@ button.pill { font: inherit; cursor: pointer; }
 .help-card h2 { font-size: 18px; margin: 0 0 8px; }
 .help-card details { margin: 6px 0; }
 .help-card details details { margin-left: 12px; }
-/* Regions are blue tiles like incoming messages; countries are white tiles like outgoing ones. */
+
 .help-card summary {
   background: rgba(157, 189, 245, 0.55);
   color: var(--text);
@@ -187,8 +181,7 @@ button.pill { font: inherit; cursor: pointer; }
 .help-card ul { margin: 6px 0 10px; padding-left: 20px; }
 .help-card li { margin: 4px 0; }
 .help-card .hours { color: var(--muted); font-size: 15px; }
-/* Darker than --accent: stays AA on the translucent card even over an orb. */
-/* Phone numbers as 24 px targets (WCAG 2.2 2.5.8), even "15" or "112". */
+
 .help-card a {
   color: #1e4aa8;
   font-weight: 600;
@@ -198,7 +191,7 @@ button.pill { font: inherit; cursor: pointer; }
   text-align: center;
 }
 .help-fallback { font-weight: 600; }
-/* The full list: a plain link-like dropdown, its regions not indented a level further. */
+
 .help-card .all-countries > summary {
   background: none;
   padding: 6px 0;
@@ -208,14 +201,13 @@ button.pill { font: inherit; cursor: pointer; }
   cursor: pointer;
 }
 .help-card .all-countries > .region { margin-left: 0; }
-/* The country suggested from the time zone, above the full list. */
+
 .suggested {
   margin-bottom: 12px;
   padding-bottom: 6px;
   border-bottom: 1px solid rgba(28, 42, 61, 0.15);
 }
 
-/* The main glass "device" panel, lighter at the top like the reference. */
 .chat {
   flex: 1;
   display: flex;
@@ -224,9 +216,7 @@ button.pill { font: inherit; cursor: pointer; }
   width: calc(100% - 32px);
   margin: 0 auto;
   padding: 12px 18px 0;
-  /* Clear glass: a thin tint and a light blur, so the orbs behind stay visible; the bright
-     edge and top highlight give it its shape. Text on it stays AA over the darkest orb
-     (checked by scripts/contrast_check.py). */
+
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
   -webkit-backdrop-filter: blur(2px) saturate(120%);
   backdrop-filter: blur(2px) saturate(120%);
@@ -237,16 +227,13 @@ button.pill { font: inherit; cursor: pointer; }
 
 .messages { list-style: none; margin: 0; padding: 0; flex: 1; }
 
-/* Chat page (demo testing, 2026-10-29): the panel fills the window and only the conversation
-   (or the data notice) scrolls, so the composer and its Send button never leave the screen. */
 body.chat-page {
   height: 100vh;
   height: 100dvh;
   min-height: 0;
   overflow-y: auto;
 }
-/* On a very short window (a phone on its side) the panel keeps a usable height and the page
-   scrolls instead of squeezing the composer into the footer. */
+
 .chat-page .chat { min-height: 320px; position: relative; }
 .chat-page .messages {
   min-height: 0;
@@ -259,7 +246,6 @@ body.chat-page {
 .chat-page .onboarding { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .chat-page .notice { max-height: none; flex: 1 1 auto; min-height: 0; }
 
-/* Shown when a reply arrives while the reader is scrolled up. */
 .new-message {
   align-self: center;
   margin-top: 6px;
@@ -276,7 +262,6 @@ body.chat-page {
   cursor: pointer;
 }
 
-/* Three dots while OASIS writes; the reply then types out word by word. */
 .msg.typing { display: flex; gap: 5px; padding: 16px 18px; }
 .msg.typing span {
   width: 8px;
@@ -292,7 +277,7 @@ body.chat-page {
   0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
   30% { opacity: 1; transform: translateY(-3px); }
 }
-/* The note appears once the reply has finished typing out. */
+
 .msg.typing-out > :not(.reply-text) { visibility: hidden; }
 
 .msg {
@@ -304,12 +289,11 @@ body.chat-page {
 }
 .msg p { margin: 0; white-space: pre-wrap; }
 .msg .note { margin-top: 6px; font-size: 14px; color: var(--muted); }
-/* Bot: translucent blue tile. User: the solid white "active" tile. */
+
 .msg.bot { background: rgba(157, 189, 245, 0.75); }
 .msg.user { background: var(--glass-strong); box-shadow: var(--glass-shadow); margin-left: auto; }
 .msg.system { margin: 8px auto; padding: 4px 16px; font-size: 14px; color: var(--muted); text-align: center; }
 
-/* "Why this reply?" under each bot message: closed by default, text in --muted for AA. */
 .why { margin-top: 8px; font-size: 14px; color: var(--muted); }
 .why summary {
   cursor: pointer;
@@ -321,7 +305,7 @@ body.chat-page {
 .why ul { margin: 6px 0 0; padding-left: 20px; }
 .why li { margin: 2px 0; }
 .why .why-note { margin-top: 6px; font-style: italic; }
-/* Why replies page (demo testing, 2026-10-29): one closed panel per reply, newest first. */
+
 .why-list { list-style: none; margin: 0; padding: 0; }
 .why-list > li {
   margin: 10px 0;
@@ -383,7 +367,6 @@ body.chat-page {
 
 .status { min-height: 1.6em; color: var(--muted); font-size: 15px; margin: 8px 0; }
 
-/* Glass bottom bar with one raised, glowing action, as in the reference. */
 .composer {
   display: flex;
   align-items: center;
@@ -425,7 +408,6 @@ body.chat-page {
   padding: 12px 16px 20px;
 }
 
-/* Mood-trend page (design §9). */
 .trends { padding: 18px 22px 24px; }
 .trends h2 { margin: 4px 0 10px; font-size: 22px; }
 .trends h3 { margin: 22px 0 6px; font-size: 18px; }
@@ -440,7 +422,7 @@ body.chat-page {
 .trend-intro, .trend-note { margin: 6px 0; max-width: 65ch; }
 .trends .status:empty { display: none; }
 .chart svg { display: block; width: 100%; height: auto; }
-.chart svg:not([viewBox]) { display: none; }  /* the empty placeholder before a chart */
+.chart svg:not([viewBox]) { display: none; }
 .chart .axis { stroke: rgba(28, 42, 61, 0.3); stroke-dasharray: 4 4; }
 .chart .axis-text { fill: var(--muted); font-size: 12px; }
 .chart .trend-line { fill: none; stroke: var(--accent); stroke-width: 2.5; }
@@ -448,7 +430,7 @@ body.chat-page {
 .chart .dot { fill: var(--accent); }
 .chart .flag { fill: none; stroke: var(--text); stroke-width: 2; }
 .earlier h4 { margin: 14px 0 0; font-size: 15px; }
-/* "What it is based on": a closed dropdown styled like the page's section headings. */
+
 .basis-more { margin-top: 22px; }
 .basis-more > summary {
   cursor: pointer;
@@ -461,7 +443,6 @@ body.chat-page {
 .basis strong { display: block; }
 .basis span { display: block; color: var(--muted); font-size: 15px; }
 
-/* First-use data notice (FR-PRV-1) and the settings page. */
 .onboarding { padding: 8px 0 4px; }
 .notice {
   max-height: 60vh;
@@ -506,7 +487,7 @@ body.chat-page {
 }
 .settings .danger { color: #fff; background: #a3262a; }
 .settings .danger:hover { background: #8a1f23; }
-/* Style profile: native radios as segmented controls, each with an example reply. */
+
 .style-form fieldset {
   display: flex;
   flex-wrap: wrap;
@@ -542,12 +523,10 @@ body.chat-page {
 @media (max-width: 520px) {
   .top { flex-wrap: wrap; position: relative; }
   .pill, .help summary { padding: 7px 14px; }
-  /* Five header buttons (New chat, Why replies): each label stays on one line, so "Need help
-     now?" never breaks, and the buttons wrap to a second row instead. */
+
   .pill, .help summary { white-space: nowrap; }
   .top-actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-  /* The header wraps and "Need help now?" no longer sits at the right edge, so the card
-     spans the header instead of hanging off the pill (it ran off-screen at 375 px). */
+
   .help { position: static; }
   .help-card { left: 16px; right: 16px; width: auto; top: 100%; margin-top: 0; }
 }
@@ -557,7 +536,6 @@ body.chat-page {
   .msg.typing span { animation: none; opacity: 0.7; }
 }
 
-/* Online demo only (OASIS_DEMO=1): the same dark-on-light pair as the user's messages. */
 .demo-banner {
   margin: 0;
   padding: 8px 16px;

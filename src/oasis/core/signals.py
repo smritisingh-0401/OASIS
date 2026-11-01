@@ -14,12 +14,11 @@ from oasis.safety.normalize import base_form
 from oasis.types import Signals
 
 EMOTIONS = ("sadness", "anxiety", "anger", "shame", "loneliness")
-LABEL_TERM = 3.0 * 1.5  # labelling scorer scale x a labelling term's weight (distortions.yaml)
+LABEL_TERM = 3.0 * 1.5
 
 _CLAUSE = re.compile(r"[,.;:!?]+|\b(?:and|but)\b")
 
 
-# "like" is a positive verb only after one of these ("I like", "would like", "don't like").
 _LIKE_SUBJECTS = frozenset({
     "i", "you", "we", "they", "he", "she", "people", "everyone", "really", "would", "do",
     "does", "did", "dont", "doesnt", "didnt", "don't", "doesn't", "didn't", "to", "also",
@@ -104,8 +103,6 @@ def extract(message: str) -> Signals:
             for e in EMOTIONS
         },
         dysregulation=cues["dysregulation"].score(norm),
-        # Sum, not max: several categories in one message add up, and the sum is still a
-        # linear model before the clip, so its explanation stays exact.
         distortion=min(1.0, sum(by_type.values())),
         distortion_types=frozenset(t for t, v in by_type.items() if v > 0),
         overwhelm=cues["overwhelm"].score(norm),

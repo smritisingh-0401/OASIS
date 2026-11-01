@@ -17,8 +17,6 @@ def _pattern() -> re.Pattern[str]:
 
 
 def hedged(message: str) -> bool:
-    # Known limit: a phrase list ("what kind of music" counts); the 2-of-3 window keeps one
-    # stray match from suggesting anything. A labelled set would tell whether more is needed.
     text = " ".join(re.sub(r"['\u2019]", "", message.lower()).split())
     return bool(_pattern().search(text))
 
