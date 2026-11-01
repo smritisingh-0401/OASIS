@@ -49,6 +49,7 @@ from oasis.router.router import load_state
 from oasis.storage.repository import (
     ErasureIncomplete,
     SessionInfo,
+    StorageBusy,
     StorageError,
     UserSettings,
     utc_now,
@@ -72,6 +73,7 @@ class ApiError(Exception):
 
 INVALID_SESSION = ApiError(401, "invalid_session", "Session not found. Start a new session.")
 STORAGE_DOWN = ApiError(503, "storage_unavailable", "Saved data is unavailable right now.")
+BUSY = ApiError(503, "busy", "OASIS is busy right now. Please try again in a few minutes.")
 NO_EXPLANATION = ApiError(404, "not_found", "No explanation for this reply.")
 CONSENT_REQUIRED = ApiError(
     403, "consent_required", "Please review and accept the data notice first."
@@ -119,6 +121,7 @@ def _settings_out(value: UserSettings) -> UserSettingsBody:
 def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset[str]) -> APIRouter:
     """`countries`: the help card's country codes, the only ones a user can choose."""
     router = APIRouter()
+    demo = engine.settings.demo
 
     async def resolve(session: str | None) -> tuple[str, SessionInfo]:
         """The session's hash and stored state; 401 if unknown, 503 if storage is down."""
@@ -143,10 +146,13 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
 
     @router.post("/session", status_code=201)
     async def create_session(body: SessionRequest | None = None) -> SessionResponse:
-        ephemeral = body is not None and body.ephemeral
+        # The online demo never saves, whatever the page asked for.
+        ephemeral = demo or (body is not None and body.ephemeral)
         token = secrets.token_urlsafe(32)  # 256 bits
         try:
             await repo.create_user_session(hash_token(token), ephemeral=ephemeral)
+        except StorageBusy:
+            raise BUSY from None
         except StorageError:
             raise STORAGE_DOWN from None
         return SessionResponse(session_id=token, ephemeral=ephemeral)
@@ -154,7 +160,7 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
     @router.get("/session")
     async def session_status(session: SessionHeader = None) -> SessionStatus:
         session_hash, info = await resolve(session)
-        version = load_disclosure().version
+        version = load_disclosure(demo).version
         return SessionStatus(
             ephemeral=repo.is_ephemeral(session_hash),
             consented=info.consent_version == version,
@@ -164,7 +170,7 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
     @router.post("/consent", status_code=204)
     async def consent(body: ConsentRequest, session: SessionHeader = None) -> Response:
         session_hash, info = await resolve(session)
-        if body.disclosure_version != load_disclosure().version:
+        if body.disclosure_version != load_disclosure(demo).version:
             raise OUTDATED_NOTICE  # accepted text must be the text shown
         detail = json.dumps({"disclosure_version": body.disclosure_version})
         try:
@@ -189,7 +195,7 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
     ) -> UserSettingsBody:
         """Only the user changes their settings; OASIS never sets them (FR-CUL-2)."""
         _, info = await resolve(session)
-        if info.consent_version != load_disclosure().version:
+        if info.consent_version != load_disclosure(demo).version:
             raise CONSENT_REQUIRED  # nothing is stored before the notice is accepted
         if body.country is not None and body.country not in countries:
             raise UNKNOWN_COUNTRY

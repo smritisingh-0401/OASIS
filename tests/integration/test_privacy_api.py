@@ -293,7 +293,7 @@ def test_a_newer_notice_is_accepted_on_the_same_session(
 
     newer = routes.load_disclosure().__class__(**{**routes.load_disclosure().__dict__,
                                                   "version": "99"})  # fmt: skip
-    monkeypatch.setattr(routes, "load_disclosure", lambda: newer)
+    monkeypatch.setattr(routes, "load_disclosure", lambda demo=False: newer)
     assert client.get("/session", headers={HEADER: token}).json()["consented"] is False
     assert _consent(client, token, "99").status_code == 204
     turns = client.get("/history", headers={HEADER: token}).json()["turns"]

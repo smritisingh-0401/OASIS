@@ -19,6 +19,7 @@ from oasis.storage.repository import (
     AUDIT_EVENTS,
     AuditRecord,
     SessionInfo,
+    StorageBusy,
     StorageUnavailable,
     UserSettings,
     utc_now,
@@ -45,9 +46,11 @@ class MemoryRepository:
         self,
         *,
         idle_timeout_s: float | None = None,
+        max_sessions: int | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._idle_timeout_s = idle_timeout_s
+        self._max_sessions = max_sessions
         self._clock = clock
         self._users: dict[str, str] = {}  # user_id -> created_at
         self._sessions: dict[str, str] = {}  # session_hash -> user_id
@@ -94,6 +97,9 @@ class MemoryRepository:
 
     async def create_user_session(self, session_hash: str) -> str:
         self._expire()
+        # ponytail: one global cap; a per-client limit needs the client's address behind a proxy
+        if self._max_sessions is not None and len(self._sessions) >= self._max_sessions:
+            raise StorageBusy("too many sessions")
         user_id = uuid.uuid4().hex
         now = utc_now()
         self._users[user_id] = now

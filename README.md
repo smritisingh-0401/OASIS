@@ -102,6 +102,10 @@ uv run python scripts/model_smoke_test.py
 
 A reply takes about 5-10 s with the model warm, and about 20 s for the first one after the model has been idle or other apps have pushed it out of memory. Close large apps such as a web browser with many tabs for the best speed.
 
+### Share a test version by link
+
+Run OASIS with the real model on one computer and give testers a link through a Cloudflare tunnel, in demo mode (memory only, a test-version notice and banner, made-up messages only): [docs/demo_host.md](docs/demo_host.md).
+
 ### Developer checks
 
 Run every check (lint, types, import rules, security scan, dependency audit, tests with coverage):
