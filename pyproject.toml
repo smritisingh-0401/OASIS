@@ -17,6 +17,12 @@ dependencies = [
     "vadersentiment>=3.3.2",
 ]
 
+[project.optional-dependencies]
+ml = [
+    "onnxruntime>=1.31",
+    "tokenizers>=0.23",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=8.3",
@@ -44,7 +50,7 @@ build-backend = "uv_build"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests", "scripts"]
+src = ["src", "tests", "scripts", "ml"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "ASYNC", "PT", "C4", "RET"]
@@ -53,6 +59,8 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "ASYNC", "PT", "C4",
 # assert is the pytest idiom; tests use fixed fake tokens.
 "tests/**" = ["S101", "S105", "S106"]
 "scripts/**" = ["S603", "S607"]
+# Offline training: seeded RNGs for reproducibility, regex token patterns.
+"ml/**" = ["S311", "S106"]
 # Look-alike letters and apostrophes are the data these files exist to handle.
 "src/oasis/safety/normalize.py" = ["RUF001"]
 "tests/unit/test_safety_normalize.py" = ["RUF001"]
@@ -68,8 +76,8 @@ module = ["tests.*"]
 disallow_untyped_decorators = false
 
 [[tool.mypy.overrides]]
-# Ships no type information.
-module = ["vaderSentiment.*"]
+# Ship no type information; onnxruntime and tokenizers are the optional `ml` extra.
+module = ["vaderSentiment.*", "onnxruntime.*", "tokenizers.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

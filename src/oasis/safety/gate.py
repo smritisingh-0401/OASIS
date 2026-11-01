@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from oasis.safety.classifier import CrisisClassifier
 from oasis.safety.rules import RuleSet
 from oasis.types import SafetyVerdict
 
@@ -17,11 +18,15 @@ class SafetyGate(Protocol):
 
 
 class RuleBasedSafetyGate:
-    def __init__(self, ruleset: RuleSet) -> None:
+    def __init__(self, ruleset: RuleSet, classifier: CrisisClassifier | None = None) -> None:
         self.ruleset = ruleset
+        self.classifier = classifier
 
     def check(self, text: str) -> SafetyVerdict:
         hits = self.ruleset.hits(text)
+        # Add-only (rules S7): the classifier can raise an alert the rules missed, never clear one.
+        if not hits and self.classifier and self.classifier.flags(text):
+            hits["classifier"] = "classifier"
         return SafetyVerdict(
             is_crisis=bool(hits),
             tiers=frozenset(hits.values()),

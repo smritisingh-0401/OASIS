@@ -23,7 +23,20 @@ HARM_OTHERS_REPLY = (
     '"Need help now?" so you can find one in your country.'
 )
 
+# Only the add-only classifier raised the alert (rules S7, 2026-11-01), so no pattern matched
+# and it may be a misread ("I'm dead tired"): ask directly instead of assuming. Clinician
+# review pending: CR-28.
+CHECK_IN_REPLY = (
+    "I want to make sure I've understood you. Are you having thoughts of ending your life or "
+    'hurting yourself? If you are, I\'ve opened "Need help now?" so you can find a crisis line '
+    "in your country. If I've misread you, press \"Continue talking\" and we'll carry on."
+)
+
 
 def handoff_reply(tiers: frozenset[str]) -> str:
-    """Harm to others alone gets its own reply; any risk to self gets the reply above."""
-    return HARM_OTHERS_REPLY if tiers == {"harm_others"} else HANDOFF_REPLY
+    """Harm to others alone gets its own reply, a classifier-only alert a check-in, and any
+    other risk to self the reply above."""
+    rules = tiers - {"classifier"}  # a pattern match decides the reply on its own
+    if not rules:
+        return CHECK_IN_REPLY
+    return HARM_OTHERS_REPLY if rules == {"harm_others"} else HANDOFF_REPLY

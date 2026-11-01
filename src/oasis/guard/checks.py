@@ -27,6 +27,7 @@ from typing import Any
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from oasis.content import load_yaml, require_review
+from oasis.guard.nli import AgreementModel
 from oasis.safety.normalize import base_form
 from oasis.types import GuardVerdict, Plan
 
@@ -151,7 +152,9 @@ def load_rules() -> Rules:
             **parse_guard(load_yaml("guard", "checks.yaml"))}  # fmt: skip
 
 
-def check(draft: str, plan: Plan) -> GuardVerdict:
+def check(draft: str, plan: Plan, agreement: AgreementModel | None = None) -> GuardVerdict:
+    """`agreement` is the optional NLI check (oasis.guard.nli): add-only, for agreement that
+    rewords the claim."""
     rules = load_rules()
     norm = base_form(draft)
     if not norm.strip():
@@ -183,6 +186,8 @@ def check(draft: str, plan: Plan) -> GuardVerdict:
         failed.append("ack_only")
     if plan.claims:
         failed += _claim_rules(norm, plan.claims, rules)
+        if agreement and "no_agreeing" not in failed and agreement.agrees(draft, plan.claim_texts):
+            failed.append("no_agreeing")
     # "I agree with you" agrees even when the reply words the claim differently from theirs.
     strong = _any(rules["strong_agreement"], norm)
     if strong and "no_agreeing" in plan.constraints and "no_agreeing" not in failed:

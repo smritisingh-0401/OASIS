@@ -1,0 +1,7 @@
+# Psychoeducation semantic retrieval (oasis.psychoed.semantic). A question the cue lexicon
+# missed gets the closest vetted item when their cosine similarity is at least this. Chosen
+# by ml/eval_psychoed.py on the tuning sets only; see docs/reports/ml-psychoed.json.
+schema: oasis.content/v1
+version: "2026.11.0"
+review_status: needs_clinician_review
+threshold: 0.3

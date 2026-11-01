@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 HEADER = "X-OASIS-Session"
 
 
+@pytest.fixture(autouse=True)
+def _no_optional_models(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The optional ONNX models (ml/fetch_models.py) stay off, so a checkout that has them
+    runs the same suite as CI (rules T7)."""
+    monkeypatch.setenv("OASIS_GUARD_NLI_DIR", str(tmp_path / "no-model"))
+    monkeypatch.setenv("OASIS_PSYCHOED_EMBED_DIR", str(tmp_path / "no-model"))
+
+
 @pytest.fixture
 def anyio_backend() -> str:
     return "asyncio"

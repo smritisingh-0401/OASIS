@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from dataclasses import replace
 
 from oasis.assessment import flow, trigger
-from oasis.core.signals import claims, extract
+from oasis.core.signals import claims, extract, trap_clauses
 from oasis.core.templates import TEMPLATES
 from oasis.guard.checks import medication_topic, opener
 from oasis.psychoed import selector as psychoed
@@ -202,7 +202,7 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
     if state.router.exercise is not None:  # no offer or explanation mid-exercise (design §3.2)
         return _routed(signals, state, now, expired)
     offer = trigger.decide(state.history, message, state.assessments, now)
-    item = _explanation(message, signals, state.router)
+    item = _explanation(message, signals, state)
     if offer is not None and (item is None or offer.explicit):
         plan = _from_step(flow.offer(offer.instrument, offer.reason, now), "assessment.offer")
         if item is None:
@@ -219,11 +219,14 @@ def _plan(message: str, state: ConversationState, action: Action | None) -> Plan
     return _routed(signals, state, now, expired)
 
 
-def _explanation(message: str, signals: Signals, rs: RouterState) -> psychoed.Item | None:
+def _explanation(message: str, signals: Signals, state: ConversationState) -> psychoed.Item | None:
     """The vetted item for a psychoeducation cue; acute overwhelm needs grounding first."""
-    if not signals.psychoed_cue or signals.overwhelm >= router_config().acute_threshold:
+    if signals.overwhelm >= router_config().acute_threshold:
         return None
-    return psychoed.select(message, rs.psychoed_shown)
+    if signals.psychoed_cue:
+        return psychoed.select(message, state.router.psychoed_shown)
+    # Add-only: a question the cue lexicon missed, matched by meaning (oasis.psychoed.semantic).
+    return next((i for i in psychoed.load_all() if i.id == state.psychoed_match), None)
 
 
 def _after_item(rs: RouterState, item: psychoed.Item) -> tuple[RouterState, tuple[str, ...]]:
@@ -306,7 +309,8 @@ def with_thinking_trap(plan: Plan, message: str) -> Plan:
     if not found:
         return plan
     rules = plan.constraints + tuple(r for r in DISTORTION_RULES if r not in plan.constraints)
-    return replace(plan, constraints=rules, distortion_types=found, claims=claims(message))
+    return replace(plan, constraints=rules, distortion_types=found, claims=claims(message),
+                   claim_texts=trap_clauses(message))  # fmt: skip
 
 
 def rules_for(mode: str, signals: Signals) -> tuple[str, ...]:
