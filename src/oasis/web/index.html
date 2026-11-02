@@ -9,7 +9,6 @@
   <script src="app.js" defer></script>
 </head>
 <body class="chat-page">
-  <!-- DEMO BANNER -->
   <div class="orbs" aria-hidden="true"><i></i><i></i><i></i><i class="dots"></i><i class="dots"></i></div>
 
   <header class="top">
@@ -44,6 +43,13 @@
     </a>
     </div>
   </header>
+
+  <dialog id="demo-popup" class="demo-popup" aria-labelledby="demo-popup-title">
+    <h2 id="demo-popup-title">Test version</h2>
+    <p>Use made-up messages only: this is not for real support. If you need help now, call your
+      local emergency number or open "Need help now?".</p>
+    <form method="dialog" class="card-options"><button>OK</button></form>
+  </dialog>
 
   <main class="chat">
     <section id="onboarding" class="onboarding" aria-labelledby="notice-title" hidden>

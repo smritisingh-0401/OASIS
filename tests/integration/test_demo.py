@@ -1,4 +1,4 @@
-"""Online demo mode (OASIS_DEMO=1): memory only, an honest notice, a banner on every page, and
+"""Online demo mode (OASIS_DEMO=1): memory only, an honest notice before the first message, and
 the limits a public server needs (decision 2026-10-28)."""
 
 from __future__ import annotations
@@ -41,13 +41,11 @@ def test_demo_never_saves_even_when_asked(demo: Settings) -> None:
 
 
 @pytest.mark.parametrize("page", ["/", "/settings.html", "/trends.html", "/why.html"])
-def test_every_demo_page_carries_the_banner(demo: Settings, settings: Settings, page: str) -> None:
-    with TestClient(create_app(demo)) as c:
-        html = c.get(page).text
-    assert 'class="demo-banner"' in html
-    assert "made-up" in html
-    with TestClient(create_app(settings)) as c:
-        assert "demo-banner" not in c.get(page).text
+def test_no_page_carries_a_test_banner(demo: Settings, settings: Settings, page: str) -> None:
+    """Replaced by a popup at the owner's request (2026-11-02)."""
+    for s in (demo, settings):
+        with TestClient(create_app(s)) as c:
+            assert "demo-banner" not in c.get(page).text
 
 
 def test_demo_notice_says_where_messages_go() -> None:
@@ -104,5 +102,16 @@ def test_the_demo_page_offers_only_start_without_saving() -> None:
     import oasis
 
     js = (Path(oasis.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
+    assert """const DEMO = document.querySelector('.notice[data-version^="demo-"]')""" in js
+    assert load_disclosure(demo=True).version.startswith("demo-")
+    assert not load_disclosure().version.startswith("demo-")
     assert "startSaved.hidden = DEMO && !resume" in js
+    assert "if (DEMO && !resume && !demoPopup.open) demoPopup.showModal();" in js
     assert "saveToken(token, session.ephemeral)" in js
+
+
+def test_the_chat_page_has_the_test_version_popup(demo: Settings) -> None:
+    with TestClient(create_app(demo)) as c:
+        html = c.get("/").text
+    assert '<dialog id="demo-popup"' in html
+    assert "made-up messages only" in html

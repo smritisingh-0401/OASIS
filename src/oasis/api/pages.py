@@ -23,12 +23,6 @@ MARKER = "<!-- CRISIS_RESOURCES -->"
 _ZONE = re.compile(r"[A-Za-z0-9_+\-]+(?:/[A-Za-z0-9_+\-]+)+")
 NOTICE_MARKER = "<!-- DATA_NOTICE -->"
 COUNTRY_MARKER = "<!-- COUNTRY OPTIONS -->"
-DEMO_MARKER = "<!-- DEMO BANNER -->"
-DEMO_BANNER = (
-    '<p class="demo-banner" role="note"><strong>Test version.</strong> Use made-up messages '
-    "only: this is not for real support. If you need help now, call your local emergency "
-    "number.</p>"
-)
 
 
 @dataclass(frozen=True)
@@ -164,13 +158,6 @@ def render_index(template: str, resources: Resources, disclosure: Disclosure) ->
     return template.replace(MARKER, render_help(resources, load_time_zones())).replace(
         NOTICE_MARKER, render_onboarding(disclosure)
     )
-
-
-def render_demo(template: str, demo: bool) -> str:
-    """Every page has the banner slot; the online demo fills it."""
-    if DEMO_MARKER not in template:
-        raise ValueError("page is missing the demo banner marker")
-    return template.replace(DEMO_MARKER, DEMO_BANNER if demo else "")
 
 
 def render_settings(template: str, resources: Resources) -> str:
