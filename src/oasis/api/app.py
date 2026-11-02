@@ -18,7 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
 from oasis.api.middleware import BodyLimit, BodyTooLarge, error_response, security_middleware
-from oasis.api.pages import load_disclosure, render_demo, render_index, render_settings
+from oasis.api.pages import load_disclosure, render_index, render_settings
 from oasis.api.routes import ApiError, build_router
 from oasis.assessment.instruments import load_all as load_assessment_content
 from oasis.core.engine import ChatEngine
@@ -110,7 +110,7 @@ def create_app(
     resources = crisis_resources or load_resources()
 
     def page(name: str) -> str:
-        return render_demo((WEB_DIR / name).read_text(encoding="utf-8"), settings.demo)
+        return (WEB_DIR / name).read_text(encoding="utf-8")
 
     index_html = render_index(page("index.html"), resources, disclosure)
     settings_html = render_settings(page("settings.html"), resources)

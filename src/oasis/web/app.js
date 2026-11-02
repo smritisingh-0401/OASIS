@@ -87,7 +87,10 @@ const OFFLINE = "I couldn't reach the server. \"Need help now?\" still works.";
 
 const startSaved = document.getElementById("start-saved");
 const startEphemeral = document.getElementById("start-ephemeral");
-const DEMO = document.querySelector(".demo-banner") !== null;
+// Only the online demo's data notice has a "demo-" version (disclosure_demo.yaml).
+const DEMO = document.querySelector('.notice[data-version^="demo-"]') !== null;
+// Opens with the data notice, so it needs nothing stored in the browser (rules F5).
+const demoPopup = document.getElementById("demo-popup");
 let resuming = false;
 
 function showOnboarding(note, resume = false) {
@@ -95,6 +98,7 @@ function showOnboarding(note, resume = false) {
   startSaved.textContent = resume ? "Accept and continue" : "Save on this computer";
   startEphemeral.hidden = resume;
   startSaved.hidden = DEMO && !resume;
+  if (DEMO && !resume && !demoPopup.open) demoPopup.showModal();
   onboarding.hidden = false;
   messages.hidden = true;
   form.hidden = true;
