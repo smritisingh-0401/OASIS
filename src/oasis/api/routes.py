@@ -60,7 +60,13 @@ from oasis.storage.repository import (
 from oasis.storage.split import SplitRepository
 from oasis.tracking.aggregate import trend
 from oasis.tracking.features import load_config as load_tracking
-from oasis.types import AssessmentAction, ExerciseAction, ExerciseCard, StyleProfile
+from oasis.types import (
+    ACTIVE_STATUSES,
+    AssessmentAction,
+    ExerciseAction,
+    ExerciseCard,
+    StyleProfile,
+)
 
 log = logging.getLogger("oasis.api")
 
@@ -352,7 +358,7 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
         cfg = load_tracking()
         t = trend(records, session_hash, cfg)
         scored = sorted(
-            (a for a in assessments if a.status in ("scored", "escalated")),
+            (a for a in assessments if a.status in ("scored", "escalated", *ACTIVE_STATUSES)),
             key=lambda a: a.completed_at or a.created_at,
         )
         return TrendsResponse(

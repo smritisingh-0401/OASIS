@@ -115,10 +115,13 @@ def _answer(
     if (rec.instrument, expected) == ITEM9 and action.value >= ITEM9_HANDOFF:
         return Step(escalate(rec, action.value, now), None, escalate=True)
     rec = replace(rec, answers=(*rec.answers, action.value))
-    if len(rec.answers) == len(inst.items) and inst.functional_question is None:
+    if len(rec.answers) == len(inst.items):
+        # Scored once the last item is answered, so the result reaches the mood trend even if
+        # the PHQ-9 difficulty question (not part of the score) is never answered.
         total, band = score(inst, rec.answers)
-        return _result(replace(rec, status="scored", total=total, band=band,
-                               completed_at=_iso(now)), inst)  # fmt: skip
+        rec = replace(rec, total=total, band=band)
+        if inst.functional_question is None:
+            return _result(replace(rec, status="scored", completed_at=_iso(now)), inst)
     return _show(rec, inst, changed=True)
 
 
@@ -173,7 +176,8 @@ def _declined(rec: AssessmentRecord, by: str, now: datetime.datetime) -> Assessm
 
 
 def _aborted(rec: AssessmentRecord, now: datetime.datetime) -> AssessmentRecord:
-    return replace(rec, status="aborted", answers=(), functional=None, completed_at=_iso(now))
+    return replace(rec, status="aborted", answers=(), functional=None, total=None, band=None,
+                   completed_at=_iso(now))  # fmt: skip
 
 
 def _step_text(key: str) -> str:

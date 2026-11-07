@@ -365,6 +365,21 @@ def test_full_phq9_over_http(settings: Settings) -> None:
     assert any(t["content"] == "Somewhat difficult" for t in turns)
 
 
+def test_phq9_score_reaches_the_trend_before_the_difficulty_question(settings: Settings) -> None:
+    repo = MemoryRepository()
+    with TestClient(create_app(settings, repo=repo)) as c:
+        token = _session(c)
+        _start_phq9(c, token)
+        for item in range(1, 10):
+            _act(c, token, "Several days", {"type": "assessment_answer", "value": 1,
+                                            "instrument": "PHQ9", "item": item})  # fmt: skip
+        scores = c.get("/trends", headers={HEADER: token}).json()["scores"]
+        _chat(c, token, "actually let me just talk")
+        paused = c.get("/trends", headers={HEADER: token}).json()["scores"]
+    assert [(s["name"], s["total"], s["band"]) for s in scores] == [("PHQ-9", 9, "mild")]
+    assert paused == scores
+
+
 def test_item9_over_http_hands_off_and_audits_the_source(settings: Settings) -> None:
     repo = MemoryRepository()
     with TestClient(create_app(settings, repo=repo)) as c:
