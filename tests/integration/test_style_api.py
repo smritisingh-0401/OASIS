@@ -173,7 +173,7 @@ def _app_js() -> str:
 def test_the_help_card_opens_the_chosen_country_first() -> None:
     js = _app_js()
     assert 'api("/settings")' in js
-    body = js[js.index("function suggestCountry") :]
+    body = js[js.index("function findCountry") :]
     body = body[: body.index("\n}\n")]
     assert "chosenCountry" in body
     assert "Your chosen country:" in body

@@ -6,6 +6,13 @@ review_status: needs_clinician_review
 disclaimer: >-
   This questionnaire is a screening tool, not a diagnosis. Only a qualified professional can
   say what these results mean for you.
+# Added after PHQ-9 item 9 answered "Several days" (CR-07, clinician review 2026-11-07).
+# "More than half the days" or "Nearly every day" gives the crisis handoff instead.
+item9_advice: >-
+  You said you have had thoughts that you would be better off dead, or of hurting yourself,
+  on several days. Please talk to a doctor or mental health professional about this soon. If
+  these thoughts get stronger, call a crisis line or your local emergency number; the numbers
+  are under "Need help now?".
 PHQ9:
   minimal: "Your answers suggest few or no symptoms of depression over the last two weeks."
   mild: >-

@@ -17,7 +17,7 @@ import uuid
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, replace
 
-from oasis.assessment.flow import ITEM9, active
+from oasis.assessment.flow import ITEM9, ITEM9_HANDOFF, active, escalate
 from oasis.core.planner import plan_turn
 from oasis.core.signals import extract
 from oasis.core.templates import TEMPLATES, fallback_template
@@ -99,6 +99,7 @@ class TurnResult:
     card: AssessmentCard | None = None
     exercise_card: ExerciseCard | None = None
     escalated: AssessmentRecord | None = None
+    item9_answer: int | None = None
     preface: str | None = None
     explanation_id: str | None = None
     style_suggestion: bool = False
@@ -160,14 +161,15 @@ class ChatEngine:
 
         # Stage 3 — safety, before any storage access (rules S1, S2).
         verdict = check_fail_closed(self.safety, message)
-        if not verdict.is_crisis and _item9_positive(action):
+        item9 = _item9_handoff(action)
+        if not verdict.is_crisis and item9 is not None:
             # Checked before storage, so a dead database cannot block the handoff (rules S11).
             verdict = ITEM9_VERDICT
         clock.mark("safety", "crisis" if verdict.is_crisis else "clear")
         if verdict.is_crisis:
             # Nothing else runs: no storage, no planning, no LLM (rules S3, S4). The audit
             # entry is written by record_crisis after the response is sent.
-            return self._crisis(session_hash, turn_id, clock, verdict)
+            return self._crisis(session_hash, turn_id, clock, verdict, item9_answer=item9)
 
         user_id: str | None = None
         history: list[TurnRecord] = []
@@ -338,13 +340,14 @@ class ChatEngine:
         clock: StageClock,
         verdict: SafetyVerdict,
         escalated: AssessmentRecord | None = None,
+        item9_answer: int | None = None,
     ) -> TurnResult:
         self._post_crisis.add(session_hash)
         crisis_plan = Plan(mode="crisis", templated=True)
         turn_log.info(trace_to_json(_trace(turn_id, clock, verdict, crisis_plan, _NO_DRAFT, set())))
         return TurnResult(turn_id, handoff_reply(verdict.tiers), "crisis", templated=True,
-                          persisted=False,
-                          degraded=frozenset(), verdict=verdict, escalated=escalated)  # fmt: skip
+                          persisted=False, degraded=frozenset(), verdict=verdict,
+                          escalated=escalated, item9_answer=item9_answer)  # fmt: skip
 
     async def _save_assessment(self, user_id: str | None, plan: Plan, degraded: set[str]) -> Plan:
         """Persist the assessment step before replying; if that fails, say so and stop."""
@@ -378,23 +381,29 @@ class ChatEngine:
         session_hash: str,
         verdict: SafetyVerdict,
         escalated: AssessmentRecord | None = None,
+        item9_answer: int | None = None,
     ) -> None:
         """Best-effort bookkeeping after a crisis reply has been SENT (rules S2).
 
         Writes the audit entry (tiers and pattern IDs, never text), persists post-crisis
-        mode and leaves a placeholder in history. After a PHQ-9 item-9 answer it also marks
-        the questionnaire escalated, so it is never scored. Any storage failure is logged by
-        type only; it can never affect the reply, which has already gone out.
+        mode and leaves a placeholder in history. After a PHQ-9 item-9 answer it also closes
+        the questionnaire as escalated, with its score for the mood trend (CR-07). Any storage
+        failure is logged by type only; it can never affect the reply, which has already gone
+        out.
         """
         try:
             # Bounded, so storage that never answers cannot hold this task forever.
             async with asyncio.timeout(self.settings.request_timeout_s):
-                await self._record_crisis(session_hash, verdict, escalated)
+                await self._record_crisis(session_hash, verdict, escalated, item9_answer)
         except TimeoutError:
             log.error("crisis record timed out")
 
     async def _record_crisis(
-        self, session_hash: str, verdict: SafetyVerdict, escalated: AssessmentRecord | None
+        self,
+        session_hash: str,
+        verdict: SafetyVerdict,
+        escalated: AssessmentRecord | None,
+        item9_answer: int | None,
     ) -> None:
         try:
             session = await self.repo.get_session(session_hash)
@@ -417,7 +426,11 @@ class ChatEngine:
                     now = datetime.datetime.now(datetime.UTC)
                     open_rec, _ = active(await self.repo.list_assessments(session.user_id), now)
                     if open_rec is not None and open_rec.instrument == "PHQ9":
-                        escalated = replace(open_rec, status="escalated")
+                        escalated = (
+                            escalate(open_rec, item9_answer, now)
+                            if item9_answer is not None
+                            else replace(open_rec, status="escalated")
+                        )
                 if escalated is not None:
                     await self.repo.save_assessment(session.user_id, escalated)
         except StorageError as exc:
@@ -523,13 +536,16 @@ def _last_reply_at(history: Sequence[TurnRecord]) -> datetime.datetime | None:
     return datetime.datetime.fromisoformat(last.created_at) if last else None
 
 
-def _item9_positive(action: Action | None) -> bool:
-    return (
+def _item9_handoff(action: Action | None) -> int | None:
+    """The PHQ-9 item-9 answer when it calls for the crisis handoff, else None."""
+    if (
         isinstance(action, AssessmentAction)
         and action.kind == "answer"
         and (action.instrument, action.item) == ITEM9
-        and (action.value or 0) >= 1
-    )
+        and (action.value or 0) >= ITEM9_HANDOFF
+    ):
+        return action.value
+    return None
 
 
 def _storage_code(exc: StorageError) -> str:

@@ -27,32 +27,41 @@ const ZONE_NAME = /^[A-Za-z0-9_+-]+(\/[A-Za-z0-9_+-]+)+$/;
 const COUNTRY_CODE = /^[A-Z]{2}$/;
 let chosenCountry = "";
 
-function suggestCountry() {
+// The chosen country, else the computer's time zone; null when neither names one.
+function findCountry() {
   const helpCard = help.querySelector(".help-card");
-  if (helpCard.querySelector(".suggested")) return;
-  let label = "Your chosen country:";
-  let match = COUNTRY_CODE.test(chosenCountry)
+  const chosen = COUNTRY_CODE.test(chosenCountry)
     ? helpCard.querySelector(`.country#crisis-${chosenCountry}`)
     : null;
-  if (!match) {
-    let zone = "";
-    try {
-      zone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-    } catch {
-      return;
-    }
-    if (!ZONE_NAME.test(zone)) return;
-    label = "From this computer's time zone:";
-    match = helpCard.querySelector(`.country[data-zones~="${zone}"]`);
+  if (chosen) return { label: "Your chosen country:", match: chosen };
+  let zone = "";
+  try {
+    zone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  } catch {
+    return null;
   }
-  if (!match) return;
-  const copy = match.cloneNode(true);
+  if (!ZONE_NAME.test(zone)) return null;
+  const match = helpCard.querySelector(`.country[data-zones~="${zone}"]`);
+  return match ? { label: "From this computer's time zone:", match } : null;
+}
+
+function countryBox(found) {
+  const copy = found.match.cloneNode(true);
   copy.removeAttribute("id");
   copy.removeAttribute("data-zones");
   copy.open = true;
   const box = document.createElement("div");
   box.className = "suggested";
-  box.append(line("p", label, "help-pick"), copy);
+  box.append(line("p", found.label, "help-pick"), copy);
+  return box;
+}
+
+function suggestCountry() {
+  const helpCard = help.querySelector(".help-card");
+  if (helpCard.querySelector(".suggested")) return;
+  const found = findCountry();
+  if (!found) return;
+  const box = countryBox(found);
   const others = helpCard.querySelector(".all-countries");
   others.open = false;
   others.querySelector("summary").textContent = "Not right? Choose another country";
@@ -61,6 +70,25 @@ function suggestCountry() {
 
 help.addEventListener("toggle", () => {
   if (help.open) suggestCountry();
+});
+
+// A confirmed crisis puts the country's numbers in front of the person (CR-03, clinician
+// review 2026-11-07); "Need help now?" stays open behind it.
+const crisisPopup = document.getElementById("crisis-popup");
+
+function showCrisisPopup() {
+  const found = findCountry();
+  document.getElementById("crisis-popup-country").replaceChildren(found
+    ? countryBox(found)
+    : line("p", "Choose your country below, or call your local emergency number."));
+  if (!crisisPopup.open) crisisPopup.showModal();
+}
+
+document.getElementById("crisis-popup-other").addEventListener("click", () => {
+  crisisPopup.close();
+  help.open = true;
+  help.querySelector(".all-countries").open = true;
+  help.querySelector(".all-countries > summary").focus();
 });
 
 document.addEventListener("keydown", (event) => {
@@ -455,6 +483,7 @@ async function sendText(text, action) {
     showCard(body);
     if (body.mode === "crisis" || body.mode === "post_crisis") {
       showCrisisSupport();
+      if (body.crisis_popup) showCrisisPopup();
     } else {
       continueButton.hidden = true;
     }

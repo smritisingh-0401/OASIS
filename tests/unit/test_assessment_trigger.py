@@ -82,11 +82,10 @@ def test_open_assessment_blocks_a_new_offer(status: str) -> None:
     )
 
 
-def test_recent_decline_blocks_unprompted_offers_for_24_hours() -> None:
-    declined = _record("PHQ9", "declined", datetime.timedelta(hours=23))
-    assert decide(_history(*LOW_MOOD[:-1]), LOW_MOOD[-1], (declined,), NOW) is None
-    older = _record("PHQ9", "declined", datetime.timedelta(hours=25))
-    assert decide(_history(*LOW_MOOD[:-1]), LOW_MOOD[-1], (older,), NOW) is not None
+def test_a_decline_does_not_block_later_offers() -> None:
+    """No cooldown after "Not now" (clinician review 2026-11-07, CR-10)."""
+    declined = _record("PHQ9", "declined", datetime.timedelta(minutes=5))
+    assert decide(_history(*LOW_MOOD[:-1]), LOW_MOOD[-1], (declined,), NOW) is not None
 
 
 def test_explicit_request_overrides_a_recent_decline() -> None:
@@ -96,12 +95,10 @@ def test_explicit_request_overrides_a_recent_decline() -> None:
     assert json.loads(offer.reason)["reason"] == "explicit_request"
 
 
-def test_completed_instrument_is_not_repeated_within_10_days() -> None:
-    done = _record("PHQ9", "scored", datetime.timedelta(days=9))
-    assert decide((), REQUEST, (done,), NOW) is None
-    assert decide((), "can I take an anxiety questionnaire?", (done,), NOW) is not None
-    old = _record("PHQ9", "scored", datetime.timedelta(days=11))
-    assert decide((), REQUEST, (old,), NOW) is not None
+def test_a_completed_questionnaire_can_be_taken_again_at_once() -> None:
+    """No limit on repeats (clinician review 2026-11-07, CR-10)."""
+    done = _record("PHQ9", "scored", datetime.timedelta(minutes=5))
+    assert decide((), REQUEST, (done,), NOW) is not None
 
 
 def test_an_earlier_crisis_does_not_block_offers() -> None:
@@ -126,9 +123,9 @@ def test_labelled_conversations_meet_the_reported_floor() -> None:
     assert result["recall"] >= 0.8, result
 
 
-def test_sustained_offer_respects_the_14_day_repeat_rule() -> None:
+def test_a_sustained_offer_can_follow_a_recent_result() -> None:
     done = _record("PHQ9", "scored", datetime.timedelta(days=3))
-    assert decide(_history(*LOW_MOOD[:-1]), LOW_MOOD[-1], (done,), NOW) is None
+    assert decide(_history(*LOW_MOOD[:-1]), LOW_MOOD[-1], (done,), NOW) is not None
 
 
 def test_evaluation_counts_early_and_wrong_instrument_offers() -> None:

@@ -29,8 +29,8 @@
       <summary>Need help now?</summary>
       <div class="help-card" role="region" aria-label="Crisis help" tabindex="-1">
         <h2>Talk to someone now</h2>
-        <p>If you feel like talking to someone in person, you do not have to go through this
-          alone.</p>
+        <p>Please call a crisis line or your local emergency number now. You do not have to go
+          through this alone.</p>
         <!-- CRISIS_RESOURCES -->
       </div>
     </details>
@@ -49,6 +49,16 @@
     <p>Use made-up messages only: this is not for real support. If you need help now, call your
       local emergency number or open "Need help now?".</p>
     <form method="dialog" class="card-options"><button>OK</button></form>
+  </dialog>
+
+  <dialog id="crisis-popup" class="demo-popup" aria-labelledby="crisis-popup-title">
+    <h2 id="crisis-popup-title">Please get help now</h2>
+    <p>Please call a crisis line or your local emergency number now.</p>
+    <div class="help-card" id="crisis-popup-country"></div>
+    <div class="card-options">
+      <button type="button" id="crisis-popup-other">Choose another country</button>
+      <form method="dialog"><button>Close</button></form>
+    </div>
   </dialog>
 
   <main class="chat">

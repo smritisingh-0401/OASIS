@@ -9,8 +9,8 @@ from __future__ import annotations
 
 HANDOFF_REPLY = (
     "I'm really glad you told me. It sounds like you're going through something very painful, "
-    "and you deserve support from a person right now. If you feel like talking to someone in "
-    'person, I\'ve opened "Need help now?" so you can find a crisis line in your country. '
+    "and you deserve support from a person right now. Please call a crisis line or your local "
+    "emergency number now. The numbers for your country are on your screen. "
     "You don't have to go through this alone."
 )
 
@@ -36,7 +36,12 @@ CHECK_IN_REPLY = (
 def handoff_reply(tiers: frozenset[str]) -> str:
     """Harm to others alone gets its own reply, a classifier-only alert a check-in, and any
     other risk to self the reply above."""
-    rules = tiers - {"classifier"}
-    if not rules:
+    if not shows_popup(tiers):
         return CHECK_IN_REPLY
-    return HARM_OTHERS_REPLY if rules == {"harm_others"} else HANDOFF_REPLY
+    return HARM_OTHERS_REPLY if tiers - {"classifier"} == {"harm_others"} else HANDOFF_REPLY
+
+
+def shows_popup(tiers: frozenset[str]) -> bool:
+    """A confirmed crisis opens the emergency popup; a classifier-only check-in, which may be
+    a misread, only asks (CR-03, CR-28; clinician review 2026-11-07)."""
+    return bool(tiers - {"classifier"})

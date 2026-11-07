@@ -32,6 +32,7 @@ from oasis.api.schemas import (
     HealthResponse,
     HistoryResponse,
     HistoryTurn,
+    ScoreOut,
     SessionRequest,
     SessionResponse,
     SessionStatus,
@@ -42,10 +43,12 @@ from oasis.api.schemas import (
     UserSettingsBody,
 )
 from oasis.assessment import flow
+from oasis.assessment.instruments import instrument
 from oasis.core.engine import ChatEngine, ConsentRequired, InvalidSession
 from oasis.core.templates import TEMPLATES
 from oasis.router.exercise import card_for
 from oasis.router.router import load_state
+from oasis.safety.handoff import shows_popup
 from oasis.storage.repository import (
     ErasureIncomplete,
     SessionInfo,
@@ -57,7 +60,13 @@ from oasis.storage.repository import (
 from oasis.storage.split import SplitRepository
 from oasis.tracking.aggregate import trend
 from oasis.tracking.features import load_config as load_tracking
-from oasis.types import AssessmentAction, ExerciseAction, ExerciseCard, StyleProfile
+from oasis.types import (
+    ACTIVE_STATUSES,
+    AssessmentAction,
+    ExerciseAction,
+    ExerciseCard,
+    StyleProfile,
+)
 
 log = logging.getLogger("oasis.api")
 
@@ -283,7 +292,11 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
             # Runs after the response is sent, so audit storage can never delay or block
             # the handoff (rules S2).
             background.add_task(
-                engine.record_crisis, session_hash, result.verdict, result.escalated
+                engine.record_crisis,
+                session_hash,
+                result.verdict,
+                result.escalated,
+                result.item9_answer,
             )
         return ChatResponse(
             turn_id=result.turn_id,
@@ -297,6 +310,7 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
             exercise=_exercise_out(result.exercise_card),
             explanation_id=result.explanation_id,
             style_suggestion=result.style_suggestion,
+            crisis_popup=result.mode == "crisis" and shows_popup(result.verdict.tiers),
         )
 
     @router.get("/history")
@@ -338,10 +352,15 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
             if info is None:
                 raise INVALID_SESSION
             records = await repo.list_signals(info.user_id)
+            assessments = await repo.list_assessments(info.user_id)
         except StorageError:
             raise STORAGE_DOWN from None
         cfg = load_tracking()
         t = trend(records, session_hash, cfg)
+        scored = sorted(
+            (a for a in assessments if a.status in ("scored", "escalated", *ACTIVE_STATUSES)),
+            key=lambda a: a.completed_at or a.created_at,
+        )
         return TrendsResponse(
             label=t.label,
             features=[FeatureInfoOut(name=n, **asdict(i)) for n, i in cfg.features.items()],
@@ -349,6 +368,18 @@ def build_router(engine: ChatEngine, repo: SplitRepository, countries: frozenset
             ewma=t.ewma,
             change_flags=t.change_flags,
             current=[TurnPointOut(at=at, valence=v) for at, v in t.current],
+            scores=[
+                ScoreOut(
+                    instrument=a.instrument,
+                    name=instrument(a.instrument).name,
+                    total=a.total,
+                    max_total=instrument(a.instrument).max_total,
+                    band=a.band,
+                    completed_at=a.completed_at or a.created_at,
+                )
+                for a in scored
+                if a.total is not None and a.band
+            ],
         )
 
     @router.get("/explanations/{explanation_id}")

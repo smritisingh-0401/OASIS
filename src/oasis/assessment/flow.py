@@ -23,7 +23,10 @@ from oasis.types import (
     InstrumentId,
 )
 
-ITEM9 = ("PHQ9", 9)  # any answer >= 1 triggers the crisis protocol (rules S11)
+ITEM9 = ("PHQ9", 9)
+# "More than half the days" or "Nearly every day" triggers the crisis protocol (rules S11);
+# "Several days" finishes the questionnaire with advice (CR-07, clinician review 2026-11-07).
+ITEM9_HANDOFF = 2
 
 
 @dataclass(frozen=True)
@@ -109,14 +112,27 @@ def _answer(
         done = replace(rec, status="scored", functional=action.value, total=total, band=band,
                        completed_at=_iso(now))  # fmt: skip
         return _result(done, inst)
+    if (rec.instrument, expected) == ITEM9 and action.value >= ITEM9_HANDOFF:
+        return Step(escalate(rec, action.value, now), None, escalate=True)
     rec = replace(rec, answers=(*rec.answers, action.value))
-    if (rec.instrument, expected) == ITEM9 and action.value >= 1:
-        return Step(replace(rec, status="escalated", completed_at=_iso(now)), None, escalate=True)
-    if len(rec.answers) == len(inst.items) and inst.functional_question is None:
+    if len(rec.answers) == len(inst.items):
+        # Scored once the last item is answered, so the result reaches the mood trend even if
+        # the PHQ-9 difficulty question (not part of the score) is never answered.
         total, band = score(inst, rec.answers)
-        return _result(replace(rec, status="scored", total=total, band=band,
-                               completed_at=_iso(now)), inst)  # fmt: skip
+        rec = replace(rec, total=total, band=band)
+        if inst.functional_question is None:
+            return _result(replace(rec, status="scored", completed_at=_iso(now)), inst)
     return _show(rec, inst, changed=True)
+
+
+def escalate(rec: AssessmentRecord, item9: int, now: datetime.datetime) -> AssessmentRecord:
+    """The item-9 handoff ends the questionnaire, but its nine answers are still scored, so
+    the result shows in the mood trend (CR-07)."""
+    inst = instrument(rec.instrument)
+    answers = (*rec.answers, item9)
+    total, band = score(inst, answers) if len(answers) == len(inst.items) else (None, None)
+    return replace(rec, status="escalated", answers=answers, total=total, band=band,
+                   completed_at=_iso(now))  # fmt: skip
 
 
 def _next_item(rec: AssessmentRecord, inst: Instrument) -> int | None:
@@ -139,9 +155,11 @@ def _show(rec: AssessmentRecord, inst: Instrument, *, changed: bool, intro: bool
 
 def _result(rec: AssessmentRecord, inst: Instrument) -> Step:
     doc = texts()
+    item9 = rec.answers[ITEM9[1] - 1] if inst.id == ITEM9[0] else 0
+    advice = f" {doc['item9_advice']}" if item9 >= 1 else ""
     text = (
         f"Your {inst.name} score is {rec.total} out of {inst.max_total} ({rec.band}). "
-        f"{doc[inst.id][str(rec.band)]} {doc['disclaimer']}"
+        f"{doc[inst.id][str(rec.band)]}{advice} {doc['disclaimer']}"
     )
     card = AssessmentCard("result", inst.id, inst.name, total=rec.total, band=rec.band)
     return Step(rec, text, card)
@@ -158,7 +176,8 @@ def _declined(rec: AssessmentRecord, by: str, now: datetime.datetime) -> Assessm
 
 
 def _aborted(rec: AssessmentRecord, now: datetime.datetime) -> AssessmentRecord:
-    return replace(rec, status="aborted", answers=(), functional=None, completed_at=_iso(now))
+    return replace(rec, status="aborted", answers=(), functional=None, total=None, band=None,
+                   completed_at=_iso(now))  # fmt: skip
 
 
 def _step_text(key: str) -> str:

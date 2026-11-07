@@ -149,15 +149,33 @@ def test_stale_or_repeated_click_changes_nothing() -> None:
     assert plan.card.item == 3
 
 
-@pytest.mark.parametrize("value", [1, 2, 3])
-def test_item9_positive_escalates_regardless_of_total(value: int) -> None:
+@pytest.mark.parametrize("value", [2, 3])
+def test_item9_most_days_escalates_and_is_still_scored(value: int) -> None:
+    """CR-07, clinician review 2026-11-07: the handoff takes over, the score goes to the trend."""
     rec, _ = _answer_all(_accepted(), [0] * 8)
     plan = _answer(rec, value)
     assert plan.mode == "crisis"
     assert plan.assessment is not None
     assert plan.assessment.status == "escalated"
-    assert plan.assessment.total is None
+    assert (plan.assessment.total, plan.assessment.band) == (value, "minimal")
     assert plan.card is None
+
+
+def test_item9_several_days_finishes_with_advice() -> None:
+    rec, plan = _answer_all(_accepted(), [0] * 8 + [1])
+    assert (plan.mode, rec.status) == ("assessment", "in_progress")
+    plan = plan_turn("Not difficult at all", _state(rec), _act("answer", 0, rec, None))
+    assert plan.assessment is not None
+    assert (plan.assessment.status, plan.assessment.total) == ("scored", 1)
+    assert plan.text is not None
+    assert "talk to a doctor or mental health professional about this soon" in plan.text
+
+
+def test_no_item9_advice_without_item9() -> None:
+    rec, _ = _answer_all(_accepted(), [1] * 8 + [0])
+    plan = plan_turn("Not difficult at all", _state(rec), _act("answer", 0, rec, None))
+    assert plan.text is not None
+    assert "about this soon" not in plan.text
 
 
 def test_item9_zero_does_not_escalate() -> None:

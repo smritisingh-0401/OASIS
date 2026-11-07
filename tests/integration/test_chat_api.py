@@ -18,7 +18,7 @@ from oasis.llm.fake import FakeLLM
 from oasis.psychoed.selector import load_all as load_psychoed
 from oasis.router.exercise import technique_for
 from oasis.router.weights import config as router_config
-from oasis.safety.handoff import HANDOFF_REPLY, HARM_OTHERS_REPLY
+from oasis.safety.handoff import CHECK_IN_REPLY, HANDOFF_REPLY, HARM_OTHERS_REPLY
 from oasis.settings import Settings
 from oasis.storage.memory import MemoryRepository
 from oasis.types import ChatMessage, SafetyVerdict
@@ -155,14 +155,24 @@ def test_chat_page_has_help_card_and_disclaimer(client: TestClient) -> None:
     assert "Need help now?" in html
     assert "not a diagnosis" in html
     assert "<h2>Talk to someone now</h2>" in html
-    assert "If you feel like talking to someone in person" in html
-    assert "If you are in danger right now" not in html
+    assert "Please call a crisis line or your local emergency number now." in html
+    assert 'id="crisis-popup"' in html
+    assert "If you feel like talking" not in html
 
 
-def test_crisis_reply_invites_talking_in_person_and_points_to_the_card() -> None:
-    assert "If you feel like talking to someone in person" in HANDOFF_REPLY
-    assert '"Need help now?"' in HANDOFF_REPLY
-    assert "emergency" not in HANDOFF_REPLY
+def test_crisis_reply_tells_the_person_to_call_now(client: TestClient) -> None:
+    """CR-03, clinician review 2026-11-07: a direct instruction, with the popup."""
+    assert "Please call a crisis line or your local emergency number now." in HANDOFF_REPLY
+    assert "If you feel like" not in HANDOFF_REPLY
+    reply = _chat(client, _session(client), "I want to kill myself").json()
+    assert (reply["reply"], reply["crisis_popup"]) == (HANDOFF_REPLY, True)
+
+
+def test_the_unclear_check_in_has_no_popup(client: TestClient) -> None:
+    reply = _chat(client, _session(client), "im goin to end my lfe").json()
+    assert reply["mode"] == "crisis"
+    assert reply["reply"] == CHECK_IN_REPLY
+    assert reply["crisis_popup"] is False
 
 
 def test_harm_to_others_gets_its_own_handoff(client: TestClient) -> None:
@@ -355,6 +365,21 @@ def test_full_phq9_over_http(settings: Settings) -> None:
     assert any(t["content"] == "Somewhat difficult" for t in turns)
 
 
+def test_phq9_score_reaches_the_trend_before_the_difficulty_question(settings: Settings) -> None:
+    repo = MemoryRepository()
+    with TestClient(create_app(settings, repo=repo)) as c:
+        token = _session(c)
+        _start_phq9(c, token)
+        for item in range(1, 10):
+            _act(c, token, "Several days", {"type": "assessment_answer", "value": 1,
+                                            "instrument": "PHQ9", "item": item})  # fmt: skip
+        scores = c.get("/trends", headers={HEADER: token}).json()["scores"]
+        _chat(c, token, "actually let me just talk")
+        paused = c.get("/trends", headers={HEADER: token}).json()["scores"]
+    assert [(s["name"], s["total"], s["band"]) for s in scores] == [("PHQ-9", 9, "mild")]
+    assert paused == scores
+
+
 def test_item9_over_http_hands_off_and_audits_the_source(settings: Settings) -> None:
     repo = MemoryRepository()
     with TestClient(create_app(settings, repo=repo)) as c:
@@ -363,18 +388,20 @@ def test_item9_over_http_hands_off_and_audits_the_source(settings: Settings) -> 
         for item in range(1, 9):
             _act(c, token, "Not at all", {"type": "assessment_answer", "value": 0,
                                           "instrument": "PHQ9", "item": item})  # fmt: skip
-        crisis = _act(c, token, "Several days", {"type": "assessment_answer", "value": 1,
-                                                 "instrument": "PHQ9", "item": 9})  # fmt: skip
+        crisis = _act(c, token, "More than half the days", {"type": "assessment_answer",
+                      "value": 2, "instrument": "PHQ9", "item": 9})  # fmt: skip
         held = _chat(c, token, "ok").json()
+        scores = c.get("/trends", headers={HEADER: token}).json()["scores"]
     assert crisis["mode"] == "crisis"
-    assert crisis["reply"] == HANDOFF_REPLY
+    assert (crisis["reply"], crisis["crisis_popup"]) == (HANDOFF_REPLY, True)
     assert crisis["assessment"] is None
     assert held["mode"] == "post_crisis"
     user_id = next(iter(repo._sessions.values()))
     [audit] = [r for _, r in repo._audit[user_id] if r.event == "crisis_handoff"]
     assert json.loads(audit.detail)["source"] == "item9"
     [rec] = repo._assessments[user_id]
-    assert (rec.status, rec.total) == ("escalated", None)
+    assert (rec.status, rec.total, rec.band) == ("escalated", 2, "minimal")
+    assert [(s["name"], s["total"], s["max_total"]) for s in scores] == [("PHQ-9", 2, 27)]
 
 
 @pytest.mark.parametrize(

@@ -38,6 +38,7 @@ class TriggerConfig:
     consecutive: int
     decline_cooldown: datetime.timedelta
     repeat_after: datetime.timedelta
+    result_window: datetime.timedelta
     paused_expiry: datetime.timedelta
     max_evidence: float
     domains: tuple[Domain, ...]
@@ -63,6 +64,7 @@ def config() -> TriggerConfig:
         consecutive=int(raw["consecutive"]),
         decline_cooldown=datetime.timedelta(hours=raw["decline_cooldown_hours"]),
         repeat_after=datetime.timedelta(days=raw["repeat_after_days"]),
+        result_window=datetime.timedelta(days=raw["result_window_days"]),
         paused_expiry=datetime.timedelta(hours=raw["paused_expiry_hours"]),
         max_evidence=float(raw["max_evidence"]),
         domains=tuple(

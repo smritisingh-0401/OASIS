@@ -236,7 +236,7 @@ def test_a_recent_moderate_phq9_result_feeds_the_router() -> None:
 
 
 def test_an_old_phq9_result_does_not() -> None:
-    when = (NOW - trigger_config().repeat_after - datetime.timedelta(days=1)).isoformat()
+    when = (NOW - trigger_config().result_window - datetime.timedelta(days=1)).isoformat()
     rec = AssessmentRecord("a1", "PHQ9", "scored", "{}", when, total=12, band="moderate",
                            completed_at=when)  # fmt: skip
     plan = plan_turn("I don't know", state(assessments=(rec,)))
