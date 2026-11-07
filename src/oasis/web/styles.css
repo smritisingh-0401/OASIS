@@ -554,3 +554,13 @@ body.chat-page {
 .demo-popup::backdrop { background: rgba(28, 42, 61, 0.35); }
 .demo-popup h2 { margin: 0 0 8px; font-size: 22px; }
 .demo-popup p { margin: 0 0 16px; }
+.demo-popup .help-card {
+  position: static;
+  width: auto;
+  max-height: none;
+  overflow: visible;
+  margin: 0 0 16px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}

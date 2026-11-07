@@ -93,6 +93,7 @@ class ChatResponse(BaseModel):
     exercise: ExerciseCardOut | None = None
     explanation_id: str | None = None
     style_suggestion: bool = False
+    crisis_popup: bool = False
 
 
 class UserSettingsBody(BaseModel):
@@ -171,6 +172,17 @@ class TurnPointOut(BaseModel):
     valence: float
 
 
+class ScoreOut(BaseModel):
+    """A finished PHQ-9 or GAD-7, including one cut short by the item-9 handoff (CR-07)."""
+
+    instrument: str
+    name: str
+    total: int
+    max_total: int
+    band: str
+    completed_at: str
+
+
 class TrendsResponse(BaseModel):
     label: str
     features: list[FeatureInfoOut]
@@ -178,6 +190,7 @@ class TrendsResponse(BaseModel):
     ewma: list[float]
     change_flags: list[bool]
     current: list[TurnPointOut]
+    scores: list[ScoreOut] = []
 
 
 class HealthResponse(BaseModel):

@@ -7,8 +7,12 @@ review_status: needs_clinician_review
 window: 6               # W: user turns in the readiness window, linear decay
 threshold: 0.45         # theta_offer
 consecutive: 2          # k: turns in a row at or above the threshold (3 until 2026-10-12)
-decline_cooldown_hours: 24   # blocks unprompted offers only; the user can always ask
-repeat_after_days: 10   # 14 until 2026-10-12
+# No limit on how often a questionnaire is offered or taken (clinician review 2026-11-07:
+# "it can be given unlimited number of times"). Until then: 24 h after "Not now", 10 days
+# between administrations (14 until 2026-10-12).
+decline_cooldown_hours: 0
+repeat_after_days: 0
+result_window_days: 10  # how long a moderate-or-worse result informs the router
 paused_expiry_hours: 24
 max_evidence: 1.0       # cap on one turn's evidence
 # Weights were raised from 0.5 to 0.7 (duration and uncontrolled worry 0.3 to 0.4) after the

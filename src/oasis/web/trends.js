@@ -125,6 +125,28 @@ function showPast(body) {
     : label;
 }
 
+function showScores(scores) {
+  const list = document.getElementById("scores");
+  if (!scores.length) {
+    list.replaceChildren(document.createElement("li"));
+    list.firstChild.textContent = "No questionnaire results yet.";
+    return;
+  }
+  list.replaceChildren(
+    ...scores.slice().reverse().map((s) => {
+      const item = document.createElement("li");
+      const name = document.createElement("strong");
+      name.textContent = `${s.name}: ${s.total} of ${s.max_total} (${s.band})`;
+      const when = document.createElement("span");
+      when.textContent = new Date(s.completed_at).toLocaleString([], {
+        day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+      });
+      item.append(name, when);
+      return item;
+    }),
+  );
+}
+
 function showBasis(features) {
   const list = document.getElementById("basis");
   list.replaceChildren(
@@ -165,6 +187,7 @@ async function load() {
     showNow(body.current);
     showEarlier(body.sessions);
     showPast(body);
+    showScores(body.scores || []);
     showBasis(body.features);
   } catch {
     status.textContent = "The trend couldn't load just now. Your conversation is not affected.";

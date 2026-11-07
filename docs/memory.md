@@ -23,6 +23,7 @@ Development setup: Windows 11, Python 3.12 managed by uv, `uv run python scripts
 | 2026-10-08 | Invalid safety content stops the app at startup | Bad rules are found at boot, never mid-conversation |
 | 2026-10-08 | Crisis resources in two tiers: Tier 1 needs a line verified on the service's or a government site; Tier 2 uses UK travel-advice emergency numbers. Blocked sites were not bypassed | Only verified numbers are shown |
 | 2026-10-27 | Self-harm without suicidal intent keeps the full handoff and post-crisis mode | Safe default until clinician review |
+| 2026-11-07 | Crisis reply and help card tell the person to call now; a confirmed crisis (not the classifier-only check-in) opens an emergency popup with the country's numbers | Clinician review (Dr. K. Ramakrishnan) |
 | 2026-10-29 | Threats to someone else are a crisis (`harm_others` tier) with their own reply naming the emergency number | Demo testers' threats got ordinary replies |
 | 2026-11-01 | Add-only crisis classifier (logistic regression shipped as YAML weights, pure Python), asked only when no rule matched; a classifier-only alert gets a check-in reply (CR-28); `OASIS_CRISIS_CLASSIFIER=0` turns it off | Typo recall 51% to 80% with 3/98 benign flagged and no new runtime dependency |
 
@@ -33,6 +34,7 @@ Development setup: Windows 11, Python 3.12 managed by uv, `uv run python scripts
 | 2026-10-07 | PHQ-9 and GAD-7 only, with published items and bands, fixed buttons, no model paraphrase or scoring; item 9 of 1 or more triggers the handoff before storage | Instruments stay valid; item 9 works with the database down |
 | 2026-10-08 | Screening offer needs readiness of 0.45 or more for two turns in a row (three until 2026-10-12); domain weights 0.7; messages about someone else excluded | First-run recall was 0.31 |
 | 2026-10-08 | An explicit request overrides the 24-hour decline cooldown; re-administration window 10 days | Owner's decisions |
+| 2026-11-07 | Item 9 hands off only at "More than half the days" or more; "Several days" finishes with advice; every result, escalated ones included, is scored and shown in Mood trend; no repeat or decline limits | Clinician review (Dr. K. Ramakrishnan) |
 | 2026-10-11 | Router: weighted sum per mode, margin 0.15, two turns of lead, structured modes offered with consent, grounding at overwhelm 0.6 without asking | Stable, explainable mode choice |
 | 2026-10-12 | Anxiety's mindfulness weight 0.85 and anger's DBT weight 0.85 (both raised from lower values) | With the lower values these emotions could never overcome companion's bias of 0.35 |
 | 2026-10-11 | One low-risk exercise per mode; steps shown word for word after one model sentence; the first step after "Yes" has no model call | The 4B model rewrote steps wrongly |
@@ -85,7 +87,7 @@ Development setup: Windows 11, Python 3.12 managed by uv, `uv run python scripts
 
 | # | Item | Status |
 |---|---|---|
-| 4 | Qualified clinician to review [clinical_review.md](clinical_review.md) | Needed before any real use |
+| 4 | Qualified clinician to review [clinical_review.md](clinical_review.md) | In progress: 8 of 29 items reviewed by Dr. K. Ramakrishnan on 2026-11-07; the rest are needed before any real use |
 | 5 | Ethics approval for any testing with participants | Needed before a user study |
 | 8 | Browser check of crisis lines that could not be fetched (Philippines, Chile, Colombia, Pakistan, Sweden's hours) to promote them to Tier 1 | Partly done |
 | 10 | A held-out crisis set written outside the project: first 2 to 3 people writing blind, then a published research dataset under a data-use agreement | Planned |

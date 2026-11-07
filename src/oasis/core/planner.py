@@ -305,8 +305,8 @@ def rules_for(mode: str, signals: Signals) -> tuple[str, ...]:
 
 
 def _band_flags(records: Sequence[AssessmentRecord], now: datetime.datetime) -> dict[str, float]:
-    """Moderate-or-worse PHQ-9 / GAD-7 results inside the re-administration window."""
-    window = trigger.config().repeat_after
+    """Moderate-or-worse PHQ-9 / GAD-7 results from the last `result_window_days`."""
+    window = trigger.config().result_window
     flags = {"phq_moderate_plus": 0.0, "gad_moderate_plus": 0.0}
     for r in records:
         when = datetime.datetime.fromisoformat(r.completed_at or r.created_at)

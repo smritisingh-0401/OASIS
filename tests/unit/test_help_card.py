@@ -108,8 +108,8 @@ def test_the_suggestion_is_worked_out_in_the_page() -> None:
     import oasis
 
     js = (Path(oasis.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
-    body = js[js.index("function suggestCountry") :]
-    body = body[: body.index("\n}\n")]
+    body = js[js.index("function findCountry") :]
+    body = body[: body.index("function showCrisisPopup")]
     assert "resolvedOptions().timeZone" in body
     assert "data-zones" in body
     assert "fetch" not in body
